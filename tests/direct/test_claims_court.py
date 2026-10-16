@@ -23,7 +23,13 @@ def court(direct_vm,direct_deploy,direct_alice,direct_bob,direct_charlie):
     events={}
     direct_vm.ballast_claimant=str(Address(hx(direct_alice)))
     view=SimpleNamespace(get_policy=lambda _:policy,get_agent=lambda _:agent,get_agent_revision=lambda *args:agent,get_event_record=lambda key:events.get(key,{'paid':'0','loss':'0'}),get_settlement=lambda key:settled.get(key,{}))
-    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda **kwargs:view)):
+    original_get=gl.nondet.web.get
+    def get(url):
+        if url.startswith('https://explorer-studio.genlayer.com/api/transactions/'):
+            record={'hash':url.rsplit('/',1)[1],'status':'FINALIZED','from_address':agent['executor_address'],'triggered_by_hash':None}
+            return SimpleNamespace(status=200,body=json.dumps({'transaction':record}).encode())
+        return original_get(url)
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda **kwargs:view)), patch.object(gl.nondet.web,'get',side_effect=get):
         yield contract,policy,settled,view,events
 
 
@@ -455,3 +461,34 @@ def test_worst_case_fair_appeals_have_a_finite_seventy_day_bound(court,direct_vm
     assert case['challenge_until']-created<=70*86400
     at(direct_vm,case['challenge_until']);c.finalize_claim(cid)
     assert c.get_claim(cid)['status']=='final'
+
+
+@pytest.mark.parametrize('change',[{'triggered_by_hash':OTHER_TX},{'from_address':'0x'+'f'*40},{'hash':OTHER_TX},{'status':'ACCEPTED'}])
+def test_positive_model_output_cannot_make_a_child_or_unrelated_transaction_canonical(court,direct_vm,change):
+    from genlayer import gl
+    cid=file(court,direct_vm);mock_finding(direct_vm,'harm',True)
+    original_get=gl.nondet.web.get
+    def get(url):
+        response=original_get(url)
+        if url.startswith('https://explorer-studio.genlayer.com/api/transactions/'):
+            payload=json.loads(response.body);payload['transaction'].update(change)
+            return SimpleNamespace(status=200,body=json.dumps(payload).encode())
+        return response
+    with patch.object(gl.nondet.web,'get',side_effect=get):court[0].resolve_finding(cid,'harm')
+    assert court[0].get_claim(cid)['findings']['harm'] is False
+    assert court[0].get_claim(cid)['verified_loss']=='0'
+
+
+def test_unavailable_canonical_chain_record_is_recoverable_not_a_denial(court,direct_vm):
+    from genlayer import gl
+    cid=file(court,direct_vm);mock_finding(direct_vm,'harm',True)
+    original_get=gl.nondet.web.get
+    def get(url):
+        if url.startswith('https://explorer-studio.genlayer.com/api/transactions/'):
+            return SimpleNamespace(status=503,body=b'Unavailable')
+        return original_get(url)
+    with patch.object(gl.nondet.web,'get',side_effect=get):
+        with direct_vm.expect_revert('TRANSIENT'):court[0].resolve_finding(cid,'harm')
+    assert court[0].get_claim(cid)['findings']=={}
+    court[0].resolve_finding(cid,'harm')
+    assert court[0].get_claim(cid)['findings']['harm'] is True

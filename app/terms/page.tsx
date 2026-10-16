@@ -20,7 +20,8 @@ export default function Terms() {
       <p>
         Cover applies to an unauthorized debit of a third party’s own native GEN
         funds, caused by the registered executor in a uniquely identified
-        GenLayer Studio transaction. Validators independently establish the
+        top level GenLayer Studio transaction by the insured executor. Child transfer
+        receipts cannot identify a second loss. Validators independently establish the
         actual event time, claimant and loss against the policy dates. V1 does
         not cover invoices, missing payments, fiat balances or API credit
         estimates. Maximum cover is 100 test GEN for a 30 day term. Claims must
@@ -52,7 +53,10 @@ export default function Terms() {
       <h2>Evidence and recovery</h2>
       <p>
         Claims need public evidence spanning at least two normalized source
-        hosts. An unavailable individual source does not prevent review if
+        hosts. Harm review also verifies the official finalized Studio record
+        for the initiating executor transaction. If that record is unavailable,
+        review pauses for retry within the same deadline. An unavailable
+        individual supporting source does not prevent review if
         sufficient corroboration remains. Either party may add up to twelve
         supplemental URLs under its own allowance. Appeal evidence stays in the
         effective case record and is retrieved for later assessments.

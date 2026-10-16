@@ -680,7 +680,7 @@ export function ActionForm({
                   minLength={66}
                   maxLength={66}
                   pattern="0[xX][a-fA-F0-9]{64}"
-                  placeholder="0x followed by the 64 character transaction hash"
+                  placeholder="The initiating executor transaction, never a child receipt"
                 />
               </div>
               <div>
