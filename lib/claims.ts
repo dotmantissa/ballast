@@ -24,7 +24,7 @@ export function redeemableShares(
   const shares = BigInt(owned);
   const value = BigInt(positionValue);
   const free = BigInt(freeCapital);
-  if (value === 0n) return shares;
+  if (value === 0n || free >= value) return shares;
   // Use the upper bound of the rounded share price so the estimate cannot overdraw free backing.
   const available = (free * shares) / (value + 1n);
   return available < shares ? available : shares;

@@ -31,3 +31,9 @@ it("estimates redemption using free tranche backing, retaining premium locks", (
   expect(redeemableShares("100", "140", "70")).toBeLessThan(51n);
   expect(redeemableShares("100", "140", "1000")).toBe(100n);
 });
+
+it("lets a fully free position close without stranding its last share", () => {
+  expect(redeemableShares("100", "140", "140")).toBe(100n);
+  expect(redeemableShares("1", "1", "1")).toBe(1n);
+  expect(redeemableShares("100", "140", "0")).toBe(0n);
+});
