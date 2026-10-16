@@ -66,8 +66,9 @@ export default function Terms() {
         payout; it does not declare that no harm occurred. The finite appeal
         allowances bound a case to at most 70 days of review and challenge time.
         After the policy filing window, excess reserves may be released into
-        runoff while the open claim’s maximum award stays backed. Closing and
-        settling the case releases that remaining commitment.
+        runoff while unsettled cases retain backing up to their combined requested
+        amounts and the remaining policy limit. Closing and settling cases
+        releases their unused commitments.
       </p>
       <h2>Compensation and bonds</h2>
       <p>
@@ -79,7 +80,11 @@ export default function Terms() {
         remaining cover. Filing requires a bond of 1% of the requested amount,
         with a minimum of 0.01 GEN. A successful award returns it. An
         adjudicated rejection awards it to the operator. A rejected claim leaves
-        cover in place; a payment reduces remaining cover.
+        cover in place; a payment reduces remaining cover. Distinct losses may be
+        filed concurrently. All claims share the policy’s aggregate limit.
+        Finalized settlements consume remaining cover in settlement order;
+        later awards may receive less or zero. An assessed award is not a
+        guarantee of payment beyond that shared limit.
       </p>
       <h2>Appeals and settlement</h2>
       <p>

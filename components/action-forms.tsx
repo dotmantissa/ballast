@@ -689,8 +689,13 @@ export function ActionForm({
                   id="occurred"
                   name="occurred"
                   type="datetime-local"
+                  step="1"
+                  aria-describedby="occurred-help"
                   required
                 />
+                <p id="occurred-help" className="field-note">
+                  Use the exact transaction time, including seconds, in your local timezone.
+                </p>
               </div>
             </div>
             <Amount

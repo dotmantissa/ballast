@@ -20,7 +20,7 @@ def pool(direct_vm, direct_deploy, direct_alice, direct_bob):
     agent = {'id':'a1','name':'Test agent','operator':operator,'manifest_hash':'abc','scope':'Spend only with approval','history_urls':URLS[:1]}
     policy_claim = {'value':''}
     settlements = {}
-    view = SimpleNamespace(get_agent=lambda _:agent, get_loss_record=lambda _:{'claims':0,'paid':'0'}, get_policy_claim=lambda _:policy_claim['value'], get_settlement=lambda key:settlements.get(key, {}))
+    view = SimpleNamespace(get_agent=lambda _:agent, get_loss_record=lambda _:{'claims':0,'paid':'0'}, get_policy_claim=lambda _:policy_claim['value'],get_policy_exposure=lambda _: {'requested':str(UNIT) if policy_claim['value'] else '0','open_count':1 if policy_claim['value'] else 0}, get_settlement=lambda key:settlements.get(key, {}))
     with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs:view,emit=lambda **kwargs:SimpleNamespace(acknowledge_settlement=lambda _:None))):
         yield contract, view, policy_claim
 
@@ -370,3 +370,45 @@ def test_operator_quote_index_has_stable_earlier_page_cursor(pool,direct_vm,dire
     assert [q['id'] for q in page['items']+older['items']]==list(reversed(ids))
     assert later not in [q['id'] for q in older['items']]
     assert c.get_account(hx(direct_alice))['quotes']['total']==53
+
+
+def test_concurrent_awards_share_one_aggregate_limit_and_zero_cases_can_close(pool,direct_vm,direct_bob,direct_charlie):
+    c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
+    claim=claim_record(c,qid,'first',hx(direct_charlie),8*UNIT)
+    view.get_claim=lambda _:claim
+    c.settle_claim('first')
+    claim['id']='second';claim['incident_ref']='0x'+'b'*64
+    claim['event_key']=hashlib.sha256(('genlayer-studio:'+claim['incident_ref']+':'+claim['claimant'].lower()).encode()).hexdigest()
+    c.settle_claim('second')
+    assert c.get_settlement('second')['awarded']==str(8*UNIT)
+    assert c.get_settlement('second')['paid']==str(2*UNIT)
+    assert c.get_policy(qid)['remaining']=='0'
+    assert c.get_dashboard()['reserved']=='0'
+    assert c.get_dashboard()['paid']==str(10*UNIT)
+    assert c.get_account(hx(direct_charlie))['credit']==str(10*UNIT)
+    claim['id']='third';claim['incident_ref']='0x'+'c'*64
+    claim['event_key']=hashlib.sha256(('genlayer-studio:'+claim['incident_ref']+':'+claim['claimant'].lower()).encode()).hexdigest()
+    c.settle_claim('third')
+    assert c.get_settlement('third')['paid']=='0'
+    assert c.get_operator_record(claim['operator'])['settled_claims']==3
+
+
+def test_runoff_preserves_other_cases_and_releases_only_unused_commitments(pool,direct_vm,direct_bob,direct_charlie):
+    c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
+    exposure={'requested':str(5*UNIT),'open_count':2}
+    view.get_policy_exposure=lambda _:exposure
+    direct_vm.warp('2035-01-01T00:00:00Z');c.expire_policy(qid)
+    assert c.get_dashboard()['reserved']==str(5*UNIT)
+    claim=claim_record(c,qid,'first',hx(direct_charlie),UNIT)
+    claim['amount']=str(2*UNIT);view.get_claim=lambda _:claim
+    c.settle_claim('first')
+    assert c.get_dashboard()['reserved']==str(3*UNIT)
+    assert c.get_policy(qid)['remaining']==str(3*UNIT)
+    assert c.get_policy(qid)['status']=='runoff'
+    exposure.update(requested=str(3*UNIT),open_count=1)
+    claim['id']='second';claim['amount']=str(3*UNIT);claim['payout']='0'
+    c.settle_claim('second')
+    assert c.get_dashboard()['reserved']=='0'
+    assert c.get_policy(qid)['status']=='expired'
+    assert c.get_dashboard()['junior_locked']=='0'
+    assert c.get_dashboard()['senior_locked']=='0'

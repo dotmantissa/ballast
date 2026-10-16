@@ -70,6 +70,7 @@ export type Claim = {
   }[];
   claim_bond: string;
   payout: string;
+  settled_payout?: string;
 };
 export type Dashboard = {
   registry: string;

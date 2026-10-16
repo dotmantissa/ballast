@@ -63,6 +63,8 @@ class ClaimsCourt(gl.Contract):
     account_indexes: TreeMap[str, str]
     account_counts: TreeMap[str, u256]
     open_positions: TreeMap[str, u256]
+    policy_exposure: TreeMap[str, u256]
+    policy_open_count: TreeMap[str, u256]
 
     def _index_account(self, kind: str, account: str, record_id: str) -> None:
         prefix = kind + ':' + str(Address(account))
@@ -128,9 +130,6 @@ class ClaimsCourt(gl.Contract):
             raise gl.vm.UserError('Include a detailed incident statement')
         _urls(evidence_urls)
         evidence_urls = list(dict.fromkeys(_url(url) for url in evidence_urls))
-        prior = self.policy_claims.get(policy_id, '')
-        if prior and not pool.get_settlement(prior):
-            raise gl.vm.UserError('An earlier claim is still open; repair or close it first')
         event_key = hashlib.sha256(('genlayer-studio:' + incident_ref + ':' + claimant.lower()).encode()).hexdigest()
         event = pool.get_event_record(event_key)
         if int(event['paid']) > 0:
@@ -156,6 +155,8 @@ class ClaimsCourt(gl.Contract):
         self.claim_ids.append(claim_id)
         self._index_case(self.get_claim(claim_id))
         self.policy_claims[policy_id] = claim_id
+        self.policy_exposure[policy_id] = u256(int(self.policy_exposure.get(policy_id,u256(0)))+amount)
+        self.policy_open_count[policy_id] = u256(int(self.policy_open_count.get(policy_id,u256(0)))+1)
         self.incidents[event_key] = claim_id
         return claim_id
 
@@ -372,6 +373,10 @@ class ClaimsCourt(gl.Contract):
         if not settlement or settlement['policy_id'] != claim['policy_id']:
             raise gl.vm.UserError('Finalized pool settlement is required')
         claim['status'] = 'settled'
+        claim['settled_payout'] = settlement['paid']
+        policy_id = claim['policy_id']
+        self.policy_exposure[policy_id] = u256(int(self.policy_exposure[policy_id])-int(claim['amount']))
+        self.policy_open_count[policy_id] = u256(int(self.policy_open_count[policy_id])-1)
         self.claims[claim_id] = json.dumps(claim,sort_keys=True)
         self._remove_open(claim)
 
@@ -393,6 +398,10 @@ class ClaimsCourt(gl.Contract):
         if claim_id not in self.claims:
             raise gl.vm.UserError('Claim not found')
         return json.loads(self.claims[claim_id])
+
+    @gl.public.view
+    def get_policy_exposure(self, policy_id: str) -> dict:
+        return {'requested':str(self.policy_exposure.get(policy_id,u256(0))), 'open_count':int(self.policy_open_count.get(policy_id,u256(0)))}
 
     @gl.public.view
     def get_policy_claim(self, policy_id: str) -> str:

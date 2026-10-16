@@ -2022,8 +2022,13 @@ function ClaimDetail({
               Settle this record to release its remaining commitment.
             </p>
           )}
-          <span>Final payout</span>
-          <strong className="mono">{gen(claim.payout)} GEN</strong>
+          <span>{claim.status === "settled" ? "Paid by the pool" : "Assessed award"}</span>
+          <strong className="mono">{gen(claim.status === "settled" ? (claim.settled_payout ?? "0") : claim.payout)} GEN</strong>
+          <p>
+            All claims share the policy’s aggregate limit. Finalized settlements
+            use the remaining cover in settlement order, so payment can be less
+            than the assessed award.
+          </p>
           <div>
             <button
               className="button primary small"
@@ -2316,13 +2321,15 @@ function Guide({ onRegister }: { onRegister: () => void }) {
           Anyone can close an overdue review, returning its filing bond without
           a payout. The claimant can also withdraw an unfinished case. After the
           policy filing window, excess reserves can be released while the open
-          claim’s maximum award remains backed.
+          cases stay backed up to their combined requests and the remaining policy limit.
         </p>
         <p>
           Use the exact transaction hash for the native debit, not an invoice
           alias. One claimant can receive one award for that debit across all
           policies. The independently evidenced loss and the pool’s compensation
-          ledger both cap the payment.
+          ledger both cap the payment. Distinct losses may be filed together.
+          All claims share one aggregate policy limit; finalized settlement
+          order determines which awards receive the remaining cover.
         </p>
       </section>
       <section>

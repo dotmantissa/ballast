@@ -33,6 +33,14 @@ def _url(value: str) -> str:
         raise gl.vm.UserError('Use a public HTTPS URL without credentials')
 
 
+def _unique_object(pairs):
+    result = {}
+    for key,value in pairs:
+        if key in result:
+            raise ValueError('Duplicate manifest field')
+        result[key] = value
+    return result
+
 class AgentRegistry(gl.Contract):
     owner: Address
     underwriting: str
@@ -86,7 +94,7 @@ class AgentRegistry(gl.Contract):
         if not 30 <= len(manifest) <= 16000:
             raise gl.vm.UserError('Manifest must contain 30 to 16000 characters')
         try:
-            data = json.loads(manifest)
+            data = json.loads(manifest, object_pairs_hook=_unique_object)
         except Exception:
             raise gl.vm.UserError('Manifest must be valid JSON')
         if not isinstance(data, dict):
@@ -136,7 +144,7 @@ class AgentRegistry(gl.Contract):
         after = self._manifest(manifest, history_urls)
         if after['id'] != agent_id:
             raise gl.vm.UserError('A revision cannot change the executor')
-        if after['manifest_hash'] == before['manifest_hash']:
+        if agent_id + ':' + after['manifest_hash'] in self.revisions:
             raise gl.vm.UserError('This manifest revision is already registered')
         if self.underwriting:
             policy = gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_agent_policy(agent_id)
@@ -168,6 +176,7 @@ class AgentRegistry(gl.Contract):
 
     @gl.public.view
     def get_loss_record(self, operator: str) -> dict:
+        operator = str(Address(operator))
         if self.underwriting:
             return gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_operator_record(operator)
         return {'claims':0, 'settled_claims':0, 'paid':'0'}
@@ -181,7 +190,7 @@ class AgentRegistry(gl.Contract):
         policy = gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_settlement(claim_id)
         if not policy:
             raise gl.vm.UserError("Claim has not settled")
-        operator = policy['operator']
+        operator = str(Address(policy['operator']))
         record = json.loads(self.losses.get(operator, '{"claims":0,"paid":"0"}'))
         record['claims'] += 1 if int(policy['paid']) > 0 else 0
         record['paid'] = str(int(record['paid']) + int(policy['paid']))

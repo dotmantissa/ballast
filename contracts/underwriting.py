@@ -276,15 +276,16 @@ class Underwriting(gl.Contract):
         if claim['status'] != 'final':
             raise gl.vm.UserError('Claim is not final')
         policy = self.get_policy(claim['policy_id'])
-        if policy['status'] not in ['active','runoff']:
-            raise gl.vm.UserError('Policy is already closed')
+        if policy['status'] not in ['active','runoff','expired','settled']:
+            raise gl.vm.UserError('Unknown policy status')
         if claim['operator'] != policy['operator'] or claim['agent_id'] != policy['agent_id']:
             raise gl.vm.UserError('Claim does not match policy')
         if claim['id'] != claim_id:
             raise gl.vm.UserError('Claim identifier does not match')
-        amount = int(claim['payout'])
-        if amount < 0 or amount > int(policy['remaining']) or amount > int(claim['amount']):
+        awarded = int(claim['payout'])
+        if awarded < 0 or awarded > int(policy['limit']) or awarded > int(claim['amount']):
             raise gl.vm.UserError('Payout exceeds cover or requested loss')
+        amount = min(awarded,int(policy['remaining']))
         expected_key = hashlib.sha256(('genlayer-studio:' + claim['incident_ref'].lower() + ':' + claim['claimant'].lower()).encode()).hexdigest()
         if claim['event_key'] != expected_key or not re.fullmatch(r'0x[0-9a-f]{64}', claim['incident_ref']):
             raise gl.vm.UserError('Claim has no canonical transaction identity')
@@ -314,13 +315,21 @@ class Underwriting(gl.Contract):
         self._credit(claim['claimant'], amount)
         remaining = int(policy['remaining']) - amount
         runoff = policy['status'] == 'runoff'
+        old_status = policy['status']
         if runoff:
-            self.reserved = u256(int(self.reserved) - remaining)
-            remaining = 0
+            exposure = gl.get_contract_at(Address(self.court)).view(state=StorageType.LATEST_FINAL).get_policy_exposure(policy['id'])
+            keep = min(remaining,max(0,int(exposure['requested'])-int(claim['amount'])))
+            release = remaining-keep
+            self.reserved = u256(int(self.reserved)-release)
+            target = int(policy['junior_locked'])+int(policy['senior_locked'])-release
+            junior_keep = min(int(policy['junior_locked']),target)
+            self._resize_locks(policy,junior_keep,target-junior_keep)
+            remaining = keep
         if remaining == 0:
             self._resize_locks(policy,0,0)
-        policy.update({'status':('expired' if runoff else 'settled') if remaining == 0 else 'active', 'paid':str(int(policy['paid'])+amount), 'remaining':str(remaining), 'claim_id':claim_id})
-        self.settlements[claim_id] = json.dumps({'id':claim_id, 'operator':policy['operator'], 'policy_id':policy['id'], 'paid':str(amount)}, sort_keys=True)
+        status = ('expired' if runoff or old_status == 'expired' else 'settled') if remaining == 0 else ('runoff' if runoff else 'active')
+        policy.update({'status':status, 'paid':str(int(policy['paid'])+amount), 'remaining':str(remaining), 'claim_id':claim_id})
+        self.settlements[claim_id] = json.dumps({'id':claim_id, 'operator':policy['operator'], 'policy_id':policy['id'], 'paid':str(amount), 'awarded':str(awarded), 'reason':'Shared policy limit exhausted' if amount < awarded else 'Within the remaining shared policy limit'}, sort_keys=True)
         record = self.get_operator_record(policy['operator'])
         record['settled_claims'] += 1
         record['claims'] += 1 if amount > 0 else 0
@@ -335,16 +344,17 @@ class Underwriting(gl.Contract):
         if policy['status'] not in ['active','runoff'] or _now() <= policy['ends_at'] + 7*86400:
             raise gl.vm.UserError('Policy cannot expire yet')
         court = gl.get_contract_at(Address(self.court)).view(state=StorageType.LATEST_FINAL)
-        claim_id = court.get_policy_claim(policy_id)
-        if claim_id and claim_id not in self.settlements:
-            claim = court.get_claim(claim_id)
-            keep = min(int(claim['amount']), int(policy['remaining']))
+        exposure = court.get_policy_exposure(policy_id)
+        if exposure['open_count'] > 0:
+            keep = min(int(exposure['requested']), int(policy['remaining']))
             release = int(policy['remaining']) - keep
             target = int(policy['junior_locked']) + int(policy['senior_locked']) - release
             junior_keep = min(int(policy['junior_locked']),target)
             self._resize_locks(policy,junior_keep,target-junior_keep)
-            policy.update({'status':'runoff', 'remaining':str(keep), 'claim_id':claim_id})
+            policy.update({'status':'runoff' if keep > 0 else 'expired', 'remaining':str(keep)})
             self.reserved = u256(int(self.reserved) - release)
+            if keep == 0:
+                self._resize_locks(policy,0,0)
         else:
             self.reserved = u256(int(self.reserved) - int(policy['remaining']))
             self._resize_locks(policy,0,0)
@@ -362,6 +372,7 @@ class Underwriting(gl.Contract):
 
     @gl.public.view
     def get_operator_record(self, operator: str) -> dict:
+        operator = str(Address(operator))
         return json.loads(self.operator_records.get(operator, '{"claims":0,"settled_claims":0,"paid":"0"}'))
 
     @gl.public.view

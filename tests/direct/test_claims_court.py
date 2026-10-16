@@ -71,7 +71,7 @@ def test_source_diversity_and_active_claim(court,direct_vm):
     with direct_vm.expect_revert('two source hosts'):
         c.file_claim('p1',TX,1,UNIT,'A sufficiently detailed statement about the exact harmful action.',[URLS[0],URLS[0]+'/more'])
     file(court,direct_vm)
-    with direct_vm.expect_revert('earlier claim'):file(court,direct_vm)
+    with direct_vm.expect_revert('open claim'):file(court,direct_vm)
 
 
 def test_four_findings_resolve_separately_and_compare(court,direct_vm):
@@ -396,3 +396,62 @@ def test_final_decision_stays_recoverable_until_financial_settlement(court,direc
     court[2][cid]={'policy_id':'p1','paid':'0'};court[0].acknowledge_settlement(cid)
     assert court[0].get_claim(cid)['status']=='settled'
     assert court[0].get_account_cases(account)['unresolved']['items']==[]
+
+
+def test_distinct_cases_can_file_concurrently_and_exposure_ends_only_at_settlement(court,direct_vm,direct_charlie):
+    c=court[0];first=file(court,direct_vm)
+    with direct_vm.prank(direct_charlie):
+        second=c.file_claim('p1',OTHER_TX,1,UNIT,'A separate claimant lost their own native funds in another executor debit.',URLS)
+    assert first!=second
+    assert c.get_policy_exposure('p1')=={'requested':str(2*UNIT),'open_count':2}
+    c.withdraw_claim(first)
+    assert c.get_policy_exposure('p1')['requested']==str(2*UNIT)
+    court[2][first]={'policy_id':'p1','paid':'0'}
+    c.acknowledge_settlement(first)
+    assert c.get_policy_exposure('p1')=={'requested':str(UNIT),'open_count':1}
+    assert c.get_claim(first)['settled_payout']=='0'
+
+
+def test_each_party_retains_its_own_evidence_repair_budget(court,direct_vm,direct_bob):
+    c=court[0];cid=file(court,direct_vm)
+    for i in range(3):
+        c.add_evidence(cid,[f'https://repair{i}.example.org/a',f'https://repair{i}.example.net/b',f'https://repair{i}.example.org/c',f'https://repair{i}.example.net/d'])
+    with direct_vm.expect_revert('twelve'):
+        c.add_evidence(cid,['https://last.example.org/a','https://last.example.net/b'])
+    with direct_vm.prank(direct_bob):
+        c.add_evidence(cid,['https://operator.example.org/a','https://operator.example.net/b'])
+    case=c.get_claim(cid)
+    assert len(case['effective_evidence_urls'])==16
+    assert case['review_deadline']==case['created_at']+7*86400
+
+
+def test_worst_case_fair_appeals_have_a_finite_seventy_day_bound(court,direct_vm,direct_bob):
+    c=court[0];cid=file(court,direct_vm);created=c.get_claim(cid)['created_at']
+    at(direct_vm,c.get_claim(cid)['review_deadline']-1)
+    resolve(court,direct_vm,cid)
+    # Both sides use payout rights in every revision and change each boolean once.
+    for revision in range(7):
+        for operator in [False,True]:
+            at(direct_vm,c.get_claim(cid)['challenge_until']-1)
+            mock_finding(direct_vm,'payout',100);direct_vm.value=UNIT//100
+            if operator:
+                with direct_vm.prank(direct_bob):c.appeal_finding(cid,'payout','Please reconsider the supported fraction using the full public debit and permission records.',URLS)
+            else:
+                c.appeal_finding(cid,'payout','Please reconsider the supported fraction using the full public debit and permission records.',URLS)
+        if revision==6:break
+        field=['harm','causation','scope'][revision//2]
+        before=c.get_claim(cid)['findings'][field]
+        at(direct_vm,c.get_claim(cid)['challenge_until']-1)
+        mock_finding(direct_vm,field,not before);direct_vm.value=UNIT//100
+        if revision%2:
+            with direct_vm.prank(direct_bob):c.appeal_finding(cid,field,'Please reconsider this specific finding against the public debit and permission records.',URLS)
+        else:
+            c.appeal_finding(cid,field,'Please reconsider this specific finding against the public debit and permission records.',URLS)
+        at(direct_vm,c.get_claim(cid)['review_deadline']-1)
+        mock_finding(direct_vm,'payout',100);c.resolve_finding(cid,'payout')
+    case=c.get_claim(cid)
+    assert len(case['appeals'])==20
+    assert case['eligibility_revision']==6
+    assert case['challenge_until']-created<=70*86400
+    at(direct_vm,case['challenge_until']);c.finalize_claim(cid)
+    assert c.get_claim(cid)['status']=='final'
