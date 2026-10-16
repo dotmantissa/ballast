@@ -1,0 +1,31 @@
+{
+  "network": "studionet",
+  "verifiedAt": "2026-10-16T10:30:30.863Z",
+  "registry": "0x7dd86f8bb6C05a24B7bB4957E6Df588Be1231367",
+  "underwriting": "0x2531268C5494aA753B51A4851038437AAAB2e4E7",
+  "court": "0xbEC88E20c989a5BB4371D1721A06E3f7B0215738",
+  "checks": {
+    "stake_junior": {
+      "hash": "0xdaf3fa0ef82d6eeb61aa7c0147870a8b03a7053aa38a2f304a21b045fd898a92",
+      "done": true
+    },
+    "redeem_junior": {
+      "hash": "0x8e6365cf57f65292bc9d8ade84f93edaf66d5ce3452296c123ecf1da43b34974",
+      "done": true
+    },
+    "withdraw_capital": {
+      "hash": "0x2668ae7f131b5f183e67dd8fe19e982ac49c8737c1339753834c91379fe090ad",
+      "done": true
+    },
+    "register_fixture": {
+      "hash": "0x2f4af6b69dcf23e6b9411444a2a88599687190c63b306808df8de91066210561",
+      "done": true
+    },
+    "assess_unsupported_cover": {
+      "hash": "0xeb8a8466abe65c57be6925edd274cb71de20417dedb384979c46e914568ef3ad",
+      "done": true
+    }
+  },
+  "result": "passed",
+  "scope": "Deployment, wiring, real native capital movement, immutable registration and independent validator rejection of unsupported cover. Full claim lifecycle is tested in direct mode with the 24 hour challenge period."
+}
