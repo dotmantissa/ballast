@@ -2,12 +2,15 @@
 export async function findingRequestKey(
   claimId: string,
   finding: string,
-  revision: number,
+  revision: number | string,
+  deployment = "ballast",
 ) {
   const bytes = new Uint8Array(
     await crypto.subtle.digest(
       "SHA-256",
-      new TextEncoder().encode(`ballast:${claimId}:${finding}:${revision}`),
+      new TextEncoder().encode(
+        `ballast:${deployment}:${claimId}:${finding}:${revision}`,
+      ),
     ),
   ).slice(0, 16);
   bytes[6] = (bytes[6] & 15) | 64;

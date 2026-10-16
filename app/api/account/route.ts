@@ -1,6 +1,6 @@
 import { authenticate, apiError } from "@/lib/server/auth";
 import { getAccount } from "@/lib/server/accounts";
-import { read, chainClient } from "@/lib/server/chain";
+import { read, chainClient, addresses } from "@/lib/server/chain";
 import { accountCaseRecords, operatorAgents } from "@/lib/server/records";
 import type { RecordPage } from "@/lib/records";
 import type { Policy, Quote } from "@/lib/types";
@@ -25,6 +25,10 @@ export async function GET(request: Request) {
     return Response.json(
       {
         ...funds,
+        deployment: {
+          court: addresses.court,
+          underwriting: addresses.underwriting,
+        },
         email: user.email,
         address: account.address,
         balance: balance.toString(),

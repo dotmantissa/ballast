@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   Activity,
@@ -37,6 +37,16 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Logo } from "./logo";
+import { EvidenceLink } from "./evidence-link";
+import { RecordDesk, type AnyRecord } from "./record-desk";
+import {
+  mergeRecords,
+  type RecordKind,
+  type RecordMap,
+  type RecordPage,
+} from "@/lib/records";
+import { canAppeal } from "@/lib/claims";
+import { TERMINAL_STATUSES } from "@/lib/operation-recovery";
 import { ActionForm, type FormTarget } from "./action-forms";
 import type {
   Account,
@@ -69,10 +79,17 @@ const operationNames: Record<string, string> = {
   withdraw_bonds: "Withdraw bond credit",
   claim: "File a claim",
   resolve: "Resolve a finding",
+  evidence: "Add case evidence",
+  close_unresolved: "Close overdue review",
+  withdraw_claim: "Withdraw a case",
+  accept_decision: "Accept the decision",
+  authorize: "Authorize an operator",
+  revise: "Revise agent scope",
   appeal: "Appeal a finding",
   finalize: "Finalize a claim",
   settle: "Settle a claim",
   sync_loss: "Record loss history",
+  acknowledge: "Confirm settlement",
   expire: "Release expired cover",
   faucet: "Add test funds",
 };
@@ -83,7 +100,7 @@ export function BallastApp() {
   const [now, setNow] = useState(0);
   const [view, setView] = useState<View>("overview");
   const [mobile, setMobile] = useState(false);
-  const [overview, setOverview] = useState<Overview | null>(null);
+  const [publicOverview, setOverview] = useState<Overview | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState("");
@@ -95,6 +112,102 @@ export function BallastApp() {
   const [filter, setFilter] = useState<"all" | "mine">("all");
   const [selectedClaim, setSelectedClaim] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [extraRecords, setExtraRecords] = useState<{
+    [K in RecordKind]: RecordMap[K][];
+  }>({ agents: [], policies: [], claims: [], quotes: [] });
+  const [earlierCursors, setEarlierCursors] = useState<
+    Record<string, number | null>
+  >({});
+  const overview = useMemo(
+    () =>
+      publicOverview
+        ? {
+            ...publicOverview,
+            agents: mergeRecords(
+              extraRecords.agents,
+              publicOverview.agents,
+              account?.records.agents.items ?? [],
+            ).sort((a, b) => b.registered_at - a.registered_at),
+            policies: mergeRecords(
+              extraRecords.policies,
+              publicOverview.policies,
+              account?.records.policies.items ?? [],
+            ).sort((a, b) => b.starts_at - a.starts_at),
+            quotes: mergeRecords(
+              extraRecords.quotes,
+              publicOverview.quotes,
+              account?.records.quotes.items ?? [],
+            ).sort((a, b) => b.created_at - a.created_at),
+            claims: mergeRecords(
+              extraRecords.claims,
+              publicOverview.claims,
+              account?.records.claims.items ?? [],
+              account?.unresolvedClaims ?? [],
+            ).sort((a, b) => b.created_at - a.created_at),
+          }
+        : null,
+    [publicOverview, account, extraRecords],
+  );
+  function rememberRecords<K extends RecordKind>(
+    kind: K,
+    items: RecordMap[K][],
+  ) {
+    setExtraRecords((current) => ({
+      ...current,
+      [kind]: mergeRecords(current[kind], items),
+    }));
+  }
+  function cursorFor(kind: RecordKind) {
+    const key = filter + ":" + kind;
+    return Object.hasOwn(earlierCursors, key)
+      ? earlierCursors[key]
+      : filter === "mine"
+        ? (account?.records[kind].next_cursor ?? null)
+        : (publicOverview?.cursors?.[kind] ?? null);
+  }
+  async function loadEarlier(kind: RecordKind) {
+    const cursor = cursorFor(kind);
+    if (cursor === null) return;
+    const path = `/api/records?kind=${kind}&cursor=${cursor}${filter === "mine" ? "&mine=true" : ""}`;
+    const response =
+      filter === "mine"
+        ? await authFetch(path)
+        : await fetch(path).then(async (r) => {
+            const data = await r.json();
+            if (!r.ok) throw Error(data.error);
+            return data;
+          });
+    const page = response as RecordPage<RecordMap[typeof kind]>;
+    rememberRecords(kind, page.items);
+    setEarlierCursors((current) => ({
+      ...current,
+      [filter + ":" + kind]: page.next_cursor,
+    }));
+  }
+  async function lookupRecord(kind: RecordKind, id: string) {
+    const response = await fetch(`/api/records?kind=${kind}&id=${id}`);
+    const data = await response.json();
+    if (!response.ok) throw Error(data.error);
+    const record = data.record as AnyRecord;
+    rememberRecords(kind, [record]);
+    setSearch("");
+    setFilter("all");
+    if (kind === "claims") {
+      setView("claims");
+      setSelectedClaim(record.id);
+    } else if (kind === "agents") {
+      setView("agents");
+      setForm({ type: "agent", agent: record as Agent });
+    } else if (kind === "policies") {
+      setView("agents");
+      setNotice(
+        `Policy ${record.id} is in view. You can use its full ID when filing a claim.`,
+      );
+    } else {
+      setView("agents");
+      setNotice(`Quote ${record.id} is in view.`);
+    }
+  }
   const pollRef = useRef(false);
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -176,14 +289,13 @@ export function BallastApp() {
     const pending = account.operations
       .filter(
         (o) =>
-          o.tx_hash &&
-          ![
-            "FINALIZED",
-            "CANCELED",
-            "UNDETERMINED",
-            "LEADER_TIMEOUT",
-            "VALIDATORS_TIMEOUT",
-          ].includes(o.status),
+          (o.tx_hash ||
+            o.needsReconciliation ||
+            ["preparing", "submitting", "signed", "uncertain"].includes(
+              o.status,
+            )) &&
+          !TERMINAL_STATUSES.includes(o.status) &&
+          o.status !== "error",
       )
       .slice(0, 2);
     if (!pending.length) return;
@@ -223,6 +335,10 @@ export function BallastApp() {
     setFilter("all");
   }
   function open(target: FormTarget) {
+    if (target.type === "agent") {
+      setForm(target);
+      return;
+    }
     if (!authenticated) {
       login();
       return;
@@ -240,33 +356,26 @@ export function BallastApp() {
       method: "POST",
       headers: { "Idempotency-Key": crypto.randomUUID() },
       body: JSON.stringify(action),
+    }).catch((error) => {
+      void refreshAccount();
+      throw error;
     });
     setNotice(
       action.kind === "faucet"
         ? "Test funds added. Your account will update shortly."
         : "Your action is on its way. Follow the network’s decision in your activity.",
     );
-    if (result.tx_hash)
-      setAccount((current) =>
-        current
-          ? {
-              ...current,
-              operations: [
-                {
-                  id: result.id,
-                  kind: action.kind,
-                  status: result.status,
-                  tx_hash: result.tx_hash,
-                  execution: "pending",
-                  error: null,
-                  created_at: new Date().toISOString(),
-                  votes: [],
-                },
-                ...current.operations,
-              ],
-            }
-          : current,
-      );
+    setAccount((current) =>
+      current
+        ? {
+            ...current,
+            operations: [
+              result,
+              ...current.operations.filter((o) => o.id !== result.id),
+            ],
+          }
+        : current,
+    );
     void refreshAccount();
     return;
   }
@@ -287,26 +396,18 @@ export function BallastApp() {
     }
   }
   useEffect(() => {
-    if (!authenticated || !account || !overview) return;
-    const claim = overview.claims.find(
+    if (!authenticated || !account) return;
+    const claim = account.unresolvedClaims.find(
       (c) =>
-        c.claimant.toLowerCase() === account.address.toLowerCase() &&
-        ["filed", "reviewing"].includes(c.status),
+        ["filed", "reviewing"].includes(c.status) &&
+        Date.now() / 1000 < c.review_deadline,
     );
     if (
       !claim ||
       account.operations.some(
         (o) =>
           o.kind === "resolve" &&
-          ![
-            "FINALIZED",
-            "CANCELED",
-            "UNDETERMINED",
-            "LEADER_TIMEOUT",
-            "VALIDATORS_TIMEOUT",
-            "error",
-            "uncertain",
-          ].includes(o.status),
+          ![...TERMINAL_STATUSES, "error"].includes(o.status),
       )
     )
       return;
@@ -318,7 +419,8 @@ export function BallastApp() {
         const requestKey = await findingRequestKey(
           claim.id,
           finding,
-          claim.appeals.length,
+          claim.appeals.length + ":" + claim.effective_evidence_urls.join("|"),
+          account.deployment.court,
         );
         const operation = await authFetch("/api/actions", {
           method: "POST",
@@ -326,40 +428,26 @@ export function BallastApp() {
           body: JSON.stringify({ kind: "resolve", claimId: claim.id, finding }),
         });
         if (cancelled) return;
-        if (
-          operation.tx_hash &&
-          !account.operations.some((o) => o.id === operation.id)
-        ) {
-          setAccount((current) =>
-            current
-              ? {
-                  ...current,
-                  operations: [
-                    {
-                      id: operation.id,
-                      kind: "resolve",
-                      status: operation.status,
-                      tx_hash: operation.tx_hash,
-                      execution: "pending",
-                      error: null,
-                      created_at: new Date().toISOString(),
-                      votes: [],
-                    },
-                    ...current.operations,
-                  ],
-                }
-              : current,
-          );
-        }
+        setAccount((current) =>
+          current
+            ? {
+                ...current,
+                operations: [
+                  operation,
+                  ...current.operations.filter((o) => o.id !== operation.id),
+                ],
+              }
+            : current,
+        );
       } catch {
-        /* The public case keeps its last verified findings. Manual retry remains available. */
+        void refreshAccount();
       }
     }, 1500);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [authenticated, account, overview, authFetch]);
+  }, [authenticated, account, authFetch, refreshAccount]);
   const isMine = (address: string) =>
     !!account && address.toLowerCase() === account.address.toLowerCase();
   const activePolicies =
@@ -1124,6 +1212,37 @@ export function BallastApp() {
                         isMine(currentClaim.operator)
                       }
                       busy={busy}
+                      accountAddress={account?.address}
+                      onAcknowledge={() =>
+                        void quick(
+                          { kind: "acknowledge", claimId: currentClaim.id },
+                          currentClaim.id + "acknowledge",
+                        )
+                      }
+                      onEvidence={() =>
+                        open({ type: "evidence", claim: currentClaim })
+                      }
+                      onWithdraw={() =>
+                        void quick(
+                          { kind: "withdraw_claim", claimId: currentClaim.id },
+                          currentClaim.id + "withdraw",
+                        )
+                      }
+                      onCloseOverdue={() =>
+                        void quick(
+                          {
+                            kind: "close_unresolved",
+                            claimId: currentClaim.id,
+                          },
+                          currentClaim.id + "close",
+                        )
+                      }
+                      onAccept={() =>
+                        void quick(
+                          { kind: "accept_decision", claimId: currentClaim.id },
+                          currentClaim.id + "accept",
+                        )
+                      }
                       onResolve={(f) =>
                         void quick(
                           {
@@ -1168,8 +1287,8 @@ export function BallastApp() {
                   <Clock3 size={20} />
                   <strong>Time to reconsider</strong>
                   <p>
-                    Both sides have 24 hours to challenge a decision before it
-                    can be finalized.
+                    Both sides have 24 hours to challenge a decision. Only their
+                    mutual acceptance can end that window early.
                   </p>
                 </div>
                 <div>
@@ -1246,8 +1365,8 @@ export function BallastApp() {
                     <h2>{i ? "Senior" : "Junior"} capital</h2>
                     <p>
                       {i
-                        ? "A steadier position behind the first layer of capital. Losses reach you after junior capital is exhausted."
-                        : "Closest to the waterline. Your capital takes the first losses and the larger share of premiums."}
+                        ? "A steadier position behind the first layer of capital. Each policy spends its allocated junior backing before its senior backing."
+                        : "Closest to the waterline. Your allocated backing takes the first losses. Its premiums stay beside it until that liability ends."}
                     </p>
                     <div className="tranche-amount mono">
                       {gen(overview?.dashboard[t])}
@@ -1269,6 +1388,27 @@ export function BallastApp() {
                                 ],
                               ) + " GEN"
                             : "Sign in to view"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Backing and premiums locked</dt>
+                        <dd className="mono">
+                          {gen(
+                            overview?.dashboard[
+                              (t + "_locked") as
+                                "junior_locked" | "senior_locked"
+                            ],
+                          )}{" "}
+                          GEN
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Share generation</dt>
+                        <dd className="mono">
+                          {overview?.dashboard[
+                            (t + "_generation") as
+                              "junior_generation" | "senior_generation"
+                          ] ?? "…"}
                         </dd>
                       </div>
                       <div>
@@ -1339,10 +1479,11 @@ export function BallastApp() {
                   </span>
                 </div>
                 <p className="field-note">
-                  Premiums are already included in tranche values. Total value
-                  governed also includes claim and redemption credits awaiting
-                  withdrawal. Reserves are commitments inside the pool and are
-                  never counted twice.
+                  Premiums are included in tranche values and remain locked with
+                  their policy backing until liability ends. Available capital
+                  excludes those locks. Total value governed also includes claim
+                  and redemption credits awaiting withdrawal. Reserves are
+                  commitments inside the pool and are never counted twice.
                 </p>
               </section>
               <div className="quiet-note">
@@ -1357,6 +1498,22 @@ export function BallastApp() {
           )}
           {view === "guide" && (
             <Guide onRegister={() => open({ type: "register" })} />
+          )}
+          {["agents", "claims", "capital"].includes(view) && (
+            <RecordDesk
+              key={view + filter}
+              initialKind={
+                view === "claims"
+                  ? "claims"
+                  : view === "capital"
+                    ? "policies"
+                    : "agents"
+              }
+              mine={filter === "mine"}
+              cursor={cursorFor}
+              onEarlier={loadEarlier}
+              onLookup={lookupRecord}
+            />
           )}
           <footer className="footer">
             <span className="footer-brand">
@@ -1386,6 +1543,17 @@ export function BallastApp() {
       )}
       {form && (
         <ActionForm
+          key={
+            form.type +
+            ("claim" in form
+              ? form.claim.id
+              : "agent" in form
+                ? form.agent.id
+                : "policy" in form
+                  ? (form.policy?.id ?? "")
+                  : "")
+          }
+          onNavigate={setForm}
           target={form}
           account={account}
           policies={overview?.policies ?? []}
@@ -1626,7 +1794,19 @@ function ClaimDetail({
   onFinalize,
   onSettle,
   onSync,
+  accountAddress,
+  onAcknowledge,
+  onEvidence,
+  onWithdraw,
+  onCloseOverdue,
+  onAccept,
 }: {
+  accountAddress?: string;
+  onAcknowledge: () => void;
+  onEvidence: () => void;
+  onWithdraw: () => void;
+  onCloseOverdue: () => void;
+  onAccept: () => void;
   claim: Claim;
   mine: boolean;
   busy: string | null;
@@ -1637,6 +1817,9 @@ function ClaimDetail({
   onSettle: () => void;
   onSync: () => void;
 }) {
+  const overdue =
+    ["filed", "reviewing"].includes(claim.status) &&
+    now / 1000 >= claim.review_deadline;
   const appealOpen =
     claim.status === "challenge" && now / 1000 < claim.challenge_until;
   return (
@@ -1671,7 +1854,8 @@ function ClaimDetail({
         {FINDINGS.map((f) => {
           const done = claim.findings[f] !== undefined;
           const ready =
-            claim.status !== "final" &&
+            ["filed", "reviewing"].includes(claim.status) &&
+            !overdue &&
             !done &&
             (f !== "payout" ||
               FINDINGS.slice(0, 3).every(
@@ -1702,7 +1886,7 @@ function ClaimDetail({
                   <p>{claim.reasons[f]}</p>
                   {mine &&
                     appealOpen &&
-                    !claim.appeals.some((a) => a.field === f) && (
+                    canAppeal(claim, f, accountAddress) && (
                       <button
                         className="text-button"
                         onClick={() => onAppeal(f)}
@@ -1734,6 +1918,50 @@ function ClaimDetail({
           );
         })}
       </div>
+      {["filed", "reviewing"].includes(claim.status) && (
+        <div className="case-recovery">
+          <h3>
+            {overdue
+              ? "This review needs to close."
+              : "A missing source need not end the story."}
+          </h3>
+          <p>
+            Unfinished review closes after{" "}
+            {new Date(claim.review_deadline * 1000).toLocaleString()}. Adding
+            evidence does not move that deadline. A timeout or withdrawal
+            returns the filing bond and makes no payout.
+          </p>
+          <div>
+            {mine && !overdue && (
+              <button
+                className="button secondary small"
+                disabled={busy !== null}
+                onClick={onEvidence}
+              >
+                Add replacement evidence
+              </button>
+            )}
+            {overdue && (
+              <button
+                className="button secondary small"
+                disabled={busy !== null}
+                onClick={onCloseOverdue}
+              >
+                Close overdue review
+              </button>
+            )}
+            {accountAddress?.toLowerCase() === claim.claimant.toLowerCase() && (
+              <button
+                className="text-button"
+                disabled={busy !== null}
+                onClick={onWithdraw}
+              >
+                Withdraw this unresolved claim
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {claim.status === "challenge" && (
         <div className="form-callout">
           <Clock3 size={20} />
@@ -1747,6 +1975,31 @@ function ClaimDetail({
               Challenge window closes{" "}
               {new Date(claim.challenge_until * 1000).toLocaleString()}.
             </p>
+            {appealOpen && mine && (
+              <>
+                <p>
+                  Accept only if you agree with this decision. If both parties
+                  accept, the remaining appeal time is waived. An appeal clears
+                  both acceptances.
+                </p>
+                <button
+                  className="button small secondary"
+                  disabled={
+                    busy !== null ||
+                    claim.acceptances.some(
+                      (a) => a.toLowerCase() === accountAddress?.toLowerCase(),
+                    )
+                  }
+                  onClick={onAccept}
+                >
+                  {claim.acceptances.some(
+                    (a) => a.toLowerCase() === accountAddress?.toLowerCase(),
+                  )
+                    ? "You accepted this decision"
+                    : "Accept this decision"}
+                </button>
+              </>
+            )}
             {!appealOpen && (
               <button
                 className="button small primary"
@@ -1759,14 +2012,22 @@ function ClaimDetail({
           </div>
         </div>
       )}
-      {claim.status === "final" && (
+      {["final", "settled"].includes(claim.status) && (
         <div className="settlement-box">
+          {claim.outcome && claim.outcome !== "adjudicated" && (
+            <p>
+              {claim.outcome === "evidence_timeout"
+                ? "The review deadline passed. No loss decision was made and the filing bond was returned."
+                : "The claimant withdrew this case. The filing bond was returned."}{" "}
+              Settle this record to release its remaining commitment.
+            </p>
+          )}
           <span>Final payout</span>
           <strong className="mono">{gen(claim.payout)} GEN</strong>
           <div>
             <button
               className="button primary small"
-              disabled={busy !== null}
+              disabled={busy !== null || claim.status === "settled"}
               onClick={onSettle}
             >
               Settle with the pool
@@ -1779,30 +2040,35 @@ function ClaimDetail({
               Update loss record
             </button>
           </div>
+          {claim.status === "final" && (
+            <button
+              className="text-button"
+              disabled={busy !== null}
+              onClick={onAcknowledge}
+            >
+              Confirm the settled record
+            </button>
+          )}
           <p>
             Settle first, then update the operator’s loss record. Paid claims
-            become pool credits. Withdraw them from your account.
+            become pool credits. Withdraw them from your account. Final
+            decisions stay in your records until the pool settles them.
+            Settlement normally closes the case automatically; you can confirm
+            it here if that update is delayed.
           </p>
         </div>
       )}
       <div className="evidence-list">
         <h3>Evidence on the record</h3>
-        {claim.evidence_urls.map((u) => (
-          <a href={u} key={u} target="_blank" rel="noreferrer">
-            <FileText size={15} />
-            <span>
-              {new URL(u).hostname}
-              <small>{u}</small>
-            </span>
-            <ExternalLink size={14} />
-          </a>
+        {(claim.effective_evidence_urls ?? claim.evidence_urls).map((u) => (
+          <EvidenceLink key={u} url={u} />
         ))}
       </div>
       {claim.appeals.length > 0 && (
         <div className="appeal-history">
           <h3>Appeal record</h3>
           {claim.appeals.map((a) => (
-            <div key={a.field}>
+            <div key={a.field + a.by + String(a.revision)}>
               <span className="badge">{a.field}</span>
               <strong>
                 {a.changed ? "Finding changed" : "Finding upheld"}
@@ -1966,8 +2232,12 @@ function Guide({ onRegister }: { onRegister: () => void }) {
         </p>
         <p>
           When you bind, the premium enters the pool and the full coverage limit
-          is reserved. If the pool cannot support the promise, it cannot write
-          the cover.
+          is reserved. Agent identity follows the executor, with explicit
+          operator authorization. Spaces do not create a second agent. A revised
+          manifest keeps the same identity and can be registered only after
+          existing cover closes; policies retain the exact revision they
+          insured. If the pool cannot support the promise, it cannot write the
+          cover.
         </p>
       </section>
       <section>
@@ -1982,8 +2252,9 @@ function Guide({ onRegister }: { onRegister: () => void }) {
           <div>
             <dt>Did harm occur?</dt>
             <dd>
-              A realized, quantified loss to the claimant, during the policy
-              period.
+              A realized debit of the claimant’s own native GEN in the exact
+              Studio transaction. Validators establish the actual amount and
+              time against the policy dates.
             </dd>
           </div>
           <div>
@@ -2010,9 +2281,11 @@ function Guide({ onRegister }: { onRegister: () => void }) {
         </dl>
         <p>
           The three booleans must match exactly. The payout band must match
-          exactly. Reasons remain public but their wording does not need to
-          match. Unreachable evidence does not become a rejection. The action
-          fails so it can be retried when sources recover.
+          exactly. Positive harm also requires agreement on the independently
+          evidenced amount and event time. Reasons remain public but their
+          wording can differ. A missing URL does not veto otherwise sufficient
+          evidence. If fewer than two public hosts can be reached, either party
+          can add corroboration before the fixed review deadline.
         </p>
       </section>
       <section>
@@ -2021,15 +2294,35 @@ function Guide({ onRegister }: { onRegister: () => void }) {
           Either side may bond an appeal for a single finding during the 24 hour
           challenge period. The bond is 1% of the claimed amount, with a minimum
           of 0.01 GEN. A changed result returns the appeal bond; an unchanged
-          result awards it to the other party. Each finding can be appealed
-          once. If a boolean changes, the payout finding is assessed again. The
-          challenge clock restarts after the updated findings are complete.
+          result awards it to the other party. Each party has its own appeal for
+          each boolean and for each version of the payout decision. Nobody can
+          use the other side’s turn. If eligibility changes, payout is assessed
+          again using all accepted appeal evidence. The challenge clock restarts
+          after the updated findings are complete. Both parties can explicitly
+          accept the current decision to waive the rest of the window; an appeal
+          clears those acceptances.
         </p>
         <p>
           After the window closes, anyone can finalize the decision, settle it
           with the pool and update the operator’s loss history. A rejected claim
           leaves cover in place. A payout reduces remaining cover. Funds become
-          credits that the recipient withdraws.
+          credits that the recipient withdraws. A final case stays in your
+          account’s unresolved records until its pool settlement is finalized.
+        </p>
+        <p>
+          Incomplete review has a seven day deadline. Evidence edits and partial
+          findings do not move it. A changed boolean gives the dependent payout
+          review its own seven day window, within a finite appeal allowance.
+          Anyone can close an overdue review, returning its filing bond without
+          a payout. The claimant can also withdraw an unfinished case. After the
+          policy filing window, excess reserves can be released while the open
+          claim’s maximum award remains backed.
+        </p>
+        <p>
+          Use the exact transaction hash for the native debit, not an invoice
+          alias. One claimant can receive one award for that debit across all
+          policies. The independently evidenced loss and the pool’s compensation
+          ledger both cap the payment.
         </p>
       </section>
       <section>
@@ -2039,13 +2332,16 @@ function Guide({ onRegister }: { onRegister: () => void }) {
           both tranches are funded. Senior capital absorbs losses after junior
           capital and receives 20%. If only one tranche holds capital, it
           receives the whole premium. Shares track the current value of a
-          position. Redemptions are available only when enough capital remains
-          for active cover.
+          position. Each policy locks its own junior and senior backing,
+          including its premiums. Redemptions preserve those tranche allocations
+          for the whole liability period. A new deposit cannot make somebody
+          else’s reserved backing withdrawable.
         </p>
         <p>
-          There is no promised return, and capital can be lost. A tranche that
-          loses all its value must have its old shares redeemed before accepting
-          fresh capital.
+          There is no promised return, and capital can be lost. If a tranche
+          loses all its value, the next deposit starts a fresh share generation.
+          Old shares remain visible at zero value and have no claim on new
+          capital. No absent shareholder can hold recapitalization hostage.
         </p>
       </section>
       <section>

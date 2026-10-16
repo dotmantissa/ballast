@@ -17,7 +17,7 @@ describe("action boundary", () => {
     const claim = {
       kind: "claim",
       policyId: id,
-      incidentRef: "receipt:abcdef",
+      incidentRef: "0x" + "a".repeat(64),
       incidentAt: 1,
       amount: "1",
       statement: "A detailed account of this specific incident and the loss.",

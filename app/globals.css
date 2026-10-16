@@ -3213,4 +3213,92 @@ td strong {
 }
 
 /* Privy positions its panel independently; give the dialog itself a visible focus boundary. */
-#privy-dialog { position: fixed; inset: 0; z-index: 100; }
+#privy-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.record-desk {
+  border-top: 1px solid var(--line);
+  padding: 28px 0;
+  margin-top: 32px;
+}
+.record-desk-heading {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.record-desk-heading > svg {
+  color: var(--accent-ink);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.record-desk h3,
+.case-recovery h3 {
+  font-size: 15px;
+  font-weight: 500;
+}
+.record-desk p,
+.case-recovery p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 6px 0 14px;
+}
+.record-desk form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 20px 0 15px;
+  max-width: 760px;
+}
+.record-desk label {
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.record-desk label:nth-child(2) {
+  flex: 1;
+}
+.record-desk input {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+.record-desk .button {
+  flex-shrink: 0;
+}
+.case-recovery {
+  border-left: 2px solid var(--copper);
+  padding: 10px 18px;
+  margin: 25px 0;
+  background: var(--soft);
+}
+.case-recovery > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+.invalid-source {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .record-desk form {
+    flex-wrap: wrap;
+  }
+  .record-desk label:first-child {
+    width: 100%;
+  }
+  .record-desk label:nth-child(2) {
+    min-width: 0;
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

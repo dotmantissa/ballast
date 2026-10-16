@@ -9,3 +9,17 @@ it("uses the same valid request key after reload and a different key after an ap
   expect(await findingRequestKey("a".repeat(24), "scope", 0)).not.toBe(a);
   expect(await findingRequestKey("a".repeat(24), "harm", 1)).not.toBe(a);
 });
+it("separates deployments and effective evidence revisions", async () => {
+  const first = await findingRequestKey(
+    "a".repeat(24),
+    "harm",
+    "0:source-a",
+    "court-a",
+  );
+  expect(
+    await findingRequestKey("a".repeat(24), "harm", "0:source-a", "court-b"),
+  ).not.toBe(first);
+  expect(
+    await findingRequestKey("a".repeat(24), "harm", "0:source-b", "court-a"),
+  ).not.toBe(first);
+});

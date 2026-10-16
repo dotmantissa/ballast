@@ -19,10 +19,11 @@ export default function Privacy() {
       <p>
         The application stores your Privy user ID, email, public Studio account
         address, encrypted signing key, submission timestamps, transaction
-        references and operation outcomes in a Neon database. Keys are encrypted
-        with AES 256 GCM using a server secret kept separately from the
-        database. The server can decrypt keys to submit your requested actions.
-        This is a custodial account.
+        references, encrypted signed transaction payloads, attempt history and
+        operation outcomes in a Neon database. Keys are encrypted with AES 256
+        GCM using a server secret kept separately from the database. The server
+        can decrypt keys to submit your requested actions. This is a custodial
+        account.
       </p>
       <h2>What becomes public</h2>
       <p>

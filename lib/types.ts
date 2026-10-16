@@ -49,9 +49,18 @@ export type Claim = {
   status: string;
   findings: Partial<Record<Finding, boolean | number>>;
   reasons: Partial<Record<Finding, string>>;
+  review_deadline: number;
+  effective_evidence_urls: string[];
+  event_key: string;
+  verified_loss: string;
+  verified_incident_at: number;
+  eligibility_revision: number;
+  acceptances: string[];
+  outcome?: string;
   challenge_until: number;
   appeals: {
     field: Finding;
+    revision: number;
     by: string;
     changed: boolean;
     reason: string;
@@ -69,6 +78,10 @@ export type Dashboard = {
   senior: string;
   junior_supply: string;
   senior_supply: string;
+  junior_locked: string;
+  senior_locked: string;
+  junior_generation: number;
+  senior_generation: number;
   reserved: string;
   available: string;
   premiums: string;
@@ -112,6 +125,7 @@ export type Operation = {
   votes: { validator: string; vote: string }[];
 };
 export type Account = {
+  deployment: { court: string; underwriting: string };
   records: AccountRecords;
   unresolvedClaims: Claim[];
   junior_available: string;

@@ -1,31 +1,15 @@
 import { z } from "zod";
 import { parseUnits } from "viem";
 
+import { normalizePublicUrl, evidenceHost } from "./evidence";
 export const publicUrl = z
   .string()
   .max(500)
-  .url()
-  .refine((value) => {
-    try {
-      const u = new URL(value);
-      const h = u.hostname.toLowerCase();
-      return (
-        u.protocol === "https:" &&
-        !u.username &&
-        !u.password &&
-        (!u.port || u.port === "443") &&
-        h.includes(".") &&
-        !h.endsWith(".local") &&
-        !h.endsWith(".internal") &&
-        !h.endsWith(".localhost") &&
-        !h.includes(":") &&
-        !/^\d+(\.\d+){3}$/.test(h) &&
-        h !== "localhost"
-      );
-    } catch {
-      return false;
-    }
-  }, "Use a public HTTPS URL without credentials.");
+  .refine(
+    (v) => normalizePublicUrl(v) !== null,
+    "Use a public HTTPS URL without credentials.",
+  )
+  .transform((v) => normalizePublicUrl(v)!);
 const id = z.string().regex(/^[a-f0-9]{24}$/);
 const money = z
   .string()
@@ -46,7 +30,9 @@ const evidence = z
   .min(2)
   .max(6)
   .refine(
-    (urls) => new Set(urls.map((u) => new URL(u).hostname)).size >= 2,
+    (urls) =>
+      urls.every((u) => evidenceHost(u) !== null) &&
+      new Set(urls.map(evidenceHost)).size >= 2,
     "Use at least two different evidence hosts.",
   );
 export const actionSchema = z.discriminatedUnion("kind", [
@@ -78,7 +64,10 @@ export const actionSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("claim"),
     policyId: id,
-    incidentRef: z.string().min(6).max(160),
+    incidentRef: z
+      .string()
+      .regex(/^0x[0-9a-f]{64}$/i, "Use the exact Studio transaction hash.")
+      .transform((v) => v.toLowerCase()),
     incidentAt: z.number().int().positive(),
     amount: money,
     statement: z.string().min(40).max(6000),
@@ -98,6 +87,27 @@ export const actionSchema = z.discriminatedUnion("kind", [
     evidenceUrls: evidence,
     publicConsent: z.literal(true),
   }),
+  z.object({
+    kind: z.literal("evidence"),
+    claimId: id,
+    evidenceUrls: evidence,
+    publicConsent: z.literal(true),
+  }),
+  z.object({ kind: z.literal("withdraw_claim"), claimId: id }),
+  z.object({ kind: z.literal("close_unresolved"), claimId: id }),
+  z.object({ kind: z.literal("accept_decision"), claimId: id }),
+  z.object({
+    kind: z.literal("authorize"),
+    operator: z.string().regex(/^0x[0-9a-f]{40}$/i),
+  }),
+  z.object({
+    kind: z.literal("revise"),
+    agentId: id,
+    manifest: z.string().min(30).max(16000),
+    historyUrls: sources,
+    publicConsent: z.literal(true),
+  }),
+  z.object({ kind: z.literal("acknowledge"), claimId: id }),
   z.object({ kind: z.literal("finalize"), claimId: id }),
   z.object({ kind: z.literal("settle"), claimId: id }),
   z.object({ kind: z.literal("sync_loss"), claimId: id }),

@@ -157,6 +157,36 @@ export async function submitAction(
         method = "register_agent";
         args = [action.manifest, action.historyUrls];
         break;
+      case "authorize":
+        contract = "registry";
+        method = "authorize_operator";
+        args = [action.operator];
+        break;
+      case "revise":
+        contract = "registry";
+        method = "revise_agent";
+        args = [action.agentId, action.manifest, action.historyUrls];
+        break;
+      case "evidence":
+        contract = "court";
+        method = "add_evidence";
+        args = [action.claimId, action.evidenceUrls];
+        break;
+      case "withdraw_claim":
+        contract = "court";
+        method = "withdraw_claim";
+        args = [action.claimId];
+        break;
+      case "close_unresolved":
+        contract = "court";
+        method = "close_unresolved_claim";
+        args = [action.claimId];
+        break;
+      case "accept_decision":
+        contract = "court";
+        method = "accept_decision";
+        args = [action.claimId];
+        break;
       case "quote":
         method = "quote_policy";
         args = [action.agentId, parseUnits(action.limit, 18), action.peerUrls];
@@ -228,6 +258,11 @@ export async function submitAction(
         if (value < 10n ** 16n) value = 10n ** 16n;
         break;
       }
+      case "acknowledge":
+        contract = "court";
+        method = "acknowledge_settlement";
+        args = [action.claimId];
+        break;
       case "finalize":
         contract = "court";
         method = "finalize_claim";

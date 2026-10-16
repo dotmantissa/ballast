@@ -21,10 +21,15 @@ import type {
 import type { Action } from "@/lib/validation";
 import { actionSchema } from "@/lib/validation";
 import { gen, short, explorer } from "@/lib/format";
+import { EvidenceLink } from "./evidence-link";
+import { redeemableShares } from "@/lib/claims";
 import { Dialog } from "./dialog";
 
 export type FormTarget =
   | { type: "register" }
+  | { type: "revise"; agent: Agent }
+  | { type: "authorize" }
+  | { type: "evidence"; claim: Claim }
   | { type: "quote"; agent: Agent }
   | { type: "bind"; quote: Quote }
   | { type: "stake"; tranche?: "junior" | "senior" }
@@ -35,6 +40,9 @@ export type FormTarget =
   | { type: "agent"; agent: Agent };
 const titles: Record<FormTarget["type"], string> = {
   register: "Put your agent on the record",
+  revise: "Write the next scope",
+  authorize: "Choose an operator",
+  evidence: "Give the court another source",
   quote: "Find your footing",
   bind: "A little peace of mind",
   stake: "Put some weight behind it",
@@ -45,6 +53,12 @@ const titles: Record<FormTarget["type"], string> = {
   agent: "The original promise",
 };
 const descriptions: Partial<Record<FormTarget["type"], string>> = {
+  evidence:
+    "Add reachable corroboration. Earlier evidence stays on the record and the review deadline stays put.",
+  revise:
+    "Your executor keeps its identity. Existing cover must close first, and older manifests remain public.",
+  authorize:
+    "Let another operator register this account as an executor. Once registered, that assignment is fixed.",
   register:
     "A clear scope makes a fair decision possible. This record is permanent.",
   quote:
@@ -69,7 +83,9 @@ export function ActionForm({
   onClose,
   onSubmit,
   onQuote,
+  onNavigate,
 }: {
+  onNavigate: (target: FormTarget) => void;
   target: FormTarget;
   account: Account | null;
   policies: Policy[];
@@ -83,6 +99,33 @@ export function ActionForm({
   const [tranche, setTranche] = useState<"junior" | "senior">(
     target.type === "stake" ? (target.tranche ?? "junior") : "junior",
   );
+  const [policyId, setPolicyId] = useState(
+    target.type === "claim" ? (target.policy?.id ?? "") : "",
+  );
+  const [policyPreview, setPolicyPreview] = useState<Policy | null>(
+    target.type === "claim" ? (target.policy ?? null) : null,
+  );
+  async function checkPolicy() {
+    setError("");
+    setBusy(true);
+    try {
+      const response = await fetch(
+        "/api/records?kind=policies&id=" + encodeURIComponent(policyId),
+      );
+      const data = await response.json();
+      if (!response.ok) throw Error(data.error);
+      setPolicyPreview(data.record);
+    } catch (error) {
+      setPolicyPreview(null);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "We could not check that policy.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -95,6 +138,26 @@ export function ActionForm({
           kind: "register",
           manifest: String(form.get("manifest")),
           historyUrls: urls(form.get("history")),
+          publicConsent: consent,
+        };
+        break;
+      case "revise":
+        action = {
+          kind: "revise",
+          agentId: target.agent.id,
+          manifest: String(form.get("manifest")),
+          historyUrls: urls(form.get("history")),
+          publicConsent: consent,
+        };
+        break;
+      case "authorize":
+        action = { kind: "authorize", operator: String(form.get("operator")) };
+        break;
+      case "evidence":
+        action = {
+          kind: "evidence",
+          claimId: target.claim.id,
+          evidenceUrls: urls(form.get("evidence")),
           publicConsent: consent,
         };
         break;
@@ -122,7 +185,20 @@ export function ActionForm({
         action = {
           kind: "redeem",
           tranche: target.tranche,
-          shares: ((owned * percent) / 100n).toString(),
+          shares: (
+            (redeemableShares(
+              owned.toString(),
+              account?.[
+                (target.tranche + "_value") as "junior_value" | "senior_value"
+              ] ?? "0",
+              account?.[
+                (target.tranche + "_available") as
+                  "junior_available" | "senior_available"
+              ] ?? "0",
+            ) *
+              percent) /
+            100n
+          ).toString(),
         };
         break;
       }
@@ -158,7 +234,7 @@ export function ActionForm({
       setError(parsed.error.issues[0].message);
       return;
     }
-    if (target.type === "register") {
+    if (target.type === "register" || target.type === "revise") {
       try {
         const manifest = JSON.parse(String(form.get("manifest")));
         if (
@@ -219,17 +295,19 @@ export function ActionForm({
           </pre>
           <h3>Public operating history</h3>
           {target.agent.history_urls.map((url) => (
-            <a
-              className="source-link"
-              href={url}
-              key={url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {new URL(url).hostname}
-              <ExternalLink size={14} />
-            </a>
+            <EvidenceLink key={url} url={url} compact />
           ))}
+          {account?.address.toLowerCase() ===
+            target.agent.operator.toLowerCase() && (
+            <button
+              className="button secondary full"
+              onClick={() =>
+                onNavigate({ type: "revise", agent: target.agent })
+              }
+            >
+              Revise the scope after cover closes
+            </button>
+          )}
           <button
             className="button primary full"
             onClick={() => onQuote(target.agent)}
@@ -269,6 +347,12 @@ export function ActionForm({
               </a>
             </div>
           </label>
+          <button
+            className="button secondary full"
+            onClick={() => onNavigate({ type: "authorize" })}
+          >
+            Authorize an operator for this executor
+          </button>
           <AccountAction
             label="Add 25 test GEN"
             action={{ kind: "faucet" }}
@@ -310,12 +394,15 @@ export function ActionForm({
       }}
     >
       <form onSubmit={submit} className="form-body" aria-busy={busy}>
-        {target.type === "register" && (
+        {(target.type === "register" || target.type === "revise") && (
           <>
             <label htmlFor="manifest">
               Capability manifest <span>JSON</span>
             </label>
             <textarea
+              defaultValue={
+                target.type === "revise" ? target.agent.manifest : undefined
+              }
               id="manifest"
               name="manifest"
               className="code-input"
@@ -326,11 +413,19 @@ export function ActionForm({
               }
             />
             <p className="field-note">
-              Use the address that actually executes your agent’s actions. Scope
-              should explain permissions, approval rules and spending limits.
+              Use the address that actually executes the agent’s actions. Your
+              Ballast account is {account?.address}. A different executor must
+              authorize your operator account first. Scope should explain
+              permissions, approval rules and spending limits. Adding spaces
+              will not create a new agent.
             </p>
             <label htmlFor="history">Public action history</label>
             <textarea
+              defaultValue={
+                target.type === "revise"
+                  ? target.agent.history_urls.join("\n")
+                  : undefined
+              }
               id="history"
               name="history"
               required
@@ -340,6 +435,34 @@ export function ActionForm({
             <p className="field-note">
               One to four explorer pages or verifiable execution records.
               Validators must be able to open them.
+            </p>
+            <Consent />
+          </>
+        )}
+        {target.type === "authorize" && (
+          <>
+            <label htmlFor="operator">Operator address</label>
+            <input
+              id="operator"
+              name="operator"
+              required
+              pattern="0x[a-fA-F0-9]{40}"
+              placeholder="0x…"
+            />
+            <p className="field-note">
+              This authorizes registration of your Ballast address as an
+              executor. It does not transfer your funds or let the operator sign
+              for you.
+            </p>
+          </>
+        )}
+        {target.type === "evidence" && (
+          <>
+            <Evidence />
+            <p className="field-note">
+              You may add up to twelve supplemental URLs in total. Both parties
+              have their own allowance. Existing findings can be challenged
+              through an appeal once the four findings are complete.
             </p>
             <Consent />
           </>
@@ -487,11 +610,13 @@ export function ActionForm({
               <option value="25">25 percent</option>
               <option value="50">50 percent</option>
               <option value="75">75 percent</option>
-              <option value="100">All available shares</option>
+              <option value="100">All redeemable shares</option>
             </select>
             <p className="field-note">
               Redeeming creates a pool credit. Withdraw that credit from your
-              account menu. Reserved capital cannot be redeemed.
+              account menu. Each tranche keeps its own policy backing and
+              premiums locked. This estimate uses your redeemable position; the
+              contract checks it again.
             </p>
           </>
         )}
@@ -502,33 +627,60 @@ export function ActionForm({
               open. Come back at any time to resume it.
             </p>
             <label htmlFor="policy">Policy</label>
-            <select
+            <input
               id="policy"
               name="policy"
-              defaultValue={target.policy?.id ?? ""}
+              list="claim-policy-options"
+              value={policyId}
+              onChange={(e) => {
+                setPolicyId(e.target.value.trim().toLowerCase());
+                setPolicyPreview(null);
+              }}
+              pattern="[a-f0-9]{24}"
+              maxLength={24}
+              placeholder="Choose or paste a full policy ID"
               required
-            >
-              <option value="" disabled>
-                Choose the policy covering this agent
-              </option>
+            />
+            <datalist id="claim-policy-options">
               {policies
                 .filter((p) => p.status === "active")
                 .map((p) => (
                   <option key={p.id} value={p.id}>
-                    {short(p.id)} · {gen(p.remaining)} GEN remaining
+                    {gen(p.remaining)} GEN remaining
                   </option>
                 ))}
-            </select>
+            </datalist>
+            <button
+              type="button"
+              className="text-button"
+              disabled={busy || !/^[a-f0-9]{24}$/.test(policyId)}
+              onClick={() => void checkPolicy()}
+            >
+              Check this policy
+            </button>
+            <p className="field-note">
+              Any policy can be found by its ID, including one outside the
+              latest page.
+            </p>
+            {policyPreview && (
+              <p className="field-note" role="status">
+                {gen(policyPreview.remaining)} GEN remaining. Cover period:{" "}
+                {new Date(policyPreview.starts_at * 1000).toLocaleString()} to{" "}
+                {new Date(policyPreview.ends_at * 1000).toLocaleString()}.
+                Status: {policyPreview.status}.
+              </p>
+            )}
             <div className="form-columns">
               <div>
-                <label htmlFor="reference">Incident reference</label>
+                <label htmlFor="reference">Studio transaction hash</label>
                 <input
                   id="reference"
                   name="reference"
                   required
-                  minLength={6}
-                  maxLength={160}
-                  placeholder="Transaction hash or receipt ID"
+                  minLength={66}
+                  maxLength={66}
+                  pattern="0[xX][a-fA-F0-9]{64}"
+                  placeholder="0x followed by the 64 character transaction hash"
                 />
               </div>
               <div>
@@ -566,8 +718,9 @@ export function ActionForm({
                       maximumFractionDigits: 6,
                     })
                   : "0.01 minimum"}{" "}
-                GEN. A successful claim returns it. Otherwise it goes to the
-                operator.
+                GEN. A successful claim returns it. An adjudicated rejection
+                awards it to the operator. An unresolved timeout or withdrawal
+                returns it to you.
               </p>
             </div>
             <Consent />
@@ -606,8 +759,10 @@ export function ActionForm({
             <Evidence />
             <p className="field-note">
               A changed finding returns your bond. An unchanged finding awards
-              it to the other party. Each finding can be appealed once. An
-              updated finding opens a fresh 24 hour challenge window.
+              it to the other party. Each party keeps one appeal for each
+              boolean finding and one payout appeal per eligibility revision.
+              The other side cannot spend your appeal. Updated findings open a
+              fresh 24 hour window.
             </p>
             <Consent />
           </>
@@ -626,6 +781,12 @@ export function ActionForm({
             </>
           ) : target.type === "register" ? (
             "Register manifest"
+          ) : target.type === "revise" ? (
+            "Register the next manifest revision"
+          ) : target.type === "authorize" ? (
+            "Authorize this operator"
+          ) : target.type === "evidence" ? (
+            "Add corroborating evidence"
           ) : target.type === "quote" ? (
             "Request a considered quote"
           ) : target.type === "bind" ? (
