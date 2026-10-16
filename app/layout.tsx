@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { BackToTop } from "@/components/back-to-top";
 import "@fontsource/figtree/400.css";
 import "@fontsource/figtree/500.css";
 import "@fontsource/figtree/600.css";
@@ -39,6 +40,7 @@ export default function RootLayout({
           Skip to content
         </a>
         {children}
+        <BackToTop />
       </body>
     </html>
   );

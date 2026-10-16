@@ -375,6 +375,9 @@ nav {
   min-width: 0;
 }
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   height: 77px;
   padding: 0 40px;
   display: flex;
@@ -383,6 +386,41 @@ nav {
   border-bottom: 1px solid var(--line);
   gap: 15px;
   background: var(--bg);
+}
+.back-to-top {
+  position: fixed;
+  right: 28px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--copper);
+  border-radius: 24px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 3px 14px #00000012;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.back-to-top:hover {
+  background: var(--copper-soft);
+  color: var(--accent-ink);
+}
+/* Leave room for transaction updates, including the expanded history. */
+body:has(.activity-tray) .back-to-top {
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+}
+body:has(.activity-tray.expanded) .back-to-top {
+  bottom: min(450px, calc(100dvh - 140px));
+}
+body:has(.activity-tray) .footer {
+  padding-bottom: calc(144px + env(safe-area-inset-bottom, 0px));
 }
 .breadcrumb {
   display: flex;
@@ -880,7 +918,7 @@ nav {
   justify-content: space-between;
   gap: 20px;
   border-top: 1px solid var(--line);
-  padding: 20px 0 24px;
+  padding: 20px 0 calc(92px + env(safe-area-inset-bottom, 0px));
   font-size: 9px;
   color: var(--muted);
   margin-top: auto;
@@ -2083,7 +2121,7 @@ td strong {
 .legal-page {
   max-width: 750px;
   margin: 0 auto;
-  padding: 45px 28px 70px;
+  padding: 45px 28px calc(92px + env(safe-area-inset-bottom, 0px));
 }
 .legal-page > .brand {
   display: inline-flex;
@@ -2429,9 +2467,9 @@ td strong {
   .topbar {
     height: 65px;
     padding: 0 22px;
-    position: sticky;
-    top: 0;
-    z-index: 20;
+  }
+  .back-to-top {
+    right: 20px;
   }
   .mobile-menu {
     display: inline-flex;
@@ -2549,7 +2587,7 @@ td strong {
     font-size: 9px;
   }
   .footer {
-    padding: 17px 0 65px;
+    padding: 17px 0 calc(92px + env(safe-area-inset-bottom, 0px));
     flex-wrap: wrap;
     gap: 13px;
   }
@@ -2858,7 +2896,7 @@ td strong {
   }
   .footer {
     gap: 11px;
-    padding-bottom: 65px;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   }
   .footer > div {
     width: 100%;
@@ -3156,7 +3194,7 @@ td strong {
     font-size: 33px;
   }
   .legal-page {
-    padding: 30px 22px 60px;
+    padding: 30px 22px calc(92px + env(safe-area-inset-bottom, 0px));
   }
   .legal-page p {
     font-size: 13px;
