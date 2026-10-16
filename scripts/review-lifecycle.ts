@@ -139,30 +139,45 @@ if(phase==="history"){
   await write("file_claim","claimant",state.court,"file_claim",[state.policy.id,state.incidentHash,Number(state.loss.occurred_at),BigInt(state.loss.amount_wei),"My own native GEN escrow was debited by the registered executor without approval in this exact Studio transaction. I authorized refunds only to myself after an explicit approve_refund entry. No approval was pending. The executor instead used spend_without_approval to misroute 0.2 GEN to its own address. The vault lost exactly 200000000000000000 wei of my funds and no repayment has occurred. This is a controlled live exercise using test GEN.",urls],10n**16n);
   state.claimId=await owner.client.readContract({address:state.court,functionName:"get_policy_claim",args:[state.policy.id],transactionHashVariant:TransactionHashVariant.LATEST_FINAL});await save();
   for(const field of ["harm","causation","scope","payout"])await write("finding_"+field,"claimant",state.court,"resolve_finding",[state.claimId,field]);
-  state.initialClaim=await read(state.court,"get_claim",[state.claimId]);await save();
+  state.initialClaim ??= await read(state.court,"get_claim",[state.claimId]);await save();
   assert.equal(state.initialClaim.status,"challenge");
   assert.deepEqual(state.initialClaim.findings,{harm:true,causation:true,scope:false,payout:100});
   await write("appeal_scope","owner",state.court,"appeal_finding",[state.claimId,"scope","Please independently review the scope conclusion against the registered mandate and this actual debit. The test vault exposed this callable path, but the executor was expressly forbidden from using it without claimant approval. I ask for a precise scope review; I do not assert that technical access granted permission.",urls],10n**16n);
-  state.appealedClaim=await read(state.court,"get_claim",[state.claimId]);await save();
+  state.appealedClaim ??= await read(state.court,"get_claim",[state.claimId]);await save();
   assert.equal((state.appealedClaim.findings as Record<string,unknown>).scope,false);
   await write("accept_claimant","claimant",state.court,"accept_decision",[state.claimId]);
   await write("accept_operator","owner",state.court,"accept_decision",[state.claimId]);
   await write("finalize_claim","claimant",state.court,"finalize_claim",[state.claimId]);
-  state.finalClaim=await read(state.court,"get_claim",[state.claimId]);await save();assert.equal(state.finalClaim.payout,state.loss.amount_wei);
+  state.finalClaim ??= await read(state.court,"get_claim",[state.claimId]);await save();assert.equal(state.finalClaim.payout,state.loss.amount_wei);
   await write("settle_claim","claimant",state.underwriting,"settle_claim",[state.claimId]);
   state.settlement=await read(state.underwriting,"get_settlement",[state.claimId]);await save();assert.equal(state.settlement.paid,state.loss.amount_wei);
-  if((await read(state.court,"get_claim",[state.claimId])).status!=="settled")await write("acknowledge_settlement","claimant",state.court,"acknowledge_settlement",[state.claimId]);
+  // Let the finalized child acknowledgment finish before choosing a manual recovery.
+  await eventually(async()=>(await read(state.court,"get_claim",[state.claimId])).status==="settled","Finalized settlement acknowledgment needs permissionless recovery; inspect the emitted child receipt before resuming.");
   if(!state.beforeWithdraw){state.beforeWithdraw=String(await balance(claimant.account.address));await save();}
   await write("withdraw_claimant","claimant",state.underwriting,"withdraw");
   await eventually(async()=>await balance(claimant.account.address)>=BigInt(state.beforeWithdraw)+BigInt(state.loss.amount_wei),"Claim payment did not reach claimant balance");
-  state.afterWithdraw=String(await balance(claimant.account.address));await save();
+  state.afterWithdraw ??= String(await balance(claimant.account.address));await save();
   const account=await read(state.underwriting,"get_account",[claimant.account.address]);assert.equal(account.credit,"0");
   if(!state.beforeBondWithdraw){state.beforeBondWithdraw=String(await balance(claimant.account.address));await save();}
   await write("withdraw_bonds","claimant",state.court,"withdraw_bonds");
   await eventually(async()=>await balance(claimant.account.address)>=BigInt(state.beforeBondWithdraw)+2n*10n**16n,"Filing and upheld operator appeal bonds did not reach claimant");
   await write("sync_loss","owner",state.registry,"sync_loss",[state.claimId]);
   state.lossRecord=await read(state.registry,"get_loss_record",[owner.account.address]);assert.equal(state.lossRecord.paid,state.loss.amount_wei);
-  state.completedAt=new Date().toISOString();state.result="passed";await save();
-  await writeFile("docs/review-integration-result.json",JSON.stringify(jsonSafe({network:"studionet",verifiedAt:state.completedAt,sourceHashes:state.sourceHashes,registry:state.registry,underwriting:state.underwriting,court:state.court,vault:state.vault,peerVault:state.peerVault,actors:state.actors,historyCommit:state.historyCommit,incidentCommit:state.incidentCommit,caseId:state.caseId,checks:state.checks,policy:state.policy,initialClaim:state.initialClaim,appealedClaim:state.appealedClaim,finalClaim:await read(state.court,"get_claim",[state.claimId]),settlement:state.settlement,lossRecord:state.lossRecord,withdrawal:{before:state.beforeWithdraw,after:state.afterWithdraw,paid:state.loss.amount_wei,bond_before:state.beforeBondWithdraw,bond_after:String(await balance(claimant.account.address))},result:"passed",scope:"Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, four findings, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/bond withdrawals. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."}),null,2)+"\n");
+  for(const name of ["quote_policy","finding_harm","finding_causation","finding_scope","finding_payout","appeal_scope"]){
+    const votes=state.checks[name].receipt?.votes??[];
+    assert.ok(votes.filter((v:{vote:string})=>v.vote.toLowerCase()==="agree").length>=2,"Independent validator agreement missing for "+name);
+  }
+  state.finalPolicy=await read(state.underwriting,"get_policy",[state.policy.id]);
+  state.finalDashboard=await read(state.underwriting,"get_dashboard");
+  assert.equal(BigInt(state.finalPolicy.paid),BigInt(state.loss.amount_wei));
+  assert.equal(BigInt(state.finalPolicy.remaining)+BigInt(state.finalPolicy.paid),10n**18n);
+  assert.ok(BigInt(state.finalDashboard.junior_locked)<=BigInt(state.finalDashboard.junior));
+  assert.ok(BigInt(state.finalDashboard.senior_locked)<=BigInt(state.finalDashboard.senior));
+  assert.ok(BigInt(state.finalDashboard.junior_locked)+BigInt(state.finalDashboard.senior_locked)>=BigInt(state.finalDashboard.reserved));
+  state.finalPoolBalance=String(await balance(state.underwriting));
+  assert.ok(BigInt(state.finalPoolBalance)>=BigInt(state.finalDashboard.tvg));
+  state.completedAt=new Date().toISOString();
+  await writeFile("docs/review-integration-result.json",JSON.stringify(jsonSafe({network:"studionet",verifiedAt:state.completedAt,sourceHashes:state.sourceHashes,registry:state.registry,underwriting:state.underwriting,court:state.court,vault:state.vault,peerVault:state.peerVault,actors:state.actors,historyCommit:state.historyCommit,incidentCommit:state.incidentCommit,caseId:state.caseId,checks:state.checks,policy:state.policy,initialClaim:state.initialClaim,appealedClaim:state.appealedClaim,finalClaim:await read(state.court,"get_claim",[state.claimId]),settlement:state.settlement,lossRecord:state.lossRecord,finalPolicy:state.finalPolicy,finalDashboard:state.finalDashboard,poolBalanceWei:state.finalPoolBalance,withdrawal:{before:state.beforeWithdraw,after:state.afterWithdraw,paid:state.loss.amount_wei,bond_before:state.beforeBondWithdraw,bond_after:String(await balance(claimant.account.address))},result:"passed",scope:"Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, four findings, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/bond withdrawals. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."}),null,2)+"\n");
+  state.result="passed";await save();
   console.log("Full real Studio lifecycle passed, including claimant receipt of native funds.");
 }else throw Error("Unknown review phase");

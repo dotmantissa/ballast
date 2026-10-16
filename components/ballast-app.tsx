@@ -2024,7 +2024,7 @@ function ClaimDetail({
               {claim.outcome === "evidence_timeout"
                 ? "The review deadline passed. No loss decision was made and the filing bond was returned."
                 : "The claimant withdrew this case. The filing bond was returned."}{" "}
-              Settle this record to release its remaining commitment.
+              {claim.status === "final" ? "Settle this record to close its case commitment." : "The pool settlement has been recorded."}
             </p>
           )}
           <span>{claim.status === "settled" ? "Paid by the pool" : "Assessed award"}</span>
