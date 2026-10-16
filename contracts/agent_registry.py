@@ -42,6 +42,25 @@ class AgentRegistry(gl.Contract):
     recorded: TreeMap[str, bool]
     executor_operators: TreeMap[str, str]
     revisions: TreeMap[str, str]
+    account_indexes: TreeMap[str, str]
+    account_counts: TreeMap[str, u256]
+
+    def _index_account(self, kind: str, account: str, record_id: str) -> None:
+        prefix = kind + ':' + str(Address(account))
+        count = int(self.account_counts.get(prefix,u256(0)))
+        self.account_indexes[prefix+':'+str(count)] = record_id
+        self.account_counts[prefix] = u256(count+1)
+
+    def _account_page(self, kind: str, account: str, before: int, limit: int) -> dict:
+        if before < -1 or not 1 <= limit <= 50:
+            raise gl.vm.UserError('Invalid page')
+        prefix = kind + ':' + str(Address(account))
+        total = int(self.account_counts.get(prefix,u256(0)))
+        end = total if before == -1 else min(before,total)
+        start = max(0,end-limit)
+        ids = [self.account_indexes[prefix+':'+str(i)] for i in range(end-1,start-1,-1)]
+        return {'ids':ids,'total':total,'next_cursor':start if start > 0 else None}
+
 
     def __init__(self):
         self.owner = gl.message.sender_address
@@ -106,6 +125,7 @@ class AgentRegistry(gl.Contract):
         self.agents[agent['id']] = encoded
         self.revisions[agent['id'] + ':' + agent['manifest_hash']] = encoded
         self.agent_ids.append(agent['id'])
+        self._index_account('agents',agent['operator'],agent['id'])
         return agent['id']
 
     @gl.public.write
@@ -167,6 +187,11 @@ class AgentRegistry(gl.Contract):
         record['paid'] = str(int(record['paid']) + int(policy['paid']))
         self.losses[operator] = json.dumps(record, sort_keys=True)
         self.recorded[claim_id] = True
+
+    @gl.public.view
+    def list_operator_agents(self, account: str, before: int, limit: int) -> dict:
+        page = self._account_page('agents',account,before,limit)
+        return {'items':[self.get_agent(i) for i in page['ids']], 'total':page['total'], 'next_cursor':page['next_cursor']}
 
     @gl.public.view
     def get_config(self) -> dict:

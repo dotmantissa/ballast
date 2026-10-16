@@ -360,3 +360,24 @@ def test_only_both_parties_can_waive_challenge_time_and_appeals_reset_consent(co
     with direct_vm.expect_revert('not closed'):court[0].finalize_claim(cid)
     court[0].accept_decision(cid);court[0].finalize_claim(cid)
     assert court[0].get_claim(cid)['payout']==str(UNIT)
+
+
+def test_account_index_recovers_old_unresolved_claim_past_public_window(court,direct_vm,direct_charlie):
+    c=court[0];first=file(court,direct_vm)
+    # Distinct policies and losses populate real court storage; SDK peers supply policy metadata only.
+    for i in range(52):
+        direct_vm.value=UNIT//100
+        c.file_claim('policy-'+str(i),'0x'+format(i+100,'064x'),1,UNIT,'A distinct sufficiently evidenced transaction and realized claimant loss.',URLS)
+    account=c.get_claim(first)['claimant']
+    latest=c.list_account_claims(account,True,-1,50)
+    assert first not in [item['id'] for item in latest['items']]
+    older=c.list_account_claims(account,True,latest['next_cursor'],50)
+    assert first in [item['id'] for item in older['items']]
+    assert latest['total']==53 and older['next_cursor'] is None
+    # Removing a non-last entry must retain all other unresolved cases and their positions.
+    c.withdraw_claim(first)
+    assert c.get_account_cases(account)['unresolved']['total']==52
+    one=c.list_account_claims(account,True,-1,1)['items'][0]
+    c.withdraw_claim(one['id'])
+    assert c.get_account_cases(account)['unresolved']['total']==51
+    assert c.get_account_cases(account)['claims']['total']==53

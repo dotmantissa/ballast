@@ -360,3 +360,13 @@ def test_stale_manifest_quote_cannot_bind(pool,direct_vm,direct_bob):
     before=view.get_agent('a1');view.get_agent=lambda _: {**before,'manifest_hash':'new-revision'}
     direct_vm.value=UNIT//2
     with direct_vm.expect_revert('fresh quote'):c.bind_policy(qid)
+
+
+def test_operator_quote_index_has_stable_earlier_page_cursor(pool,direct_vm,direct_alice):
+    c=pool[0];ids=[quote(pool,direct_vm) for _ in range(52)]
+    page=c.list_account_records(hx(direct_alice),'quotes',-1,50)
+    later=quote(pool,direct_vm)
+    older=c.list_account_records(hx(direct_alice),'quotes',page['next_cursor'],50)
+    assert [q['id'] for q in page['items']+older['items']]==list(reversed(ids))
+    assert later not in [q['id'] for q in older['items']]
+    assert c.get_account(hx(direct_alice))['quotes']['total']==53

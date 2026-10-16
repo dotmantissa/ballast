@@ -60,6 +60,44 @@ class ClaimsCourt(gl.Contract):
     policy_claims: TreeMap[str, str]
     incidents: TreeMap[str, str]
     credits: TreeMap[str, u256]
+    account_indexes: TreeMap[str, str]
+    account_counts: TreeMap[str, u256]
+    open_positions: TreeMap[str, u256]
+
+    def _index_account(self, kind: str, account: str, record_id: str) -> None:
+        prefix = kind + ':' + str(Address(account))
+        count = int(self.account_counts.get(prefix,u256(0)))
+        self.account_indexes[prefix+':'+str(count)] = record_id
+        self.account_counts[prefix] = u256(count+1)
+
+    def _account_page(self, kind: str, account: str, before: int, limit: int) -> dict:
+        if before < -1 or not 1 <= limit <= 50:
+            raise gl.vm.UserError('Invalid page')
+        prefix = kind + ':' + str(Address(account))
+        total = int(self.account_counts.get(prefix,u256(0)))
+        end = total if before == -1 else min(before,total)
+        start = max(0,end-limit)
+        ids = [self.account_indexes[prefix+':'+str(i)] for i in range(end-1,start-1,-1)]
+        return {'ids':ids,'total':total,'next_cursor':start if start > 0 else None}
+
+
+    def _index_case(self, claim: dict) -> None:
+        for account in [claim['claimant'],claim['operator']]:
+            self._index_account('claims',account,claim['id'])
+            prefix = 'open:' + account
+            position = int(self.account_counts.get(prefix,u256(0)))
+            self.open_positions[account+':'+claim['id']] = u256(position)
+            self._index_account('open',account,claim['id'])
+
+    def _remove_open(self, claim: dict) -> None:
+        for account in [claim['claimant'],claim['operator']]:
+            prefix = 'open:' + account
+            count = int(self.account_counts.get(prefix,u256(0)))
+            position = int(self.open_positions[account+':'+claim['id']])
+            last = self.account_indexes[prefix+':'+str(count-1)]
+            self.account_indexes[prefix+':'+str(position)] = last
+            self.open_positions[account+':'+last] = u256(position)
+            self.account_counts[prefix] = u256(count-1)
 
     def __init__(self, registry: str, underwriting: str):
         Address(registry); Address(underwriting)
@@ -116,6 +154,7 @@ class ClaimsCourt(gl.Contract):
             'challenge_until':0, 'acceptances':[], 'appeals':[], 'claim_bond':str(bond), 'payout':'0',
         }, sort_keys=True)
         self.claim_ids.append(claim_id)
+        self._index_case(self.get_claim(claim_id))
         self.policy_claims[policy_id] = claim_id
         self.incidents[event_key] = claim_id
         return claim_id
@@ -292,6 +331,7 @@ class ClaimsCourt(gl.Contract):
         claimant = claim['claimant']
         self.credits[claimant] = u256(int(self.credits.get(claimant,u256(0))) + int(claim['claim_bond']))
         self.claims[claim['id']] = json.dumps(claim, sort_keys=True)
+        self._remove_open(claim)
 
     @gl.public.write
     def close_unresolved_claim(self, claim_id: str) -> None:
@@ -323,6 +363,7 @@ class ClaimsCourt(gl.Contract):
         recipient = claim['claimant'] if int(claim['payout']) > 0 else claim['operator']
         self.credits[recipient] = u256(int(self.credits.get(recipient,u256(0))) + int(claim['claim_bond']))
         self.claims[claim_id] = json.dumps(claim, sort_keys=True)
+        self._remove_open(claim)
 
     @gl.public.write
     def withdraw_bonds(self) -> None:
@@ -352,6 +393,17 @@ class ClaimsCourt(gl.Contract):
         if offset < 0 or not 1 <= limit <= 50:
             raise gl.vm.UserError('Invalid page')
         return [self.get_claim(self.claim_ids[i]) for i in range(offset,min(len(self.claim_ids),offset+limit))]
+
+    @gl.public.view
+    def list_account_claims(self, account: str, unresolved: bool, before: int, limit: int) -> dict:
+        page = self._account_page('open' if unresolved else 'claims',account,before,limit)
+        return {'items':[self.get_claim(i) for i in page['ids']], 'total':page['total'], 'next_cursor':page['next_cursor']}
+
+    @gl.public.view
+    def get_account_cases(self, account: str) -> dict:
+        return {'claims':self.list_account_claims(account,False,-1,50),
+                'unresolved':self.list_account_claims(account,True,-1,50),
+                'bond_credit':self.get_bond_credit(account)}
 
     @gl.public.view
     def get_config(self) -> dict:

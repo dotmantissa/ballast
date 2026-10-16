@@ -140,3 +140,17 @@ def test_active_policy_prevents_revision_and_reads_final_state(registry, manifes
 def test_rejects_malformed_or_private_history(registry, manifest, direct_vm, url):
     with direct_vm.expect_revert('public HTTPS'):
         registry.register_agent(manifest,[url])
+
+
+def test_operator_index_paginates_beyond_fifty_agents(registry,manifest,direct_vm,direct_alice):
+    from genlayer import Address
+    ids=[]
+    for i in range(52):
+        executor=Address('0x'+format(i+1000,'040x'))
+        with direct_vm.prank(executor):registry.authorize_operator(hx(direct_alice))
+        data=json.loads(manifest);data['executor_address']=str(executor)
+        ids.append(registry.register_agent(json.dumps(data),['https://example.org/history']))
+    first=registry.list_operator_agents(hx(direct_alice),-1,50)
+    second=registry.list_operator_agents(hx(direct_alice),first['next_cursor'],50)
+    assert [a['id'] for a in first['items']+second['items']]==list(reversed(ids))
+    assert first['total']==52 and second['next_cursor'] is None

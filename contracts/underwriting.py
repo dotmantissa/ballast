@@ -67,6 +67,25 @@ class Underwriting(gl.Contract):
     locked: TreeMap[str, u256]
     generations: TreeMap[str, u256]
     exhausted_supply: TreeMap[str, u256]
+    account_indexes: TreeMap[str, str]
+    account_counts: TreeMap[str, u256]
+
+    def _index_account(self, kind: str, account: str, record_id: str) -> None:
+        prefix = kind + ':' + str(Address(account))
+        count = int(self.account_counts.get(prefix,u256(0)))
+        self.account_indexes[prefix+':'+str(count)] = record_id
+        self.account_counts[prefix] = u256(count+1)
+
+    def _account_page(self, kind: str, account: str, before: int, limit: int) -> dict:
+        if before < -1 or not 1 <= limit <= 50:
+            raise gl.vm.UserError('Invalid page')
+        prefix = kind + ':' + str(Address(account))
+        total = int(self.account_counts.get(prefix,u256(0)))
+        end = total if before == -1 else min(before,total)
+        start = max(0,end-limit)
+        ids = [self.account_indexes[prefix+':'+str(i)] for i in range(end-1,start-1,-1)]
+        return {'ids':ids,'total':total,'next_cursor':start if start > 0 else None}
+
 
     def __init__(self, registry: str):
         Address(registry)
@@ -201,6 +220,7 @@ class Underwriting(gl.Contract):
             'expires_at':_now()+3600, 'bound':False,
         }, sort_keys=True)
         self.quote_ids.append(quote_id)
+        self._index_account('quotes',agent['operator'],quote_id)
         return quote_id
 
     @gl.public.write.payable
@@ -240,6 +260,7 @@ class Underwriting(gl.Contract):
         self._resize_locks(policy, junior_backing+junior_premium, limit-junior_backing+premium-junior_premium)
         self.policies[policy_id] = json.dumps(policy, sort_keys=True)
         self.policy_ids.append(policy_id)
+        self._index_account('policies',quote['operator'],policy_id)
         self.agent_policy[quote['agent_id']] = policy_id
         quote['bound'] = True
         self.quotes[quote_id] = json.dumps(quote, sort_keys=True)
@@ -381,7 +402,17 @@ class Underwriting(gl.Contract):
             result[tranche+'_available'] = str(max(0,int(self.nav.get(tranche,u256(0)))-int(self.locked.get(tranche,u256(0)))))
             result[tranche+'_shares'] = str(shares)
             result[tranche+'_value'] = str(0 if supply == 0 else shares * int(self.nav.get(tranche,u256(0))) // supply)
+        result['policies'] = self.list_account_records(account,'policies',-1,50)
+        result['quotes'] = self.list_account_records(account,'quotes',-1,50)
         return result
+
+    @gl.public.view
+    def list_account_records(self, account: str, kind: str, before: int, limit: int) -> dict:
+        if kind not in ['quotes','policies']:
+            raise gl.vm.UserError('Unknown record kind')
+        page = self._account_page(kind,account,before,limit)
+        records = [self.get_policy(i) if kind == 'policies' else self.get_quote(i) for i in page['ids']]
+        return {'items':records,'total':page['total'],'next_cursor':page['next_cursor']}
 
     @gl.public.view
     def get_generation_holding(self, account: str, tranche: str, generation: int) -> dict:
