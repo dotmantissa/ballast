@@ -1,3 +1,4 @@
+import "./rpc-transport";
 import { readFile, writeFile, rename } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { createClient, createAccount } from "genlayer-js";

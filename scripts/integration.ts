@@ -1,3 +1,4 @@
+import "./rpc-transport";
 import { readFile, writeFile, rename } from "node:fs/promises";
 import assert from "node:assert/strict";
 import { createAccount, createClient } from "genlayer-js";

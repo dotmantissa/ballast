@@ -1,0 +1,25 @@
+{
+  "chainId": 61999,
+  "network": "studionet",
+  "rpc": "https://studio.genlayer.com/api",
+  "registry": "0x0c23aE2A8EF21F24aFeb372459C132393E32E57c",
+  "underwriting": "0xce34ebc176da53Ae729f6a7Fa2BDC30AC1192Af6",
+  "court": "0x98c4757Ee122C3b8C499EcEAC1B9F426C80B4028",
+  "transactions": {
+    "registry": "0x23f449fddc57f6454742d9cfc8a0585822ea130057767432f08cb5eae7a08552",
+    "underwriting": "0x3761b18309a3f333c43d58749a2425099f1b80521741530751dbba539e2e0c83",
+    "court": "0x5069807a4db197968319be387a3eddb0a852b1286362aff9a036fcc18f3f9eb8",
+    "wire_registry": "0xc7003cc6ca40a8b0d38a917b4478935d4969c3e4819849cf04db35ebd494fe39",
+    "wire_pool": "0xc3779dde559158e3748bc0837cc6a36ff2ae558da97224a7f4be00441334a253"
+  },
+  "sourceHashes": {
+    "registry": "6da17e02797f6c937a49aa2d956d9075b3763512f8f04b2aa95d788bda1fd63b",
+    "underwriting": "7e744746068bc2ec4f659e87e5e1d5d1b4461c24f736f818b26e2b187fc5da39",
+    "court": "14ef4523fa75af772afa36d9fe49eeb3c483aa9fb0157513c25dd9da162f227b"
+  },
+  "wired": {
+    "wire_registry": true,
+    "wire_pool": true
+  },
+  "verifiedAt": "2026-10-16T09:32:14.252Z"
+}
