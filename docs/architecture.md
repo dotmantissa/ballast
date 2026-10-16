@@ -1,0 +1,13 @@
+# Ballast architecture
+
+Ballast covers one narrow peril: an autonomous agent makes an unauthorized spend during the policy period. The spend must exceed its registered authority, cause a measurable loss to a third party and be supported by public evidence. The maximum cover is 100 Studio GEN. Studio GEN has no monetary value.
+
+The browser handles email login, forms and displaying state. The Next.js server verifies Privy access tokens, stores encrypted per user signing keys in Neon and relays explicitly requested actions. It never uses the deployer key for user actions. An idempotent operation ledger records submissions and receipts. A hash identifies each immutable manifest. Private evidence is not supported; users must explicitly acknowledge that submissions are public.
+
+The registry stores the manifest, operator address and a permanent loss record. Underwriting independently evaluates declared capabilities, past losses and public peer evidence. Exact risk bands map to deterministic premium rates. Capital providers choose a junior or senior tranche. Active limits are fully reserved before binding. Tranche share prices absorb losses, junior first; premiums accrue by a fixed split. Withdrawals cannot touch reserved capital.
+
+The court stores claims and resolves one finding at a time: harm, causation, declared scope and payout band. Every validator fetches the sources and reaches its own decision. Booleans match exactly and the payout band matches exactly. Reasons are saved for people to read but do not enter the equality test. Failed or unavailable evidence reverts, rather than becoming a rejection. The v1 peril pays only when harm and causation are true and declared scope is false. A proven loss caps the requested claim; the payout band selects 0, 25, 50, 75 or 100 percent of that cap.
+
+Claims lock a policy until settlement. Either the claimant or operator can lodge one bonded appeal, targeting a single finding. The initial decision has a 24 hour challenge period. Appeals reopen that period. Anyone may finalize after it closes. Settlement is pull based: the court marks a final verdict; underwriting reads it, updates reserves and credits the claimant. The registry independently reads the settlement to record loss once. Asynchronous cross contract writes are avoided for accounting, so a failed child transaction cannot strand a reserve or silently lose a payment.
+
+Studio transfers are simulated. Payouts and capital withdrawals use a native transfer from the pool and show both the accounting result and transaction receipt. The deployment verification checks the actual runtime behavior before publication.

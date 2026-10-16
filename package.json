@@ -1,0 +1,44 @@
+{
+  "name": "ballast",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build --webpack",
+    "start": "next start --hostname 0.0.0.0",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:contracts": "python3 -m pytest tests/direct -v",
+    "lint:contracts": "genvm-lint check contracts/agent_registry.py && genvm-lint check contracts/underwriting.py && genvm-lint check contracts/claims_court.py",
+    "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate.ts",
+    "deploy:contracts": "node --env-file=.env.local --import tsx scripts/deploy.ts",
+    "test:integration": "node --env-file=.env.local --import tsx scripts/integration.ts"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@privy-io/react-auth": "latest",
+    "@privy-io/server-auth": "1.32.5",
+    "@neondatabase/serverless": "^1.0.2",
+    "genlayer-js": "1.1.8",
+    "viem": "^2.38.0",
+    "zod": "^4.1.0",
+    "lucide-react": "^0.577.0",
+    "@fontsource/figtree": "^5.2.0",
+    "@fontsource/ibm-plex-mono": "^5.2.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "16.4.2",
+    "vitest": "^3.2.0",
+    "tsx": "^4.20.0",
+    "@playwright/test": "^1.56.0"
+  }
+}
