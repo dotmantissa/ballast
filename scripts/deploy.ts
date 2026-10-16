@@ -33,7 +33,7 @@ async function wait(hash: `0x${string}`) {
     } catch {
       /* A read timeout must never cause a duplicate deployment. */
     }
-    await new Promise((resolve) => setTimeout(resolve, 6000));
+    await new Promise((resolve) => setTimeout(resolve, 12000));
   }
   if (!receipt)
     throw Error("Receipt wait timed out. Resume with the saved hash: " + hash);

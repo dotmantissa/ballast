@@ -89,7 +89,18 @@ test("mobile layout and menu have no horizontal overflow", async ({ page }) => {
   });
   await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByRole("button", { name: "Overview", exact: true }).click();
-  await page.screenshot({ path: "/tmp/ballast-mobile.png", fullPage: true });
+  await expect
+    .poll(async () =>
+      page
+        .locator(".sidebar")
+        .evaluate((el) => el.getBoundingClientRect().right),
+    )
+    .toBeLessThanOrEqual(0);
+  await page.screenshot({
+    path: "/tmp/ballast-mobile.png",
+    fullPage: true,
+    animations: "disabled",
+  });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

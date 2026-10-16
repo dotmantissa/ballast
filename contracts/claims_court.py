@@ -66,7 +66,7 @@ class ClaimsCourt(gl.Contract):
         prior = self.policy_claims.get(policy_id, '')
         if prior and not gl.get_contract_at(Address(self.underwriting)).view().get_settlement(prior):
             raise gl.vm.UserError('An earlier claim is still open')
-        incident_key = hashlib.sha256((policy_id+incident_ref.strip().lower()).encode()).hexdigest()
+        incident_key = hashlib.sha256((policy['agent_id']+claimant+incident_ref.strip().lower()).encode()).hexdigest()
         if self.incidents.get(incident_key, False):
             raise gl.vm.UserError('Incident already claimed')
         bond = max(UNIT//100, amount//100)

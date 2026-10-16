@@ -228,3 +228,11 @@ def test_withdraw_emits_native_transfer_and_clears_credit(pool,direct_vm,direct_
     assert c.get_account(str(Address(hx(direct_alice))))['credit']=='0'
     assert c.get_dashboard()['credits']=='0'
     with direct_vm.expect_revert('No funds'):c.withdraw()
+
+
+def test_agent_cannot_bind_overlapping_cover(pool,direct_vm,direct_bob):
+    c=pool[0];bind(pool,direct_vm,direct_bob)
+    qid=quote(pool,direct_vm)
+    direct_vm.value=UNIT//2
+    with direct_vm.expect_revert('already has active cover'):
+        c.bind_policy(qid)

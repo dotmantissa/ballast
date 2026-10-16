@@ -174,3 +174,19 @@ def test_bond_withdrawal_emits_exact_amount_once(court,direct_vm):
     assert int(emitter.emit_transfer.call_args.kwargs['value'])==UNIT//100
     assert court[0].get_bond_credit(c['claimant'])=='0'
     with direct_vm.expect_revert('No bond credit'):court[0].withdraw_bonds()
+
+
+def test_a_wrong_claimant_does_not_consume_someone_elses_reference(court,direct_vm,direct_charlie):
+    first=file(court,direct_vm)
+    court[2][first]={'paid':'0'}
+    with direct_vm.prank(direct_charlie):
+        second=file(court,direct_vm)
+    assert first!=second
+
+
+def test_same_claimant_cannot_replay_incident_under_another_policy(court,direct_vm):
+    first=file(court,direct_vm)
+    court[2][first]={'paid':'0'}
+    court[1]['id']='p2'
+    with direct_vm.expect_revert('already claimed'):
+        court[0].file_claim('p2','receipt:abc123',1,UNIT,'The registered executor spent 1 GEN without approval and caused a realized loss to my account.',URLS)

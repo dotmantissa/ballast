@@ -38,6 +38,7 @@ class Underwriting(gl.Contract):
     credit_total: u256
     settlements: TreeMap[str, str]
     operator_records: TreeMap[str, str]
+    agent_policy: TreeMap[str, str]
 
     def __init__(self, registry: str):
         Address(registry)
@@ -173,6 +174,9 @@ class Underwriting(gl.Contract):
             raise gl.vm.UserError('Only the quoted operator may bind')
         if quote['bound'] or quote['expires_at'] < _now() or quote['band'] == 'declined':
             raise gl.vm.UserError('Quote is not available')
+        prior_id = self.agent_policy.get(quote['agent_id'], '')
+        if prior_id and self.get_policy(prior_id)['status'] == 'active':
+            raise gl.vm.UserError('This agent already has active cover; close it before binding another policy')
         premium = int(quote['premium']); limit = int(quote['limit'])
         if int(gl.message.value) != premium:
             raise gl.vm.UserError('Send the exact quoted premium')
@@ -189,6 +193,7 @@ class Underwriting(gl.Contract):
         policy_id = quote_id
         self.policies[policy_id] = json.dumps({**quote, 'id':policy_id, 'status':'active', 'starts_at':_now(), 'ends_at':_now()+30*86400, 'paid':'0', 'remaining':str(limit), 'claim_id':''}, sort_keys=True)
         self.policy_ids.append(policy_id)
+        self.agent_policy[quote['agent_id']] = policy_id
         quote['bound'] = True
         self.quotes[quote_id] = json.dumps(quote, sort_keys=True)
         return policy_id

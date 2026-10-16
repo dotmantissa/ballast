@@ -21,6 +21,22 @@ async function save() {
   await writeFile(statePath + ".tmp", JSON.stringify(state, null, 2) + "\n");
   await rename(statePath + ".tmp", statePath);
 }
+async function retryRead<T>(operation: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof assert.AssertionError) throw error;
+      if (attempt === 29)
+        throw Error(
+          "Studio remained unavailable. Saved transaction hashes are safe to resume.",
+        );
+      console.log("Studio read is waiting for network capacity.");
+      await new Promise((resolve) => setTimeout(resolve, 15000));
+    }
+  }
+  throw Error("Unreachable");
+}
 async function wait(hash: TransactionHash) {
   for (let attempt = 0; attempt < 100; attempt++) {
     try {
@@ -42,12 +58,14 @@ async function read(
   method: string,
   args: CalldataEncodable[] = [],
 ) {
-  return (await client.readContract({
-    address: state[contract],
-    functionName: method,
-    args,
-    transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
-  })) as Record<string, unknown>;
+  return (await retryRead(() =>
+    client.readContract({
+      address: state[contract],
+      functionName: method,
+      args,
+      transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
+    }),
+  )) as Record<string, unknown>;
 }
 async function write(
   name: string,
@@ -113,7 +131,10 @@ holdings = await read("underwriting", "get_account", [owner]);
 assert.equal(String(holdings.credit), "0");
 let returned = false;
 for (let i = 0; i < 10; i++) {
-  if ((await client.getBalance({ address: owner })) >= 25n * 10n ** 18n) {
+  if (
+    (await retryRead(() => client.getBalance({ address: owner }))) >=
+    25n * 10n ** 18n
+  ) {
     returned = true;
     break;
   }
@@ -132,12 +153,14 @@ await write("register_fixture", "registry", "register_agent", [
   manifest,
   ["https://docs.genlayer.com/developers/networks"],
 ]);
-const agents = (await client.readContract({
-  address: state.registry,
-  functionName: "list_agents",
-  args: [0, 50],
-  transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
-})) as Record<string, unknown>[];
+const agents = (await retryRead(() =>
+  client.readContract({
+    address: state.registry,
+    functionName: "list_agents",
+    args: [0, 50],
+    transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
+  }),
+)) as Record<string, unknown>[];
 const agent = agents.find((a) => a.name === "Integration boundary fixture");
 assert.ok(agent);
 await write("assess_unsupported_cover", "underwriting", "quote_policy", [
@@ -147,12 +170,14 @@ await write("assess_unsupported_cover", "underwriting", "quote_policy", [
     "https://docs.genlayer.com/developers/intelligent-contracts/features/value-transfers",
   ],
 ]);
-const quotes = (await client.readContract({
-  address: state.underwriting,
-  functionName: "list_quotes",
-  args: [0, 50],
-  transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
-})) as Record<string, unknown>[];
+const quotes = (await retryRead(() =>
+  client.readContract({
+    address: state.underwriting,
+    functionName: "list_quotes",
+    args: [0, 50],
+    transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
+  }),
+)) as Record<string, unknown>[];
 assert.equal(
   quotes.at(-1)?.band,
   "declined",

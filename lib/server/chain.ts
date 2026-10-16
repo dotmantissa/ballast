@@ -42,19 +42,20 @@ export async function read<T>(
     }),
   ) as T;
 }
+const cacheKey = "overview:" + deployment.underwriting;
 let cached: Overview | undefined;
 let pending: Promise<Overview> | undefined;
 export async function invalidateOverview() {
   cached = undefined;
   const sql = db();
-  await sql`UPDATE ballast_cache SET refresh_after=now() WHERE key='overview'`;
+  await sql`UPDATE ballast_cache SET refresh_after=now() WHERE key=${cacheKey}`;
 }
 export async function getOverview(): Promise<Overview> {
   if (pending) return pending;
   pending = (async () => {
     const sql = db();
     const [entry] =
-      await sql`SELECT payload,refresh_after FROM ballast_cache WHERE key='overview'`;
+      await sql`SELECT payload,refresh_after FROM ballast_cache WHERE key=${cacheKey}`;
     if (
       entry?.payload &&
       new Date(entry.refresh_after).getTime() > Date.now()
@@ -66,7 +67,7 @@ export async function getOverview(): Promise<Overview> {
       return cached;
     }
     const lease =
-      await sql`INSERT INTO ballast_cache (key,lease_until) VALUES ('overview',now()+interval '45 seconds') ON CONFLICT(key) DO UPDATE SET lease_until=now()+interval '45 seconds' WHERE ballast_cache.lease_until<now() RETURNING key`;
+      await sql`INSERT INTO ballast_cache (key,lease_until) VALUES (${cacheKey},now()+interval '45 seconds') ON CONFLICT(key) DO UPDATE SET lease_until=now()+interval '45 seconds' WHERE ballast_cache.lease_until<now() RETURNING key`;
     if (!lease.length) {
       if (entry?.payload) return { ...entry.payload, stale: true } as Overview;
       throw Error("The initial network read is still being prepared");
@@ -112,10 +113,10 @@ export async function getOverview(): Promise<Overview> {
           chainId: deployment.chainId,
         },
       };
-      await sql`UPDATE ballast_cache SET payload=${JSON.stringify(cached)}::jsonb,refresh_after=now()+interval '2 minutes',lease_until=now() WHERE key='overview'`;
+      await sql`UPDATE ballast_cache SET payload=${JSON.stringify(cached)}::jsonb,refresh_after=now()+interval '2 minutes',lease_until=now() WHERE key=${cacheKey}`;
       return cached;
     } catch (error) {
-      await sql`UPDATE ballast_cache SET lease_until=now(),refresh_after=now()+interval '30 seconds' WHERE key='overview'`;
+      await sql`UPDATE ballast_cache SET lease_until=now(),refresh_after=now()+interval '30 seconds' WHERE key=${cacheKey}`;
       if (entry?.payload) return { ...entry.payload, stale: true } as Overview;
       throw error;
     }
