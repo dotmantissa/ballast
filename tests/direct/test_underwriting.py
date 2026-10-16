@@ -20,7 +20,7 @@ def pool(direct_vm, direct_deploy, direct_alice, direct_bob):
     policy_claim = {'value':''}
     settlements = {}
     view = SimpleNamespace(get_agent=lambda _:agent, get_loss_record=lambda _:{'claims':0,'paid':'0'}, get_policy_claim=lambda _:policy_claim['value'], get_settlement=lambda key:settlements.get(key, {}))
-    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda:view)):
+    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs:view)):
         yield contract, view, policy_claim
 
 
@@ -236,3 +236,9 @@ def test_agent_cannot_bind_overlapping_cover(pool,direct_vm,direct_bob):
     direct_vm.value=UNIT//2
     with direct_vm.expect_revert('already has active cover'):
         c.bind_policy(qid)
+
+
+@pytest.mark.parametrize('bad',['https://[invalid','https://example.org:444/x','https://u:p@example.org/x','https://127.0.0.1/x'])
+def test_quote_rejects_malformed_public_sources(pool,direct_vm,bad):
+    with direct_vm.expect_revert('public HTTPS'):
+        pool[0].quote_policy('a1',UNIT,[bad])

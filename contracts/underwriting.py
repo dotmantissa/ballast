@@ -2,6 +2,9 @@
 from genlayer import *
 import json
 import hashlib
+import re
+from urllib.parse import urlsplit, urlunsplit
+from genlayer.py.public_abi import StorageType
 from datetime import datetime, timezone
 
 UNIT = 10**18
@@ -10,6 +13,27 @@ CAP = 100 * UNIT
 
 def _now() -> int:
     return int(datetime.now(timezone.utc).timestamp())
+
+
+def _url(value: str) -> str:
+    # Restrict v1 to public DNS HTTPS endpoints. No IP literals or credentials.
+    if not isinstance(value, str) or len(value) > 500 or any(c.isspace() or ord(c) < 32 for c in value) or '\\' in value:
+        raise gl.vm.UserError('Use a public HTTPS URL without credentials')
+    try:
+        parsed = urlsplit(value)
+        host = (parsed.hostname or '').lower().rstrip('.')
+        labels = host.split('.')
+        if parsed.scheme != 'https' or parsed.username is not None or parsed.password is not None or parsed.port not in [None, 443]:
+            raise ValueError('Invalid authority')
+        if len(host) > 253 or len(labels) < 2 or not re.fullmatch(r'[a-z]{2,63}', labels[-1]):
+            raise ValueError('Invalid public DNS host')
+        if any(not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label) for label in labels):
+            raise ValueError('Invalid DNS label')
+        if labels[-1] in ['local', 'internal', 'localhost', 'onion']:
+            raise ValueError('Private DNS host')
+        return urlunsplit(('https', host, parsed.path or '/', parsed.query, ''))
+    except Exception:
+        raise gl.vm.UserError('Use a public HTTPS URL without credentials')
 
 
 @gl.evm.contract_interface
@@ -121,9 +145,7 @@ class Underwriting(gl.Contract):
             raise gl.vm.UserError('Only the registered operator can request cover')
         if not 1 <= len(peer_urls) <= 3:
             raise gl.vm.UserError('Supply one to three public peer evidence URLs')
-        for url in peer_urls:
-            if not url.startswith('https://') or len(url) > 500:
-                raise gl.vm.UserError('Peer URLs must use HTTPS')
+        peer_urls = list(dict.fromkeys(_url(url) for url in peer_urls))
         losses = self.get_operator_record(agent['operator'])
         urls = agent['history_urls'] + peer_urls
         context = json.dumps({'agent':agent, 'losses':losses, 'limit':str(limit)}, sort_keys=True)

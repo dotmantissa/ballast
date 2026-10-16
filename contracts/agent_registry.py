@@ -2,11 +2,35 @@
 from genlayer import *
 import hashlib
 import json
+import re
+from urllib.parse import urlsplit, urlunsplit
+from genlayer.py.public_abi import StorageType
 from datetime import datetime, timezone
 
 
 def _now() -> int:
     return int(datetime.now(timezone.utc).timestamp())
+
+
+def _url(value: str) -> str:
+    # Restrict v1 to public DNS HTTPS endpoints. No IP literals or credentials.
+    if not isinstance(value, str) or len(value) > 500 or any(c.isspace() or ord(c) < 32 for c in value) or '\\' in value:
+        raise gl.vm.UserError('Use a public HTTPS URL without credentials')
+    try:
+        parsed = urlsplit(value)
+        host = (parsed.hostname or '').lower().rstrip('.')
+        labels = host.split('.')
+        if parsed.scheme != 'https' or parsed.username is not None or parsed.password is not None or parsed.port not in [None, 443]:
+            raise ValueError('Invalid authority')
+        if len(host) > 253 or len(labels) < 2 or not re.fullmatch(r'[a-z]{2,63}', labels[-1]):
+            raise ValueError('Invalid public DNS host')
+        if any(not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label) for label in labels):
+            raise ValueError('Invalid DNS label')
+        if labels[-1] in ['local', 'internal', 'localhost', 'onion']:
+            raise ValueError('Private DNS host')
+        return urlunsplit(('https', host, parsed.path or '/', parsed.query, ''))
+    except Exception:
+        raise gl.vm.UserError('Use a public HTTPS URL without credentials')
 
 
 class AgentRegistry(gl.Contract):
@@ -16,6 +40,8 @@ class AgentRegistry(gl.Contract):
     agent_ids: DynArray[str]
     losses: TreeMap[str, str]
     recorded: TreeMap[str, bool]
+    executor_operators: TreeMap[str, str]
+    revisions: TreeMap[str, str]
 
     def __init__(self):
         self.owner = gl.message.sender_address
@@ -29,41 +55,84 @@ class AgentRegistry(gl.Contract):
         self.underwriting = address
 
     @gl.public.write
-    def register_agent(self, manifest: str, history_urls: list[str]) -> str:
-        if len(manifest) > 16000 or len(manifest) < 30:
-            raise gl.vm.UserError("Manifest must contain 30 to 16000 characters")
+    def authorize_operator(self, operator: str) -> None:
+        operator = str(Address(operator))
+        executor = str(gl.message.sender_address)
+        agent_id = hashlib.sha256(('genlayer-studio:' + executor.lower()).encode()).hexdigest()[:24]
+        if agent_id in self.agents:
+            raise gl.vm.UserError('Executor ownership is fixed after registration')
+        self.executor_operators[executor] = operator
+
+    def _manifest(self, manifest: str, history_urls: list[str]) -> dict:
+        if not 30 <= len(manifest) <= 16000:
+            raise gl.vm.UserError('Manifest must contain 30 to 16000 characters')
         try:
             data = json.loads(manifest)
         except Exception:
-            raise gl.vm.UserError("Manifest must be valid JSON")
+            raise gl.vm.UserError('Manifest must be valid JSON')
         if not isinstance(data, dict):
-            raise gl.vm.UserError("Manifest must be an object")
-        for field in ["name", "scope", "executor_address"]:
+            raise gl.vm.UserError('Manifest must be an object')
+        for field in ['name', 'scope', 'executor_address']:
             if not isinstance(data.get(field), str) or not data[field].strip():
-                raise gl.vm.UserError("Missing manifest field: " + field)
+                raise gl.vm.UserError('Missing manifest field: ' + field)
         if len(data['name']) > 80 or len(data['scope']) < 20:
-            raise gl.vm.UserError("Use a short name and a detailed scope")
-        Address(data['executor_address'])
-        if type(data.get('spend_limit_gen')) is not int or not 0 <= data['spend_limit_gen'] <= 100:
-            raise gl.vm.UserError("spend_limit_gen must be a whole number from 0 to 100")
-        if not 1 <= len(history_urls) <= 4:
-            raise gl.vm.UserError("Supply one to four public history URLs")
-        for url in history_urls:
-            if not url.startswith('https://') or len(url) > 500:
-                raise gl.vm.UserError("History URLs must use HTTPS")
-        digest = hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+            raise gl.vm.UserError('Use a short name and a detailed scope')
+        executor = str(Address(data['executor_address']))
         operator = str(gl.message.sender_address)
-        agent_id = hashlib.sha256((operator + digest).encode()).hexdigest()[:24]
-        if agent_id in self.agents:
-            raise gl.vm.UserError("This manifest is already registered")
-        self.agents[agent_id] = json.dumps({
-            'id': agent_id, 'name': data['name'].strip(), 'operator': operator,
-            'manifest': manifest, 'manifest_hash': digest, 'scope': data['scope'],
-            'executor_address': data['executor_address'], 'history_urls': history_urls,
-            'registered_at': _now(),
-        }, sort_keys=True)
-        self.agent_ids.append(agent_id)
-        return agent_id
+        if executor != operator and self.executor_operators.get(executor, '') != operator:
+            raise gl.vm.UserError('The executor must authorize this operator first')
+        if type(data.get('spend_limit_gen')) is not int or not 0 <= data['spend_limit_gen'] <= 100:
+            raise gl.vm.UserError('spend_limit_gen must be a whole number from 0 to 100')
+        if not 1 <= len(history_urls) <= 4:
+            raise gl.vm.UserError('Supply one to four public history URLs')
+        history_urls = list(dict.fromkeys(_url(url) for url in history_urls))
+        data['executor_address'] = executor
+        canonical = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
+        digest = hashlib.sha256(canonical.encode()).hexdigest()
+        agent_id = hashlib.sha256(('genlayer-studio:' + executor.lower()).encode()).hexdigest()[:24]
+        return {'id':agent_id, 'name':data['name'].strip(), 'operator':operator,
+                'manifest':manifest, 'manifest_hash':digest,
+                'raw_manifest_hash':hashlib.sha256(manifest.encode()).hexdigest(),
+                'scope':data['scope'], 'executor_address':executor,
+                'history_urls':history_urls, 'registered_at':_now(), 'revised_at':_now()}
+
+    @gl.public.write
+    def register_agent(self, manifest: str, history_urls: list[str]) -> str:
+        agent = self._manifest(manifest, history_urls)
+        if agent['id'] in self.agents:
+            raise gl.vm.UserError('This executor is already registered; use a manifest revision')
+        self.executor_operators[agent['executor_address']] = agent['operator']
+        encoded = json.dumps(agent, sort_keys=True)
+        self.agents[agent['id']] = encoded
+        self.revisions[agent['id'] + ':' + agent['manifest_hash']] = encoded
+        self.agent_ids.append(agent['id'])
+        return agent['id']
+
+    @gl.public.write
+    def revise_agent(self, agent_id: str, manifest: str, history_urls: list[str]) -> None:
+        before = self.get_agent(agent_id)
+        if Address(before['operator']) != gl.message.sender_address:
+            raise gl.vm.UserError('Only the registered operator may revise the manifest')
+        after = self._manifest(manifest, history_urls)
+        if after['id'] != agent_id:
+            raise gl.vm.UserError('A revision cannot change the executor')
+        if after['manifest_hash'] == before['manifest_hash']:
+            raise gl.vm.UserError('This manifest revision is already registered')
+        if self.underwriting:
+            policy = gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_agent_policy(agent_id)
+            if policy and policy['status'] in ['active', 'runoff']:
+                raise gl.vm.UserError('Close existing cover before revising the manifest')
+        after['registered_at'] = before['registered_at']
+        encoded = json.dumps(after, sort_keys=True)
+        self.agents[agent_id] = encoded
+        self.revisions[agent_id + ':' + after['manifest_hash']] = encoded
+
+    @gl.public.view
+    def get_agent_revision(self, agent_id: str, manifest_hash: str) -> dict:
+        key = agent_id + ':' + manifest_hash
+        if key not in self.revisions:
+            raise gl.vm.UserError('Manifest revision not found')
+        return json.loads(self.revisions[key])
 
     @gl.public.view
     def get_agent(self, agent_id: str) -> dict:
@@ -80,7 +149,7 @@ class AgentRegistry(gl.Contract):
     @gl.public.view
     def get_loss_record(self, operator: str) -> dict:
         if self.underwriting:
-            return gl.get_contract_at(Address(self.underwriting)).view().get_operator_record(operator)
+            return gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_operator_record(operator)
         return {'claims':0, 'settled_claims':0, 'paid':'0'}
 
     @gl.public.write
@@ -89,7 +158,7 @@ class AgentRegistry(gl.Contract):
             raise gl.vm.UserError("Pool is not wired")
         if self.recorded.get(claim_id, False):
             raise gl.vm.UserError("Loss already recorded")
-        policy = gl.get_contract_at(Address(self.underwriting)).view().get_settlement(claim_id)
+        policy = gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_settlement(claim_id)
         if not policy:
             raise gl.vm.UserError("Claim has not settled")
         operator = policy['operator']

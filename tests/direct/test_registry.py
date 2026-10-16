@@ -15,14 +15,17 @@ def registry(direct_vm, direct_deploy, direct_alice):
 
 
 @pytest.fixture
-def manifest(direct_bob):
-    return json.dumps({'name': 'Refund helper', 'scope': 'Issue refunds only after explicit customer approval.', 'executor_address': hx(direct_bob), 'spend_limit_gen': 2})
+def manifest(direct_alice):
+    return json.dumps({'name': 'Refund helper', 'scope': 'Issue refunds only after explicit customer approval.', 'executor_address': hx(direct_alice), 'spend_limit_gen': 2})
 
 
 def test_registration_is_immutable_and_hashed(registry, manifest, direct_alice):
     agent_id = registry.register_agent(manifest, ['https://example.org/history'])
     agent = registry.get_agent(agent_id)
-    assert agent['manifest_hash'] == hashlib.sha256(manifest.encode()).hexdigest()
+    assert agent['raw_manifest_hash'] == hashlib.sha256(manifest.encode()).hexdigest()
+    canonical = json.loads(manifest)
+    canonical['executor_address'] = agent['executor_address']
+    assert agent['manifest_hash'] == hashlib.sha256(json.dumps(canonical,sort_keys=True,separators=(',', ':')).encode()).hexdigest()
     assert agent['manifest'] == manifest
     from genlayer import Address
     assert agent['operator'] == str(Address(hx(direct_alice)))
@@ -78,7 +81,7 @@ def test_loss_is_verified_and_recorded_once(registry, direct_vm, direct_bob, dir
     policy = {}
     view = SimpleNamespace(get_settlement=lambda _: policy, get_operator_record=lambda op:json.loads(registry.losses.get(op, '{"claims":0,"paid":"0"}')))
     from genlayer import gl
-    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda: view)):
+    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs: view)):
         with direct_vm.expect_revert('not settled'):
             registry.sync_loss('p1')
         policy.update({'operator':hx(direct_alice), 'paid':'20'})
@@ -86,3 +89,54 @@ def test_loss_is_verified_and_recorded_once(registry, direct_vm, direct_bob, dir
         assert registry.get_loss_record(hx(direct_alice)) == {'claims':1, 'paid':'20'}
         with direct_vm.expect_revert('already recorded'):
             registry.sync_loss('p1')
+
+
+def test_whitespace_and_key_order_cannot_create_another_identity(registry, manifest, direct_vm):
+    aid=registry.register_agent(manifest,['https://EXAMPLE.org:443/history#fragment'])
+    assert registry.get_agent(aid)['history_urls']==['https://example.org/history']
+    for variant in [manifest+'\n',json.dumps(json.loads(manifest),sort_keys=True,indent=2)]:
+        with direct_vm.expect_revert('already registered'):
+            registry.register_agent(variant,['https://example.org/history'])
+
+
+def test_executor_must_authorize_operator_and_cannot_be_stolen(registry, manifest, direct_vm, direct_alice, direct_bob, direct_charlie):
+    data=json.loads(manifest);data['executor_address']=hx(direct_bob)
+    with direct_vm.expect_revert('authorize'):
+        registry.register_agent(json.dumps(data),['https://example.org/history'])
+    with direct_vm.prank(direct_bob):registry.authorize_operator(hx(direct_alice))
+    aid=registry.register_agent(json.dumps(data),['https://example.org/history'])
+    with direct_vm.prank(direct_bob):
+        with direct_vm.expect_revert('fixed'):registry.authorize_operator(hx(direct_charlie))
+    assert registry.get_agent(aid)['operator'] != hx(direct_charlie)
+
+
+def test_revisions_preserve_identity_and_old_manifest(registry, manifest, direct_vm, direct_bob):
+    aid=registry.register_agent(manifest,['https://example.org/history'])
+    before=registry.get_agent(aid)
+    data=json.loads(manifest);data['spend_limit_gen']=1
+    registry.revise_agent(aid,json.dumps(data),['https://example.net/history'])
+    assert registry.get_agent(aid)['id']==aid
+    assert registry.get_agent_revision(aid,before['manifest_hash'])==before
+    assert registry.get_config()['agent_count']==1
+    with direct_vm.prank(direct_bob):
+        with direct_vm.expect_revert('Only'):registry.revise_agent(aid,manifest,['https://example.org/history'])
+
+
+def test_active_policy_prevents_revision_and_reads_final_state(registry, manifest, direct_vm, direct_bob):
+    from genlayer import gl
+    from genlayer.py.public_abi import StorageType
+    aid=registry.register_agent(manifest,['https://example.org/history'])
+    registry.wire_underwriting(hx(direct_bob))
+    data=json.loads(manifest);data['spend_limit_gen']=1
+    def view(**kwargs):
+        assert kwargs['state']==StorageType.LATEST_FINAL
+        return SimpleNamespace(get_agent_policy=lambda _: {'status':'active'})
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=view)):
+        with direct_vm.expect_revert('Close existing'):
+            registry.revise_agent(aid,json.dumps(data),['https://example.org/history'])
+
+
+@pytest.mark.parametrize('url',['https://[invalid','https://example.org:444/x','https://user:pass@example.org/x','https://127.0.0.1/x','https://host.local/x','https://example.org/has space','https://example.org\\@host.net/x'])
+def test_rejects_malformed_or_private_history(registry, manifest, direct_vm, url):
+    with direct_vm.expect_revert('public HTTPS'):
+        registry.register_agent(manifest,[url])

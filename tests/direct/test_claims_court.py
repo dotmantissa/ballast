@@ -19,7 +19,7 @@ def court(direct_vm,direct_deploy,direct_alice,direct_bob,direct_charlie):
     agent={'id':'a1','scope':'Only spend after explicit approval. Limit 1 GEN.','history_urls':[URLS[0]],'executor_address':str(Address(hx(direct_charlie)))}
     settled={}
     view=SimpleNamespace(get_policy=lambda _:policy,get_agent=lambda _:agent,get_settlement=lambda key:settled.get(key,{}))
-    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda:view)):
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda **kwargs:view)):
         yield contract,policy,settled
 
 
@@ -190,3 +190,16 @@ def test_same_claimant_cannot_replay_incident_under_another_policy(court,direct_
     court[1]['id']='p2'
     with direct_vm.expect_revert('already claimed'):
         court[0].file_claim('p2','receipt:abc123',1,UNIT,'The registered executor spent 1 GEN without approval and caused a realized loss to my account.',URLS)
+
+
+@pytest.mark.parametrize('bad',['https://[invalid','https://example.org:444/x','https://u:p@example.org/x','https://127.0.0.1/x'])
+def test_contract_rejects_malformed_evidence(court,direct_vm,bad):
+    direct_vm.value=UNIT//100
+    with direct_vm.expect_revert('public HTTPS'):
+        court[0].file_claim('p1','receipt:abcdef',1,UNIT,'A sufficiently detailed and evidenced incident statement for the court.',[bad,URLS[1]])
+
+
+def test_default_port_and_case_do_not_count_as_different_hosts(court,direct_vm):
+    direct_vm.value=UNIT//100
+    with direct_vm.expect_revert('two source hosts'):
+        court[0].file_claim('p1','receipt:abcdef',1,UNIT,'A sufficiently detailed and evidenced incident statement for the court.',['https://example.org/a','https://EXAMPLE.org:443/b'])
