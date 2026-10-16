@@ -3,6 +3,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
+import urllib.request
 
 state_path = Path(os.environ.get('BALLAST_DEPLOYMENT_FILE', 'deployments/review-integration.json'))
 state = json.loads(state_path.read_text())
@@ -35,6 +37,17 @@ if parent:
 commit = git(*args, data=('Publish actual Studio '+phase+' evidence for '+state['caseId']+'\n').encode())
 git('update-ref', 'refs/heads/review-evidence', commit)
 subprocess.run(['git', '-c', 'credential.helper=', 'push', 'origin', commit+':refs/heads/review-evidence'], env=env, check=True)
+for path in files:
+    url = 'https://raw.githubusercontent.com/dotmantissa/ballast/' + commit + '/' + path.as_posix()
+    for attempt in range(8):
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                assert response.read() == path.read_bytes(), 'Published bytes differ'
+            break
+        except Exception:
+            if attempt == 7:
+                raise
+            time.sleep(5)
 state[phase+'Commit'] = commit
 temporary = state_path.with_suffix('.tmp')
 temporary.write_text(json.dumps(state, indent=2)+'\n')

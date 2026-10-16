@@ -1,4 +1,5 @@
 import "./rpc-transport";
+import "./studio-lock";
 import { readFile, writeFile, rename } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import {
@@ -11,7 +12,7 @@ const state = JSON.parse(await readFile(path, "utf8"));
 const key = process.env.GENLAYER_DEPLOYER_KEY as `0x${string}`;
 if (!/^0x[0-9a-f]{64}$/i.test(key ?? ""))
   throw Error("Deployment key is missing");
-const {client, submit, wait} = await transactionJournal(path + ".journal", key);
+const {client, submit, wait} = await transactionJournal(path + "." + (state.deploymentGeneration ?? "initial") + ".journal", key);
 async function save() {
   await writeFile(path + ".tmp", JSON.stringify(state, null, 2) + "\n");
   await rename(path + ".tmp", path);

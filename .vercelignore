@@ -11,3 +11,9 @@ tests/
 artifacts/
 contracts/
 scripts/
+deployments/*.journal
+deployments/*integration*.json
+.gltest_cache/
+playwright-report/
+test-results/
+coverage/

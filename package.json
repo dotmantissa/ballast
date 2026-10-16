@@ -13,8 +13,10 @@
     "lint:contracts": "genvm-lint check contracts/agent_registry.py && genvm-lint check contracts/underwriting.py && genvm-lint check contracts/claims_court.py",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate.ts",
     "deploy:contracts": "node --env-file=.env.local --import tsx scripts/deploy.ts",
-    "test:integration": "node --env-file=.env.local --import tsx scripts/integration.ts",
-    "test:browser": "playwright test"
+    "test:integration": "python3 scripts/review-workflow.py",
+    "test:browser": "playwright test",
+    "test:integration:smoke": "node --env-file=.env.local --import tsx scripts/integration.ts",
+    "verify:deployment": "node --env-file=.env.local --import tsx scripts/verify-deployment.ts"
   },
   "dependencies": {
     "next": "16.4.2",
