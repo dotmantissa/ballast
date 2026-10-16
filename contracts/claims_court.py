@@ -335,7 +335,7 @@ class ClaimsCourt(gl.Contract):
 
     @gl.public.view
     def get_bond_credit(self, account: str) -> str:
-        return str(self.credits.get(account,u256(0)))
+        return str(self.credits.get(str(Address(account)),u256(0)))
 
     @gl.public.view
     def get_claim(self, claim_id: str) -> dict:

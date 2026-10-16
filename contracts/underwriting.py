@@ -137,6 +137,7 @@ class Underwriting(gl.Contract):
             policy[tranche+'_locked'] = str(target)
 
     def _credit(self, account: str, amount: int) -> None:
+        account = str(Address(account))
         self.credits[account] = u256(int(self.credits.get(account, u256(0))) + amount)
         self.credit_total = u256(int(self.credit_total) + amount)
 
@@ -371,6 +372,7 @@ class Underwriting(gl.Contract):
 
     @gl.public.view
     def get_account(self, account: str) -> dict:
+        account = str(Address(account))
         result = {'credit':str(self.credits.get(account, u256(0)))}
         for tranche in ['junior','senior']:
             shares = int(self.shares.get(self._share_key(account,tranche), u256(0)))
