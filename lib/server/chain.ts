@@ -18,11 +18,23 @@ import type {
 import { jsonSafe } from "../receipt";
 export const addresses = deployment;
 export type ContractName = "registry" | "underwriting" | "court";
-export function chainClient(key?: `0x${string}`) {
+export function chainClient(
+  key?: `0x${string}`,
+  onSigned?: (raw: `0x${string}`) => Promise<void>,
+) {
+  const account = key ? createAccount(key) : undefined;
+  if (account && onSigned) {
+    const original = account.signTransaction;
+    account.signTransaction = async (...args) => {
+      const raw = await original(...args);
+      await onSigned(raw);
+      return raw;
+    };
+  }
   return createClient({
     chain: studionet,
     endpoint: process.env.GENLAYER_RPC_URL,
-    ...(key ? { account: createAccount(key) } : {}),
+    ...(account ? { account } : {}),
   });
 }
 export async function read<T>(
@@ -102,6 +114,12 @@ export async function getOverview(): Promise<Overview> {
         policies: policies.reverse(),
         claims: claims.reverse(),
         quotes: quotes.reverse(),
+        cursors: {
+          agents: Math.max(0, registry.agent_count - 50) || null,
+          policies: Math.max(0, dashboard.policy_count - 50) || null,
+          claims: Math.max(0, court.claim_count - 50) || null,
+          quotes: Math.max(0, dashboard.quote_count - 50) || null,
+        },
         agentCount: registry.agent_count,
         claimCount: court.claim_count,
         updatedAt: new Date().toISOString(),

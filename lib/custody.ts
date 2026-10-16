@@ -10,11 +10,11 @@ export function encryptKey(key: string, master: string, owner: string) {
     .map((v) => v.toString("hex"))
     .join(":");
 }
-export function decryptKey(
+export function decryptPayload(
   encoded: string,
   master: string,
   owner: string,
-): `0x${string}` {
+): string {
   const [iv, tag, body] = encoded.split(":").map((v) => Buffer.from(v, "hex"));
   const cipher = createDecipheriv(
     "aes-256-gcm",
@@ -26,6 +26,14 @@ export function decryptKey(
   const value = Buffer.concat([cipher.update(body), cipher.final()]).toString(
     "utf8",
   );
+  return value;
+}
+export function decryptKey(
+  encoded: string,
+  master: string,
+  owner: string,
+): `0x${string}` {
+  const value = decryptPayload(encoded, master, owner);
   if (!/^0x[a-f0-9]{64}$/i.test(value))
     throw Error("Invalid stored signing key");
   return value as `0x${string}`;

@@ -1,3 +1,4 @@
+import type { AccountRecords, RecordKind } from "./records";
 export type Agent = {
   id: string;
   name: string;
@@ -78,6 +79,7 @@ export type Dashboard = {
   quote_count: number;
 };
 export type Overview = {
+  cursors: Record<RecordKind, number | null>;
   stale?: boolean;
   dashboard: Dashboard;
   agents: Agent[];
@@ -96,6 +98,10 @@ export type Overview = {
   };
 };
 export type Operation = {
+  attempt?: number;
+  next_retry_at?: string | null;
+  retryable?: boolean;
+  needsReconciliation?: boolean;
   id: string;
   kind: string;
   status: string;
@@ -106,6 +112,12 @@ export type Operation = {
   votes: { validator: string; vote: string }[];
 };
 export type Account = {
+  records: AccountRecords;
+  unresolvedClaims: Claim[];
+  junior_available: string;
+  senior_available: string;
+  junior_generation: number;
+  senior_generation: number;
   address: string;
   balance: string;
   email: string;

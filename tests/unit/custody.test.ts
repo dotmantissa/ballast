@@ -25,3 +25,14 @@ describe("custody isolation", () => {
   it("rejects a malformed master key", () =>
     expect(() => encryptKey(key, "abc", "alice")).toThrow());
 });
+
+it("keeps signed transaction payloads encrypted and bound to an exact attempt", async () => {
+  const { decryptPayload } = await import("../../lib/custody");
+  const raw = "0x" + "ab".repeat(150);
+  const stored = encryptKey(raw, master, "alice:operation:2");
+  expect(decryptPayload(stored, master, "alice:operation:2")).toBe(raw);
+  expect(() => decryptPayload(stored, master, "alice:operation:3")).toThrow();
+  expect(() => decryptKey(stored, master, "alice:operation:2")).toThrow(
+    "Invalid stored signing key",
+  );
+});
