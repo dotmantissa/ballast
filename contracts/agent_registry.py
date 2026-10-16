@@ -79,7 +79,9 @@ class AgentRegistry(gl.Contract):
 
     @gl.public.view
     def get_loss_record(self, operator: str) -> dict:
-        return json.loads(self.losses.get(operator, '{"claims":0,"paid":"0"}'))
+        if self.underwriting:
+            return gl.get_contract_at(Address(self.underwriting)).view().get_operator_record(operator)
+        return {'claims':0, 'settled_claims':0, 'paid':'0'}
 
     @gl.public.write
     def sync_loss(self, claim_id: str) -> None:
@@ -91,8 +93,8 @@ class AgentRegistry(gl.Contract):
         if not policy:
             raise gl.vm.UserError("Claim has not settled")
         operator = policy['operator']
-        record = self.get_loss_record(operator)
-        record['claims'] += 1
+        record = json.loads(self.losses.get(operator, '{"claims":0,"paid":"0"}'))
+        record['claims'] += 1 if int(policy['paid']) > 0 else 0
         record['paid'] = str(int(record['paid']) + int(policy['paid']))
         self.losses[operator] = json.dumps(record, sort_keys=True)
         self.recorded[claim_id] = True

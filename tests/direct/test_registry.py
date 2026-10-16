@@ -74,9 +74,9 @@ def test_loss_is_verified_and_recorded_once(registry, direct_vm, direct_bob, dir
     with direct_vm.expect_revert('not wired'):
         registry.sync_loss('p1')
     registry.wire_underwriting(hx(direct_bob))
-    assert registry.get_loss_record(hx(direct_alice)) == {'claims':0, 'paid':'0'}
+    assert registry.get_config()['underwriting'] == hx(direct_bob)
     policy = {}
-    view = SimpleNamespace(get_settlement=lambda _: policy)
+    view = SimpleNamespace(get_settlement=lambda _: policy, get_operator_record=lambda op:json.loads(registry.losses.get(op, '{"claims":0,"paid":"0"}')))
     from genlayer import gl
     with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda: view)):
         with direct_vm.expect_revert('not settled'):

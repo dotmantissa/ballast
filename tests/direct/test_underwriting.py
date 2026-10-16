@@ -182,3 +182,49 @@ def test_pagination_and_missing_items(pool,direct_vm):
     for fn in [c.get_quote,c.get_policy]:
         with direct_vm.expect_revert('not found'):fn('missing')
     with direct_vm.expect_revert('No funds'):c.withdraw()
+
+
+def test_junior_first_loss_senior_protection_and_live_loss_pricing(pool,direct_vm,direct_bob,direct_charlie):
+    c,view,_=pool
+    c.wire_court(hx(direct_bob))
+    direct_vm.value=3*UNIT;c.stake('junior')
+    direct_vm.value=10*UNIT;c.stake('senior')
+    qid=quote(pool,direct_vm)
+    direct_vm.value=UNIT//2;c.bind_policy(qid)
+    d=c.get_dashboard()
+    assert d['junior']==str(3*UNIT+4*UNIT//10)
+    assert d['senior']==str(10*UNIT+UNIT//10)
+    claim={'status':'final','policy_id':qid,'operator':c.get_policy(qid)['operator'],'agent_id':'a1','payout':str(5*UNIT),'claimant':hx(direct_charlie)}
+    view.get_claim=lambda _:claim
+    c.settle_claim('waterfall')
+    d=c.get_dashboard()
+    assert d['junior']=='0' and d['senior']==str(85*UNIT//10)
+    assert d['reserved']==str(5*UNIT)
+    record=c.get_operator_record(c.get_policy(qid)['operator'])
+    assert record=={'claims':1,'settled_claims':1,'paid':str(5*UNIT)}
+    next_quote=quote(pool,direct_vm)
+    assert c.get_quote(next_quote)['rate_bps']==600
+    claim['payout']='0';c.settle_claim('denied')
+    assert c.get_operator_record(claim['operator'])['claims']==1
+    assert c.get_operator_record(claim['operator'])['settled_claims']==2
+    direct_vm.value=UNIT
+    with direct_vm.expect_revert('exhausted'):c.stake('junior')
+    c.redeem('junior',3*UNIT)
+    c.stake('junior')
+    assert c.get_dashboard()['junior']==str(UNIT)
+
+
+def test_withdraw_emits_native_transfer_and_clears_credit(pool,direct_vm,direct_alice):
+    import sys
+    from unittest.mock import MagicMock
+    c=pool[0]
+    direct_vm.value=UNIT;c.stake('senior');c.redeem('senior',UNIT)
+    emitter=MagicMock()
+    module=sys.modules['_contract_underwriting']
+    with patch.object(module,'_Recipient',return_value=emitter):
+        c.withdraw()
+    assert int(emitter.emit_transfer.call_args.kwargs['value'])==UNIT
+    from genlayer import Address
+    assert c.get_account(str(Address(hx(direct_alice))))['credit']=='0'
+    assert c.get_dashboard()['credits']=='0'
+    with direct_vm.expect_revert('No funds'):c.withdraw()

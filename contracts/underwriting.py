@@ -37,6 +37,7 @@ class Underwriting(gl.Contract):
     paid_total: u256
     credit_total: u256
     settlements: TreeMap[str, str]
+    operator_records: TreeMap[str, str]
 
     def __init__(self, registry: str):
         Address(registry)
@@ -122,7 +123,7 @@ class Underwriting(gl.Contract):
         for url in peer_urls:
             if not url.startswith('https://') or len(url) > 500:
                 raise gl.vm.UserError('Peer URLs must use HTTPS')
-        losses = registry.get_loss_record(agent['operator'])
+        losses = self.get_operator_record(agent['operator'])
         urls = agent['history_urls'] + peer_urls
         context = json.dumps({'agent':agent, 'losses':losses, 'limit':str(limit)}, sort_keys=True)
 
@@ -222,6 +223,11 @@ class Underwriting(gl.Contract):
         remaining = int(policy['remaining']) - amount
         policy.update({'status':'settled' if remaining == 0 else 'active', 'paid':str(int(policy['paid'])+amount), 'remaining':str(remaining), 'claim_id':claim_id})
         self.settlements[claim_id] = json.dumps({'id':claim_id, 'operator':policy['operator'], 'policy_id':policy['id'], 'paid':str(amount)}, sort_keys=True)
+        record = self.get_operator_record(policy['operator'])
+        record['settled_claims'] += 1
+        record['claims'] += 1 if amount > 0 else 0
+        record['paid'] = str(int(record['paid']) + amount)
+        self.operator_records[policy['operator']] = json.dumps(record, sort_keys=True)
         self.policies[policy['id']] = json.dumps(policy, sort_keys=True)
 
     @gl.public.write
@@ -236,6 +242,10 @@ class Underwriting(gl.Contract):
         self.reserved = u256(int(self.reserved) - int(policy['remaining']))
         policy['remaining'] = '0'
         self.policies[policy_id] = json.dumps(policy, sort_keys=True)
+
+    @gl.public.view
+    def get_operator_record(self, operator: str) -> dict:
+        return json.loads(self.operator_records.get(operator, '{"claims":0,"settled_claims":0,"paid":"0"}'))
 
     @gl.public.view
     def get_settlement(self, claim_id: str) -> dict:

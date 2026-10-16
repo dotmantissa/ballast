@@ -153,3 +153,24 @@ def test_missing_claim_page_and_empty_bond_credit(court,direct_vm):
     with direct_vm.expect_revert('not found'):court[0].get_claim('missing')
     with direct_vm.expect_revert('Invalid page'):court[0].list_claims(-1,10)
     with direct_vm.expect_revert('No bond credit'):court[0].withdraw_bonds()
+
+
+def test_boolean_validator_requires_independent_exact_agreement(court,direct_vm):
+    cid=file(court,direct_vm);mock_finding(direct_vm,'harm',True)
+    court[0].resolve_finding(cid,'harm')
+    assert direct_vm.run_validator()
+    mock_finding(direct_vm,'harm',False)
+    assert not direct_vm.run_validator()
+
+
+def test_bond_withdrawal_emits_exact_amount_once(court,direct_vm):
+    import sys
+    from unittest.mock import MagicMock
+    cid=file(court,direct_vm);resolve(court,direct_vm,cid)
+    direct_vm.warp('2035-01-01T00:00:00Z');court[0].finalize_claim(cid)
+    c=court[0].get_claim(cid);emitter=MagicMock()
+    with patch.object(sys.modules['_contract_claims_court'],'_Recipient',return_value=emitter):
+        court[0].withdraw_bonds()
+    assert int(emitter.emit_transfer.call_args.kwargs['value'])==UNIT//100
+    assert court[0].get_bond_credit(c['claimant'])=='0'
+    with direct_vm.expect_revert('No bond credit'):court[0].withdraw_bonds()
