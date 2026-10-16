@@ -1,3 +1,5 @@
-contract_path: contracts/
+paths:
+  contracts: contracts
 networks:
+  default: studionet
   studionet: {}
