@@ -18,6 +18,7 @@ import {
 } from "../operation-recovery";
 import type { CalldataEncodable } from "genlayer-js/types";
 import { db } from "./db";
+import { previousPool } from "./legacy-capital";
 import { getAccount, rateLimit } from "./accounts";
 import { HttpError } from "./auth";
 import {
@@ -46,7 +47,7 @@ export async function submitAction(
   const sql = db();
   const account = await getAccount(user);
   const fingerprint = createHash("sha256")
-    .update(JSON.stringify({ deployment: addresses.underwriting, action }))
+    .update(JSON.stringify({ deployment: addresses.underwriting, previousPool, action }))
     .digest("hex");
   let [prior] =
     await sql`SELECT * FROM ballast_operations WHERE user_id=${user.id} AND idempotency_key=${idempotencyKey}`;
@@ -207,10 +208,12 @@ export async function submitAction(
         args = [action.tranche];
         value = parseUnits(action.amount, 18);
         break;
+      case "redeem_legacy":
       case "redeem":
         method = "redeem";
         args = [action.tranche, BigInt(action.shares)];
         break;
+      case "withdraw_legacy":
       case "withdraw":
         method = "withdraw";
         break;
@@ -290,7 +293,7 @@ export async function submitAction(
       );
     await sql`UPDATE ballast_operations SET status='submitting',updated_at=now() WHERE id=${id} AND attempt=${attempt}`;
     const hash = await client.writeContract({
-      address: addresses[contract] as `0x${string}`,
+      address: ["redeem_legacy", "withdraw_legacy"].includes(action.kind) ? previousPool : addresses[contract] as `0x${string}`,
       functionName: method,
       args,
       value,

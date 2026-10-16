@@ -3302,3 +3302,12 @@ td strong {
     flex-basis: 100%;
   }
 }
+
+.legacy-capital { margin-bottom: 2rem; }
+.legacy-capital h2 { display: flex; align-items: center; gap: .65rem; }
+.legacy-capital .section-heading p { max-width: 46rem; }
+.legacy-positions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; padding: 1.4rem 0; }
+.legacy-positions > div { display: grid; justify-items: start; align-content: start; gap: .75rem; min-width: 0; }
+.legacy-positions strong { font-size: 1.35rem; }
+.legacy-positions .button { white-space: normal; text-align: left; }
+@media (max-width: 700px) { .legacy-positions { grid-template-columns: 1fr; } }

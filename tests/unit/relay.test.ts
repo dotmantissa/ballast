@@ -338,3 +338,9 @@ describe("durable relay attempts", () => {
     expect(model.lease).toBe("new-owner");
   });
 });
+
+it.each(["redeem_legacy","withdraw_legacy"] as const)("routes %s only to the archived pool with zero value",async(kind)=>{
+  const previous=(await import("../../deployments/previous-studio.json")).default;
+  await submitAction(user,kind==="redeem_legacy"?{kind,tranche:"junior",shares:"1"}:{kind},key);
+  expect(model.write).toHaveBeenCalledWith(expect.objectContaining({address:previous.underwriting,functionName:kind==="redeem_legacy"?"redeem":"withdraw",value:0n}));
+});

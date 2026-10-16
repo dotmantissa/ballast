@@ -125,7 +125,17 @@ export type Operation = {
   created_at: string;
   votes: { validator: string; vote: string }[];
 };
+export type LegacyCapital = {
+  address: string;
+  available: boolean;
+  junior_shares?: string;
+  senior_shares?: string;
+  junior_value?: string;
+  senior_value?: string;
+  credit?: string;
+};
 export type Account = {
+  legacyCapital?: LegacyCapital | null;
   deployment: { court: string; underwriting: string };
   records: AccountRecords;
   unresolvedClaims: Claim[];

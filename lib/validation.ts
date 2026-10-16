@@ -60,6 +60,8 @@ export const actionSchema = z.discriminatedUnion("kind", [
     shares: z.string().regex(/^[1-9]\d{0,77}$/),
   }),
   z.object({ kind: z.literal("withdraw") }),
+  z.object({kind:z.literal("redeem_legacy"),tranche:z.enum(["junior","senior"]),shares:z.string().regex(/^[1-9]\d{0,77}$/)}),
+  z.object({kind:z.literal("withdraw_legacy")}),
   z.object({ kind: z.literal("withdraw_bonds") }),
   z.object({
     kind: z.literal("claim"),

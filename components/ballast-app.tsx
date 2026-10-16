@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Logo } from "./logo";
+import { LegacyCapitalPanel } from "./legacy-capital-panel";
 import { EvidenceLink } from "./evidence-link";
 import { RecordDesk, type AnyRecord } from "./record-desk";
 import {
@@ -75,6 +76,8 @@ const operationNames: Record<string, string> = {
   bind: "Bind coverage",
   stake: "Contribute capital",
   redeem: "Redeem shares",
+  redeem_legacy: "Redeem earlier pool shares",
+  withdraw_legacy: "Withdraw earlier pool credit",
   withdraw: "Withdraw pool credit",
   withdraw_bonds: "Withdraw bond credit",
   claim: "File a claim",
@@ -1325,6 +1328,8 @@ export function BallastApp() {
                   </button>
                 }
               />
+              {!account && <p className="field-note">Have capital in the earlier pool? Sign in to access its redemption and withdrawal controls.</p>}
+              <LegacyCapitalPanel capital={account?.legacyCapital} busy={busy !== null || !!account?.operations.some(o => ["redeem_legacy", "withdraw_legacy"].includes(o.kind) && ![...TERMINAL_STATUSES, "error"].includes(o.status))} onAction={(action) => quick(action, "legacy")} />
               <div className="capital-summary">
                 <div>
                   <span>Total value governed</span>
