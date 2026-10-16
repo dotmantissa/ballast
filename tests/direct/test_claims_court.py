@@ -376,8 +376,23 @@ def test_account_index_recovers_old_unresolved_claim_past_public_window(court,di
     assert latest['total']==53 and older['next_cursor'] is None
     # Removing a non-last entry must retain all other unresolved cases and their positions.
     c.withdraw_claim(first)
+    assert c.get_account_cases(account)['unresolved']['total']==53
+    court[2][first]={'policy_id':'p1','paid':'0'}
+    c.acknowledge_settlement(first)
     assert c.get_account_cases(account)['unresolved']['total']==52
     one=c.list_account_claims(account,True,-1,1)['items'][0]
     c.withdraw_claim(one['id'])
+    court[2][one['id']]={'policy_id':one['policy_id'],'paid':'0'}
+    c.acknowledge_settlement(one['id'])
     assert c.get_account_cases(account)['unresolved']['total']==51
     assert c.get_account_cases(account)['claims']['total']==53
+
+
+def test_final_decision_stays_recoverable_until_financial_settlement(court,direct_vm):
+    cid=file(court,direct_vm);court[0].withdraw_claim(cid)
+    account=court[0].get_claim(cid)['claimant']
+    assert court[0].get_account_cases(account)['unresolved']['items'][0]['id']==cid
+    with direct_vm.expect_revert('Finalized pool'):court[0].acknowledge_settlement(cid)
+    court[2][cid]={'policy_id':'p1','paid':'0'};court[0].acknowledge_settlement(cid)
+    assert court[0].get_claim(cid)['status']=='settled'
+    assert court[0].get_account_cases(account)['unresolved']['items']==[]

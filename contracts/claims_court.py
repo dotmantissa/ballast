@@ -188,7 +188,7 @@ class ClaimsCourt(gl.Contract):
                               'appeal_reason':appeal_reason}, sort_keys=True)
         urls = list(dict.fromkeys(claim['effective_evidence_urls'] + agent['history_urls']))
         rubrics = {
-            'harm':'Return a boolean value. True ONLY if sources establish a realized, quantified positive loss to this claimant, for the exact incident_ref transaction on GenLayer Studio. Independently establish the event UTC Unix timestamp, not the submitted timestamp. It must equal incident_at and be between policy.starts_at and policy.ends_at. Return the actual total claimant loss as a decimal integer string loss_wei in GEN base units (10^18 per GEN), occurred_at as an integer Unix second, event_ref as the exact transaction hash, and claimant as the harmed address. An allegation alone, hypothetical loss, operator loss, fiat conversion or an event outside these dates is false. Refuse aliases to another transaction or an already compensated event.',
+            'harm':'Return a boolean value. True ONLY if sources establish a realized, quantified debit of this claimant’s own native GEN funds in the exact incident_ref transaction on GenLayer Studio. This unique debit is the loss identity. Do not substitute an invoice, missing payment, or another related transaction for that debit. Subtract funds already returned. Independently establish the event UTC Unix timestamp, not the submitted timestamp. It must equal incident_at and be between policy.starts_at and policy.ends_at. Return the actual total claimant loss as a decimal integer string loss_wei in GEN base units (10^18 per GEN), occurred_at as an integer Unix second, event_ref as the exact transaction hash, and claimant as the harmed address. An allegation alone, hypothetical loss, operator loss, fiat conversion or an event outside these dates is false. Refuse aliases to another transaction or an already compensated event.',
             'causation':'Return a boolean value. True ONLY if public execution records establish that the registered executor caused this exact incident_ref transaction and claimant loss, rather than the counterparty, an unrelated actor or a fabricated action. Verify actual addresses and event time against the supplied authoritative policy dates. Require corroboration by at least two independent authoritative sources. Verify any claimed signature, not just text claiming one.',
             'scope':'Return a boolean value. True means this exact transaction WAS permitted by the insured immutable manifest revision and policy dates. False means its spend exceeded the limit or required approval that it did not have. Missing proof of a scope breach resolves as true. Out of scope spend is the covered peril; scope true excludes it.',
             'payout':'Return an integer value from 0,25,50,75,100. Determine the supported fraction of requested amount, capped by verified_loss minus prior_compensation.paid. 0 if harm or causation is false or scope is true, or this exact claimant event was already compensated. Use all effective case evidence including prior appeals. No invented loss, fiat conversion, punitive damages or hypothetical loss. Missing proof is 0.',
@@ -331,7 +331,6 @@ class ClaimsCourt(gl.Contract):
         claimant = claim['claimant']
         self.credits[claimant] = u256(int(self.credits.get(claimant,u256(0))) + int(claim['claim_bond']))
         self.claims[claim['id']] = json.dumps(claim, sort_keys=True)
-        self._remove_open(claim)
 
     @gl.public.write
     def close_unresolved_claim(self, claim_id: str) -> None:
@@ -363,6 +362,17 @@ class ClaimsCourt(gl.Contract):
         recipient = claim['claimant'] if int(claim['payout']) > 0 else claim['operator']
         self.credits[recipient] = u256(int(self.credits.get(recipient,u256(0))) + int(claim['claim_bond']))
         self.claims[claim_id] = json.dumps(claim, sort_keys=True)
+
+    @gl.public.write
+    def acknowledge_settlement(self, claim_id: str) -> None:
+        claim = self.get_claim(claim_id)
+        if claim['status'] != 'final':
+            raise gl.vm.UserError('Only an unsettled final claim can be acknowledged')
+        settlement = self._pool().get_settlement(claim_id)
+        if not settlement or settlement['policy_id'] != claim['policy_id']:
+            raise gl.vm.UserError('Finalized pool settlement is required')
+        claim['status'] = 'settled'
+        self.claims[claim_id] = json.dumps(claim,sort_keys=True)
         self._remove_open(claim)
 
     @gl.public.write

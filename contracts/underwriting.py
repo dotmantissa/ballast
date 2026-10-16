@@ -327,6 +327,7 @@ class Underwriting(gl.Contract):
         record['paid'] = str(int(record['paid']) + amount)
         self.operator_records[policy['operator']] = json.dumps(record, sort_keys=True)
         self.policies[policy['id']] = json.dumps(policy, sort_keys=True)
+        gl.get_contract_at(Address(self.court)).emit(on='finalized').acknowledge_settlement(claim_id)
 
     @gl.public.write
     def expire_policy(self, policy_id: str) -> None:

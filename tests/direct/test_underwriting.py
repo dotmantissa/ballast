@@ -21,7 +21,7 @@ def pool(direct_vm, direct_deploy, direct_alice, direct_bob):
     policy_claim = {'value':''}
     settlements = {}
     view = SimpleNamespace(get_agent=lambda _:agent, get_loss_record=lambda _:{'claims':0,'paid':'0'}, get_policy_claim=lambda _:policy_claim['value'], get_settlement=lambda key:settlements.get(key, {}))
-    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs:view)):
+    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs:view,emit=lambda **kwargs:SimpleNamespace(acknowledge_settlement=lambda _:None))):
         yield contract, view, policy_claim
 
 
@@ -299,7 +299,7 @@ def test_settlement_uses_finalized_court_storage(pool,direct_vm,direct_bob,direc
     def select(**kwargs):
         assert kwargs.get('state')==StorageType.LATEST_FINAL
         return view
-    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=select)):
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=select,emit=lambda **kwargs:SimpleNamespace(acknowledge_settlement=lambda _:None))):
         c.settle_claim('final-state')
 
 
