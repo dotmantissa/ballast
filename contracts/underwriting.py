@@ -63,6 +63,7 @@ class Underwriting(gl.Contract):
     settlements: TreeMap[str, str]
     operator_records: TreeMap[str, str]
     agent_policy: TreeMap[str, str]
+    event_records: TreeMap[str, str]
 
     def __init__(self, registry: str):
         Address(registry)
@@ -139,7 +140,7 @@ class Underwriting(gl.Contract):
     def quote_policy(self, agent_id: str, limit: int, peer_urls: list[str]) -> str:
         if not UNIT // 10 <= limit <= CAP:
             raise gl.vm.UserError('Cover must be between 0.1 and 100 GEN')
-        registry = gl.get_contract_at(Address(self.registry)).view()
+        registry = gl.get_contract_at(Address(self.registry)).view(state=StorageType.LATEST_FINAL)
         agent = registry.get_agent(agent_id)
         if Address(agent['operator']) != gl.message.sender_address:
             raise gl.vm.UserError('Only the registered operator can request cover')
@@ -196,8 +197,11 @@ class Underwriting(gl.Contract):
             raise gl.vm.UserError('Only the quoted operator may bind')
         if quote['bound'] or quote['expires_at'] < _now() or quote['band'] == 'declined':
             raise gl.vm.UserError('Quote is not available')
+        current_agent = gl.get_contract_at(Address(self.registry)).view(state=StorageType.LATEST_FINAL).get_agent(quote['agent_id'])
+        if current_agent['manifest_hash'] != quote['manifest_hash']:
+            raise gl.vm.UserError('Manifest changed; request a fresh quote')
         prior_id = self.agent_policy.get(quote['agent_id'], '')
-        if prior_id and self.get_policy(prior_id)['status'] == 'active':
+        if prior_id and self.get_policy(prior_id)['status'] in ['active', 'runoff']:
             raise gl.vm.UserError('This agent already has active cover; close it before binding another policy')
         premium = int(quote['premium']); limit = int(quote['limit'])
         if int(gl.message.value) != premium:
@@ -226,17 +230,34 @@ class Underwriting(gl.Contract):
             raise gl.vm.UserError('Court is not wired')
         if claim_id in self.settlements:
             raise gl.vm.UserError('Claim is already settled')
-        claim = gl.get_contract_at(Address(self.court)).view().get_claim(claim_id)
+        claim = gl.get_contract_at(Address(self.court)).view(state=StorageType.LATEST_FINAL).get_claim(claim_id)
         if claim['status'] != 'final':
             raise gl.vm.UserError('Claim is not final')
         policy = self.get_policy(claim['policy_id'])
-        if policy['status'] != 'active':
+        if policy['status'] not in ['active','runoff']:
             raise gl.vm.UserError('Policy is already closed')
         if claim['operator'] != policy['operator'] or claim['agent_id'] != policy['agent_id']:
             raise gl.vm.UserError('Claim does not match policy')
+        if claim['id'] != claim_id:
+            raise gl.vm.UserError('Claim identifier does not match')
         amount = int(claim['payout'])
-        if amount < 0 or amount > int(policy['remaining']):
-            raise gl.vm.UserError('Payout exceeds cover')
+        if amount < 0 or amount > int(policy['remaining']) or amount > int(claim['amount']):
+            raise gl.vm.UserError('Payout exceeds cover or requested loss')
+        expected_key = hashlib.sha256(('genlayer-studio:' + claim['incident_ref'].lower() + ':' + claim['claimant'].lower()).encode()).hexdigest()
+        if claim['event_key'] != expected_key or not re.fullmatch(r'0x[0-9a-f]{64}', claim['incident_ref']):
+            raise gl.vm.UserError('Claim has no canonical transaction identity')
+        event = self.get_event_record(expected_key)
+        if amount > 0:
+            facts = claim['findings']
+            if not facts.get('harm') or not facts.get('causation') or facts.get('scope') is not False:
+                raise gl.vm.UserError('Findings do not establish covered harm')
+            if not policy['starts_at'] <= claim['verified_incident_at'] <= policy['ends_at'] or claim['verified_incident_at'] != claim['incident_at']:
+                raise gl.vm.UserError('Evidenced incident is outside the coverage period')
+            if int(event['paid']) > 0:
+                raise gl.vm.UserError('This claimant loss has already been compensated')
+            if int(event['paid']) + amount > int(claim['verified_loss']):
+                raise gl.vm.UserError('Compensation exceeds the independently evidenced loss')
+            self.event_records[expected_key] = json.dumps({'paid':str(int(event['paid'])+amount), 'loss':claim['verified_loss'], 'claim_id':claim_id, 'incident_ref':claim['incident_ref'], 'claimant':claim['claimant']}, sort_keys=True)
         junior = int(self.nav.get('junior', u256(0)))
         senior = int(self.nav.get('senior', u256(0)))
         first_loss = min(amount, junior)
@@ -248,7 +269,11 @@ class Underwriting(gl.Contract):
         self.paid_total = u256(int(self.paid_total) + amount)
         self._credit(claim['claimant'], amount)
         remaining = int(policy['remaining']) - amount
-        policy.update({'status':'settled' if remaining == 0 else 'active', 'paid':str(int(policy['paid'])+amount), 'remaining':str(remaining), 'claim_id':claim_id})
+        runoff = policy['status'] == 'runoff'
+        if runoff:
+            self.reserved = u256(int(self.reserved) - remaining)
+            remaining = 0
+        policy.update({'status':('expired' if runoff else 'settled') if remaining == 0 else 'active', 'paid':str(int(policy['paid'])+amount), 'remaining':str(remaining), 'claim_id':claim_id})
         self.settlements[claim_id] = json.dumps({'id':claim_id, 'operator':policy['operator'], 'policy_id':policy['id'], 'paid':str(amount)}, sort_keys=True)
         record = self.get_operator_record(policy['operator'])
         record['settled_claims'] += 1
@@ -260,15 +285,29 @@ class Underwriting(gl.Contract):
     @gl.public.write
     def expire_policy(self, policy_id: str) -> None:
         policy = self.get_policy(policy_id)
-        if policy['status'] != 'active' or _now() <= policy['ends_at'] + 7*86400:
+        if policy['status'] not in ['active','runoff'] or _now() <= policy['ends_at'] + 7*86400:
             raise gl.vm.UserError('Policy cannot expire yet')
-        claim_id = gl.get_contract_at(Address(self.court)).view().get_policy_claim(policy_id)
+        court = gl.get_contract_at(Address(self.court)).view(state=StorageType.LATEST_FINAL)
+        claim_id = court.get_policy_claim(policy_id)
         if claim_id and claim_id not in self.settlements:
-            raise gl.vm.UserError('Settle the existing claim first')
-        policy['status'] = 'expired'
-        self.reserved = u256(int(self.reserved) - int(policy['remaining']))
-        policy['remaining'] = '0'
+            claim = court.get_claim(claim_id)
+            keep = min(int(claim['amount']), int(policy['remaining']))
+            release = int(policy['remaining']) - keep
+            policy.update({'status':'runoff', 'remaining':str(keep), 'claim_id':claim_id})
+            self.reserved = u256(int(self.reserved) - release)
+        else:
+            self.reserved = u256(int(self.reserved) - int(policy['remaining']))
+            policy.update({'status':'expired', 'remaining':'0'})
         self.policies[policy_id] = json.dumps(policy, sort_keys=True)
+
+    @gl.public.view
+    def get_event_record(self, event_key: str) -> dict:
+        return json.loads(self.event_records.get(event_key, '{"paid":"0","loss":"0"}'))
+
+    @gl.public.view
+    def get_agent_policy(self, agent_id: str) -> dict:
+        policy_id = self.agent_policy.get(agent_id, '')
+        return self.get_policy(policy_id) if policy_id else {}
 
     @gl.public.view
     def get_operator_record(self, operator: str) -> dict:
