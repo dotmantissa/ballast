@@ -13,3 +13,7 @@ playwright-report/
 test-results/
 coverage/
 .vercel/
+.vercel
+
+artifacts/
+deployments/integration.json
