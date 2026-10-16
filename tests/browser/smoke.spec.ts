@@ -21,6 +21,7 @@ test("desktop navigation, live data and persisted theme", async ({ page }) => {
   await page.screenshot({
     path: "/tmp/ballast-desktop-dark.png",
     fullPage: true,
+    animations: "disabled",
   });
   await page.getByRole("button", { name: "Capital pool", exact: true }).click();
   await expect(page.locator("h1")).toHaveText(
@@ -59,7 +60,10 @@ test("email is the only login method and the dialog can close", async ({
   await expect(
     dialog.getByText(/connect.*wallet|google|apple|twitter/i),
   ).toHaveCount(0);
-  await page.screenshot({ path: "/tmp/ballast-email.png" });
+  await page.screenshot({
+    path: "/tmp/ballast-email.png",
+    animations: "disabled",
+  });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });
@@ -81,6 +85,7 @@ test("mobile layout and menu have no horizontal overflow", async ({ page }) => {
   await page.screenshot({
     path: "/tmp/ballast-mobile-capital.png",
     fullPage: true,
+    animations: "disabled",
   });
   await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByRole("button", { name: "Overview", exact: true }).click();

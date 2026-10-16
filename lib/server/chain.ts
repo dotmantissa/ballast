@@ -59,7 +59,10 @@ export async function getOverview(): Promise<Overview> {
       entry?.payload &&
       new Date(entry.refresh_after).getTime() > Date.now()
     ) {
-      cached = { ...entry.payload, stale: Date.now()-Date.parse(entry.payload.updatedAt)>120000 } as Overview;
+      cached = {
+        ...entry.payload,
+        stale: Date.now() - Date.parse(entry.payload.updatedAt) > 120000,
+      } as Overview;
       return cached;
     }
     const lease =

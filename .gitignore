@@ -17,3 +17,5 @@ coverage/
 
 artifacts/
 deployments/integration.json
+
+next-env.d.ts

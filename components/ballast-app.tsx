@@ -103,11 +103,7 @@ export function BallastApp() {
       const data = await res.json();
       if (!res.ok) throw Error(data.error);
       setOverview(data);
-      setLoadError(
-        data.stale
-          ? "Studio could not refresh right now. Showing the last verified state."
-          : "",
-      );
+      setLoadError(data.stale ? "Studio could not refresh right now." : "");
     } catch {
       setLoadError(
         "The network is taking a breath. We could not load the latest pool state.",

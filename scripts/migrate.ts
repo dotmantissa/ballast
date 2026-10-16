@@ -1,5 +1,6 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
 if (!process.env.DATABASE_URL) throw Error("DATABASE_URL is required");
+neonConfig.fetchEndpoint = (host) => `https://${host}/sql`;
 const sql = neon(process.env.DATABASE_URL);
 await sql.transaction([
   sql`CREATE TABLE IF NOT EXISTS ballast_cache (key text PRIMARY KEY,payload jsonb,refresh_after timestamptz NOT NULL DEFAULT now(),lease_until timestamptz NOT NULL DEFAULT now())`,
