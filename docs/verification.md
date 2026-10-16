@@ -31,3 +31,7 @@ The public Next.js app and backend run on Vercel at https://ballast-cover.vercel
 The observed Studio allowance was 500 requests per hour from this environment. Local Node HTTP requests also timed out while curl to the same endpoint succeeded. Local scripts support `BALLAST_CURL_RPC=1` to send the same SDK JSON RPC requests through curl, with request bodies on stdin. This option is confined to local tooling. Production uses the SDK’s ordinary HTTP transport.
 
 The final production deployment is `dpl_BHWbrZ2t856R5Lr7EqYaZF9UEiML`. A separate API assertion confirmed that the hosted app uses all three final contract addresses, reports fresh network state and contains no seeded agents, claims or capital.
+
+## Clean runner SDK pin
+
+The first GitHub run exposed an upstream test loader issue: gltest 0.29.2 requests `genvm-universal.tar.xz`, while newer GenVM releases renamed that asset. Direct tests now explicitly select the downloadable v0.2.16 SDK bundle, which contains the same concrete runner pinned by the contracts. Its local archive matches the official SHA 256 digest. All 63 tests passed again with that explicit selection. No contract or hosted application behavior changed.
