@@ -125,7 +125,7 @@ def test_binding_reserves_full_limit_and_rejects_reuse(pool,direct_vm,direct_bob
     d=c.get_dashboard()
     assert d['reserved']==str(10*UNIT)
     assert d['premiums']==str(UNIT//2)
-    assert d['available']==str(10*UNIT+UNIT//2)
+    assert d['available']==str(10*UNIT)
     assert c.list_policies(0,10)[0]['manifest_hash']=='abc'
     with direct_vm.expect_revert('not available'): c.bind_policy(qid)
     with direct_vm.expect_revert('reserved'): c.redeem('junior',20*UNIT)
@@ -223,9 +223,8 @@ def test_junior_first_loss_senior_protection_and_live_loss_pricing(pool,direct_v
     assert c.get_operator_record(claim['operator'])['claims']==1
     assert c.get_operator_record(claim['operator'])['settled_claims']==2
     direct_vm.value=UNIT
-    with direct_vm.expect_revert('exhausted'):c.stake('junior')
-    c.redeem('junior',3*UNIT)
     c.stake('junior')
+    assert c.get_dashboard()['junior_generation']==1
     assert c.get_dashboard()['junior']==str(UNIT)
 
 
@@ -302,3 +301,62 @@ def test_settlement_uses_finalized_court_storage(pool,direct_vm,direct_bob,direc
         return view
     with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=select)):
         c.settle_claim('final-state')
+
+
+def test_junior_cannot_take_premium_and_leave_senior_with_its_risk(pool,direct_vm,direct_bob,direct_alice):
+    c=pool[0];c.wire_court(hx(direct_bob))
+    direct_vm.value=100*UNIT;c.stake('senior')
+    direct_vm.value=UNIT;c.stake('junior')
+    qid=quote(pool,direct_vm);direct_vm.value=UNIT//2;c.bind_policy(qid)
+    d=c.get_dashboard()
+    assert d['junior']==str(14*UNIT//10) and d['junior_locked']==d['junior']
+    assert d['senior_locked']==str(91*UNIT//10)
+    with direct_vm.expect_revert('reserved in this tranche'):c.redeem('junior',UNIT)
+    assert c.get_dashboard()['junior']==str(14*UNIT//10)
+    # Profits unlock only when no policy liability remains.
+    direct_vm.warp('2035-01-01T00:00:00Z');c.expire_policy(qid)
+    c.redeem('junior',UNIT)
+    assert c.get_account(hx(direct_alice))['credit']==str(14*UNIT//10)
+
+
+def test_new_capital_cannot_inherit_wiped_generation_shares(pool,direct_vm,direct_bob,direct_charlie,direct_alice):
+    c,view,_=pool;c.wire_court(hx(direct_bob))
+    direct_vm.value=UNIT;c.stake('junior')
+    direct_vm.value=20*UNIT;c.stake('senior')
+    qid=quote(pool,direct_vm);direct_vm.value=UNIT//2;c.bind_policy(qid)
+    claim=claim_record(c,qid,'wipe',hx(direct_charlie),2*UNIT)
+    view.get_claim=lambda _:claim;c.settle_claim('wipe')
+    assert c.get_dashboard()['junior']=='0'
+    with direct_vm.prank(direct_charlie):
+        direct_vm.value=UNIT;c.stake('junior')
+    assert c.get_dashboard()['junior_generation']==1
+    assert c.get_account(hx(direct_charlie))['junior_value']==str(UNIT)
+    assert c.get_account(hx(direct_alice))['junior_shares']=='0'
+    old=c.get_generation_holding(hx(direct_alice),'junior',0)
+    assert old=={'shares':str(UNIT),'value':'0','generation':0,'current':False}
+    with direct_vm.expect_revert('Invalid share'):c.redeem('junior',UNIT)
+
+
+def test_policy_allocations_keep_other_liabilities_funded(pool,direct_vm,direct_bob,direct_charlie):
+    c,view,_=pool;c.wire_court(hx(direct_bob))
+    direct_vm.value=4*UNIT;c.stake('junior')
+    direct_vm.value=30*UNIT;c.stake('senior')
+    first=quote(pool,direct_vm);direct_vm.value=UNIT//2;c.bind_policy(first)
+    mock_risk(direct_vm);second=c.quote_policy('a2',10*UNIT,URLS[1:]);direct_vm.value=UNIT//2;c.bind_policy(second)
+    original_second=c.get_policy(second)
+    claim=claim_record(c,first,'loss-first',hx(direct_charlie),5*UNIT)
+    view.get_claim=lambda _:claim;c.settle_claim('loss-first')
+    assert c.get_policy(second)['junior_locked']==original_second['junior_locked']
+    assert c.get_policy(second)['senior_locked']==original_second['senior_locked']
+    d=c.get_dashboard()
+    assert int(d['junior_locked'])<=int(d['junior'])
+    assert int(d['senior_locked'])<=int(d['senior'])
+    assert int(d['junior_locked'])+int(d['senior_locked'])>=int(d['reserved'])
+    assert int(d['tvg'])==int(d['junior'])+int(d['senior'])+int(d['credits'])
+
+
+def test_stale_manifest_quote_cannot_bind(pool,direct_vm,direct_bob):
+    c,view,_=pool;c.wire_court(hx(direct_bob));qid=quote(pool,direct_vm)
+    before=view.get_agent('a1');view.get_agent=lambda _: {**before,'manifest_hash':'new-revision'}
+    direct_vm.value=UNIT//2
+    with direct_vm.expect_revert('fresh quote'):c.bind_policy(qid)

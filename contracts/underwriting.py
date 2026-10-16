@@ -64,6 +64,9 @@ class Underwriting(gl.Contract):
     operator_records: TreeMap[str, str]
     agent_policy: TreeMap[str, str]
     event_records: TreeMap[str, str]
+    locked: TreeMap[str, u256]
+    generations: TreeMap[str, u256]
+    exhausted_supply: TreeMap[str, u256]
 
     def __init__(self, registry: str):
         Address(registry)
@@ -95,11 +98,14 @@ class Underwriting(gl.Contract):
         nav = int(self.nav.get(tranche, u256(0)))
         supply = int(self.supply.get(tranche, u256(0)))
         if supply > 0 and nav == 0:
-            raise gl.vm.UserError('Tranche exhausted; redeem old shares first')
+            generation = int(self.generations.get(tranche,u256(0)))
+            self.exhausted_supply[tranche+':'+str(generation)] = u256(supply)
+            self.generations[tranche] = u256(generation+1)
+            supply = 0
         minted = value if supply == 0 else value * supply // nav
         if minted == 0:
             raise gl.vm.UserError('Stake too small')
-        key = str(gl.message.sender_address) + ':' + tranche
+        key = self._share_key(str(gl.message.sender_address), tranche)
         self.nav[tranche] = u256(nav + value)
         self.supply[tranche] = u256(supply + minted)
         self.shares[key] = u256(int(self.shares.get(key, u256(0))) + minted)
@@ -107,20 +113,28 @@ class Underwriting(gl.Contract):
     @gl.public.write
     def redeem(self, tranche: str, shares: int) -> None:
         self._tranche(tranche)
-        key = str(gl.message.sender_address) + ':' + tranche
+        key = self._share_key(str(gl.message.sender_address), tranche)
         owned = int(self.shares.get(key, u256(0)))
         if shares <= 0 or shares > owned:
             raise gl.vm.UserError('Invalid share amount')
         supply = int(self.supply.get(tranche, u256(0)))
         nav = int(self.nav.get(tranche, u256(0)))
         amount = shares * nav // supply
-        total_nav = int(self.nav.get('junior', u256(0))) + int(self.nav.get('senior', u256(0)))
-        if total_nav - amount < int(self.reserved):
-            raise gl.vm.UserError('Capital is reserved for active cover')
+        if nav - amount < int(self.locked.get(tranche,u256(0))):
+            raise gl.vm.UserError('Capital and premiums are reserved in this tranche for outstanding cover')
         self.shares[key] = u256(owned - shares)
         self.supply[tranche] = u256(supply - shares)
         self.nav[tranche] = u256(nav - amount)
         self._credit(str(gl.message.sender_address), amount)
+
+    def _share_key(self, account: str, tranche: str) -> str:
+        return str(Address(account)) + ':' + tranche + ':' + str(self.generations.get(tranche,u256(0)))
+
+    def _resize_locks(self, policy: dict, junior: int, senior: int) -> None:
+        for tranche, target in [('junior',junior),('senior',senior)]:
+            previous = int(policy.get(tranche+'_locked','0'))
+            self.locked[tranche] = u256(int(self.locked.get(tranche,u256(0))) - previous + target)
+            policy[tranche+'_locked'] = str(target)
 
     def _credit(self, account: str, amount: int) -> None:
         self.credits[account] = u256(int(self.credits.get(account, u256(0))) + amount)
@@ -208,7 +222,9 @@ class Underwriting(gl.Contract):
             raise gl.vm.UserError('Send the exact quoted premium')
         junior = int(self.nav.get('junior', u256(0)))
         senior = int(self.nav.get('senior', u256(0)))
-        if junior + senior - int(self.reserved) < limit:
+        junior_free = junior - int(self.locked.get('junior',u256(0)))
+        senior_free = senior - int(self.locked.get('senior',u256(0)))
+        if junior_free + senior_free < limit:
             raise gl.vm.UserError('Not enough unreserved capital')
         # Premiums accrue only to tranches with outstanding shares.
         junior_premium = premium if senior == 0 else (0 if junior == 0 else premium * 80 // 100)
@@ -217,7 +233,11 @@ class Underwriting(gl.Contract):
         self.premium_total = u256(int(self.premium_total) + premium)
         self.reserved = u256(int(self.reserved) + limit)
         policy_id = quote_id
-        self.policies[policy_id] = json.dumps({**quote, 'id':policy_id, 'status':'active', 'starts_at':_now(), 'ends_at':_now()+30*86400, 'paid':'0', 'remaining':str(limit), 'claim_id':''}, sort_keys=True)
+        policy = {**quote, 'id':policy_id, 'status':'active', 'starts_at':_now(), 'ends_at':_now()+30*86400, 'paid':'0', 'remaining':str(limit), 'claim_id':''}
+        junior_backing = min(limit,junior_free)
+        # Each policy carries its own first loss allocation. Premium shares stay at risk.
+        self._resize_locks(policy, junior_backing+junior_premium, limit-junior_backing+premium-junior_premium)
+        self.policies[policy_id] = json.dumps(policy, sort_keys=True)
         self.policy_ids.append(policy_id)
         self.agent_policy[quote['agent_id']] = policy_id
         quote['bound'] = True
@@ -260,11 +280,13 @@ class Underwriting(gl.Contract):
             self.event_records[expected_key] = json.dumps({'paid':str(int(event['paid'])+amount), 'loss':claim['verified_loss'], 'claim_id':claim_id, 'incident_ref':claim['incident_ref'], 'claimant':claim['claimant']}, sort_keys=True)
         junior = int(self.nav.get('junior', u256(0)))
         senior = int(self.nav.get('senior', u256(0)))
-        first_loss = min(amount, junior)
-        if amount - first_loss > senior:
+        first_loss = min(amount, int(policy['junior_locked']))
+        second_loss = amount - first_loss
+        if first_loss > junior or second_loss > senior or second_loss > int(policy['senior_locked']):
             raise gl.vm.UserError('Pool is insolvent')
         self.nav['junior'] = u256(junior - first_loss)
-        self.nav['senior'] = u256(senior - (amount - first_loss))
+        self.nav['senior'] = u256(senior - second_loss)
+        self._resize_locks(policy, int(policy['junior_locked'])-first_loss, int(policy['senior_locked'])-second_loss)
         self.reserved = u256(int(self.reserved) - amount)
         self.paid_total = u256(int(self.paid_total) + amount)
         self._credit(claim['claimant'], amount)
@@ -273,6 +295,8 @@ class Underwriting(gl.Contract):
         if runoff:
             self.reserved = u256(int(self.reserved) - remaining)
             remaining = 0
+        if remaining == 0:
+            self._resize_locks(policy,0,0)
         policy.update({'status':('expired' if runoff else 'settled') if remaining == 0 else 'active', 'paid':str(int(policy['paid'])+amount), 'remaining':str(remaining), 'claim_id':claim_id})
         self.settlements[claim_id] = json.dumps({'id':claim_id, 'operator':policy['operator'], 'policy_id':policy['id'], 'paid':str(amount)}, sort_keys=True)
         record = self.get_operator_record(policy['operator'])
@@ -293,10 +317,14 @@ class Underwriting(gl.Contract):
             claim = court.get_claim(claim_id)
             keep = min(int(claim['amount']), int(policy['remaining']))
             release = int(policy['remaining']) - keep
+            target = int(policy['junior_locked']) + int(policy['senior_locked']) - release
+            junior_keep = min(int(policy['junior_locked']),target)
+            self._resize_locks(policy,junior_keep,target-junior_keep)
             policy.update({'status':'runoff', 'remaining':str(keep), 'claim_id':claim_id})
             self.reserved = u256(int(self.reserved) - release)
         else:
             self.reserved = u256(int(self.reserved) - int(policy['remaining']))
+            self._resize_locks(policy,0,0)
             policy.update({'status':'expired', 'remaining':'0'})
         self.policies[policy_id] = json.dumps(policy, sort_keys=True)
 
@@ -345,13 +373,27 @@ class Underwriting(gl.Contract):
     def get_account(self, account: str) -> dict:
         result = {'credit':str(self.credits.get(account, u256(0)))}
         for tranche in ['junior','senior']:
-            shares = int(self.shares.get(account+':'+tranche, u256(0)))
+            shares = int(self.shares.get(self._share_key(account,tranche), u256(0)))
             supply = int(self.supply.get(tranche, u256(0)))
+            result[tranche+'_generation'] = int(self.generations.get(tranche,u256(0)))
+            result[tranche+'_available'] = str(max(0,int(self.nav.get(tranche,u256(0)))-int(self.locked.get(tranche,u256(0)))))
             result[tranche+'_shares'] = str(shares)
             result[tranche+'_value'] = str(0 if supply == 0 else shares * int(self.nav.get(tranche,u256(0))) // supply)
         return result
 
     @gl.public.view
+    def get_generation_holding(self, account: str, tranche: str, generation: int) -> dict:
+        self._tranche(tranche)
+        current = int(self.generations.get(tranche,u256(0)))
+        if generation < 0 or generation > current:
+            raise gl.vm.UserError('Unknown tranche generation')
+        key = str(Address(account))+':'+tranche+':'+str(generation)
+        shares = int(self.shares.get(key,u256(0)))
+        supply = int(self.supply.get(tranche,u256(0))) if generation == current else int(self.exhausted_supply.get(tranche+':'+str(generation),u256(0)))
+        value = shares * int(self.nav.get(tranche,u256(0))) // supply if supply and generation == current else 0
+        return {'shares':str(shares), 'value':str(value), 'generation':generation, 'current':generation == current}
+
+    @gl.public.view
     def get_dashboard(self) -> dict:
         junior = int(self.nav.get('junior',u256(0))); senior = int(self.nav.get('senior',u256(0)))
-        return {'registry':self.registry, 'court':self.court, 'junior':str(junior), 'senior':str(senior), 'junior_supply':str(self.supply.get('junior',u256(0))), 'senior_supply':str(self.supply.get('senior',u256(0))), 'reserved':str(self.reserved), 'available':str(junior+senior-int(self.reserved)), 'premiums':str(self.premium_total), 'paid':str(self.paid_total), 'credits':str(self.credit_total), 'tvg':str(junior+senior+int(self.credit_total)), 'policy_count':len(self.policy_ids), 'quote_count':len(self.quote_ids)}
+        return {'registry':self.registry, 'court':self.court, 'junior':str(junior), 'senior':str(senior), 'junior_supply':str(self.supply.get('junior',u256(0))), 'senior_supply':str(self.supply.get('senior',u256(0))), 'junior_locked':str(self.locked.get('junior',u256(0))), 'senior_locked':str(self.locked.get('senior',u256(0))), 'junior_generation':int(self.generations.get('junior',u256(0))), 'senior_generation':int(self.generations.get('senior',u256(0))), 'reserved':str(self.reserved), 'available':str(junior+senior-int(self.locked.get('junior',u256(0)))-int(self.locked.get('senior',u256(0)))), 'premiums':str(self.premium_total), 'paid':str(self.paid_total), 'credits':str(self.credit_total), 'tvg':str(junior+senior+int(self.credit_total)), 'policy_count':len(self.policy_ids), 'quote_count':len(self.quote_ids)}
