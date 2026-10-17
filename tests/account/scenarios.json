@@ -1,0 +1,392 @@
+[
+  {
+    "feature": "email sign in",
+    "case": 1,
+    "scenario": "Existing email authenticates through a real Privy code"
+  },
+  {
+    "feature": "email sign in",
+    "case": 2,
+    "scenario": "Authenticated reload retains the same address"
+  },
+  {
+    "feature": "email sign in",
+    "case": 3,
+    "scenario": "Sign out removes access to private account routes"
+  },
+  {
+    "feature": "account and funds",
+    "case": 1,
+    "scenario": "Baseline balances and previous pool positions load"
+  },
+  {
+    "feature": "account and funds",
+    "case": 2,
+    "scenario": "Request daily Studio funds and reconcile native balance"
+  },
+  {
+    "feature": "account and funds",
+    "case": 3,
+    "scenario": "Repeat request is throttled without reducing an existing higher balance"
+  },
+  {
+    "feature": "executor authorization",
+    "case": 1,
+    "scenario": "Controlled executor authorizes the registered operator"
+  },
+  {
+    "feature": "executor authorization",
+    "case": 2,
+    "scenario": "Unauthorized executor registration is rejected"
+  },
+  {
+    "feature": "executor authorization",
+    "case": 3,
+    "scenario": "Registered executor ownership cannot be reassigned"
+  },
+  {
+    "feature": "agent registration",
+    "case": 1,
+    "scenario": "Register the first independently authorized executor"
+  },
+  {
+    "feature": "agent registration",
+    "case": 2,
+    "scenario": "Register a second executor with a distinct manifest"
+  },
+  {
+    "feature": "agent registration",
+    "case": 3,
+    "scenario": "Register a third executor and recover all three through Mine"
+  },
+  {
+    "feature": "manifest revisions",
+    "case": 1,
+    "scenario": "Revise an uncovered test agent and preserve identity"
+  },
+  {
+    "feature": "manifest revisions",
+    "case": 2,
+    "scenario": "Duplicate semantic revision is rejected"
+  },
+  {
+    "feature": "manifest revisions",
+    "case": 3,
+    "scenario": "Revision while covered is rejected without changing the policy manifest"
+  },
+  {
+    "feature": "risk quotes",
+    "case": 1,
+    "scenario": "Real validators assess the first eligible test agent"
+  },
+  {
+    "feature": "risk quotes",
+    "case": 2,
+    "scenario": "Real validators assess the second eligible test agent"
+  },
+  {
+    "feature": "risk quotes",
+    "case": 3,
+    "scenario": "Real validators assess the third eligible test agent"
+  },
+  {
+    "feature": "coverage binding",
+    "case": 1,
+    "scenario": "Bind one real accepted quote and reconcile premium/reserves"
+  },
+  {
+    "feature": "coverage binding",
+    "case": 2,
+    "scenario": "Repeat binding cannot create overlapping cover"
+  },
+  {
+    "feature": "coverage binding",
+    "case": 3,
+    "scenario": "Binding a stale revision quote is rejected"
+  },
+  {
+    "feature": "capital contributions",
+    "case": 1,
+    "scenario": "Contribute a small junior test position"
+  },
+  {
+    "feature": "capital contributions",
+    "case": 2,
+    "scenario": "Contribute a small senior test position"
+  },
+  {
+    "feature": "capital contributions",
+    "case": 3,
+    "scenario": "Zero or invalid amount is rejected before submission"
+  },
+  {
+    "feature": "capital redemption",
+    "case": 1,
+    "scenario": "Redeem only a new available test position"
+  },
+  {
+    "feature": "capital redemption",
+    "case": 2,
+    "scenario": "Excess share redemption is rejected"
+  },
+  {
+    "feature": "capital redemption",
+    "case": 3,
+    "scenario": "Locked liability backing cannot be redeemed"
+  },
+  {
+    "feature": "pool withdrawals",
+    "case": 1,
+    "scenario": "Withdraw newly created test redemption credit"
+  },
+  {
+    "feature": "pool withdrawals",
+    "case": 2,
+    "scenario": "Native balance increases by exactly the credited amount"
+  },
+  {
+    "feature": "pool withdrawals",
+    "case": 3,
+    "scenario": "Repeat withdrawal with no credit is rejected or disabled"
+  },
+  {
+    "feature": "claim filing",
+    "case": 1,
+    "scenario": "File an evidenced real controlled loss from a separate claimant"
+  },
+  {
+    "feature": "claim filing",
+    "case": 2,
+    "scenario": "Duplicate canonical loss is rejected"
+  },
+  {
+    "feature": "claim filing",
+    "case": 3,
+    "scenario": "Operator cannot file against their own policy"
+  },
+  {
+    "feature": "additional evidence",
+    "case": 1,
+    "scenario": "Add reachable independent corroboration to the case"
+  },
+  {
+    "feature": "additional evidence",
+    "case": 2,
+    "scenario": "Same host aliases do not count as separate hosts"
+  },
+  {
+    "feature": "additional evidence",
+    "case": 3,
+    "scenario": "Malformed source is rejected without breaking the case view"
+  },
+  {
+    "feature": "four findings",
+    "case": 1,
+    "scenario": "Resolve actual harm and verify evidenced amount and time"
+  },
+  {
+    "feature": "four findings",
+    "case": 2,
+    "scenario": "Resolve actual causation and scope independently"
+  },
+  {
+    "feature": "four findings",
+    "case": 3,
+    "scenario": "Resolve payout and show all four actual findings"
+  },
+  {
+    "feature": "scoped appeals",
+    "case": 1,
+    "scenario": "Operator appeals a finding with reachable evidence"
+  },
+  {
+    "feature": "scoped appeals",
+    "case": 2,
+    "scenario": "Claimant retains their independent challenge right"
+  },
+  {
+    "feature": "scoped appeals",
+    "case": 3,
+    "scenario": "A consumed party right cannot be used twice"
+  },
+  {
+    "feature": "decision and settlement",
+    "case": 1,
+    "scenario": "Both parties can accept the actual decision"
+  },
+  {
+    "feature": "decision and settlement",
+    "case": 2,
+    "scenario": "Finalize only after the decision becomes eligible"
+  },
+  {
+    "feature": "decision and settlement",
+    "case": 3,
+    "scenario": "Settle only with an authenticated finalized decision proof"
+  },
+  {
+    "feature": "bond withdrawal",
+    "case": 1,
+    "scenario": "Read actual bond credit after case closure"
+  },
+  {
+    "feature": "bond withdrawal",
+    "case": 2,
+    "scenario": "Withdraw available returned test bonds"
+  },
+  {
+    "feature": "bond withdrawal",
+    "case": 3,
+    "scenario": "Repeat empty bond withdrawal cannot pay twice"
+  },
+  {
+    "feature": "loss history",
+    "case": 1,
+    "scenario": "Sync the actually settled claim into the agent record"
+  },
+  {
+    "feature": "loss history",
+    "case": 2,
+    "scenario": "Repeat sync cannot count the claim twice"
+  },
+  {
+    "feature": "loss history",
+    "case": 3,
+    "scenario": "Paid totals match the settled compensation amount"
+  },
+  {
+    "feature": "claim recovery",
+    "case": 1,
+    "scenario": "Republish a finalized case confirmation without changing its decision"
+  },
+  {
+    "feature": "claim recovery",
+    "case": 2,
+    "scenario": "Withdraw an unassessed separate test case and return bond"
+  },
+  {
+    "feature": "claim recovery",
+    "case": 3,
+    "scenario": "An unelapsed unresolved deadline cannot be closed early"
+  },
+  {
+    "feature": "policy expiry",
+    "case": 1,
+    "scenario": "Active policy cannot release cover early"
+  },
+  {
+    "feature": "policy expiry",
+    "case": 2,
+    "scenario": "Fully closed policy remains readable by ID"
+  },
+  {
+    "feature": "policy expiry",
+    "case": 3,
+    "scenario": "Runoff or expiry with unelapsed filing deadline is safely refused"
+  },
+  {
+    "feature": "records and filtering",
+    "case": 1,
+    "scenario": "Mine returns the target account test agents"
+  },
+  {
+    "feature": "records and filtering",
+    "case": 2,
+    "scenario": "Direct policy and claim lookup matches actual stored IDs"
+  },
+  {
+    "feature": "records and filtering",
+    "case": 3,
+    "scenario": "Pagination cursors remain valid and records are not lost"
+  },
+  {
+    "feature": "activity and retries",
+    "case": 1,
+    "scenario": "Activity records actual submitted transaction IDs"
+  },
+  {
+    "feature": "activity and retries",
+    "case": 2,
+    "scenario": "Identical idempotency key returns the same operation"
+  },
+  {
+    "feature": "activity and retries",
+    "case": 3,
+    "scenario": "Changed action under a reused key is rejected"
+  },
+  {
+    "feature": "navigation and accessibility",
+    "case": 1,
+    "scenario": "Desktop navigation remains available while scrolling"
+  },
+  {
+    "feature": "navigation and accessibility",
+    "case": 2,
+    "scenario": "Mobile navigation and Back to top operate without overflow"
+  },
+  {
+    "feature": "navigation and accessibility",
+    "case": 3,
+    "scenario": "Visible focus and reduced motion work on signed in pages"
+  },
+  {
+    "feature": "themes and account UI",
+    "case": 1,
+    "scenario": "Light mode remains legible with populated records"
+  },
+  {
+    "feature": "themes and account UI",
+    "case": 2,
+    "scenario": "Dark mode persists on authenticated reload"
+  },
+  {
+    "feature": "themes and account UI",
+    "case": 3,
+    "scenario": "Account controls show the correct public address without exposing secrets"
+  },
+  {
+    "feature": "dialog accessibility",
+    "case": 1,
+    "scenario": "Account dialog has a proper accessible name"
+  },
+  {
+    "feature": "dialog accessibility",
+    "case": 2,
+    "scenario": "Capital dialog has a proper accessible name and description"
+  },
+  {
+    "feature": "dialog accessibility",
+    "case": 3,
+    "scenario": "Registration dialog has a proper accessible name and description"
+  },
+  {
+    "feature": "earlier pool redemption",
+    "case": 1,
+    "scenario": "Observe the account owner\u2019s confirmed 15 GEN junior redemption"
+  },
+  {
+    "feature": "earlier pool redemption",
+    "case": 2,
+    "scenario": "An empty earlier junior position cannot redeem shares"
+  },
+  {
+    "feature": "earlier pool redemption",
+    "case": 3,
+    "scenario": "Oversized earlier senior redemption preserves the existing position"
+  },
+  {
+    "feature": "earlier pool withdrawal",
+    "case": 1,
+    "scenario": "Observe the account owner\u2019s confirmed 15 GEN native withdrawal"
+  },
+  {
+    "feature": "earlier pool withdrawal",
+    "case": 2,
+    "scenario": "Empty earlier credit disables its withdrawal control"
+  },
+  {
+    "feature": "earlier pool withdrawal",
+    "case": 3,
+    "scenario": "A direct empty credit withdrawal cannot pay twice"
+  }
+]

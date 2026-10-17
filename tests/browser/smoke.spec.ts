@@ -32,13 +32,13 @@ test("desktop navigation, live data and persisted theme", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("button", { name: "Claims court", exact: true }).click();
   await expect(
-    page.getByText("Nothing before the court. A good day."),
+    page.getByText("Nothing before the court. A good day.").or(page.locator(".claim-list")),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Agents & cover", exact: true })
     .click();
   await expect(
-    page.getByText("The registry is ready for its first promise."),
+    page.getByText("The registry is ready for its first promise.").or(page.locator(".agents-list")),
   ).toBeVisible();
   await page.getByRole("button", { name: "Field guide", exact: true }).click();
   await expect(

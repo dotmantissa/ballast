@@ -16,7 +16,8 @@
     "test:integration": "python3 scripts/review-workflow.py",
     "test:browser": "playwright test",
     "test:integration:smoke": "node --env-file=.env.local --import tsx scripts/integration.ts",
-    "verify:deployment": "node --env-file=.env.local --import tsx scripts/verify-deployment.ts"
+    "verify:deployment": "node --env-file=.env.local --import tsx scripts/verify-deployment.ts",
+    "test:account": "node scripts/account-test-browser.mjs"
   },
   "dependencies": {
     "next": "16.4.2",
