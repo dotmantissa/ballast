@@ -4,7 +4,7 @@
 
 All three contracts pass GenVM lint with their concrete pinned runner. The current direct suite has 140 passing tests. It executes contract methods and SDK storage in direct mode, with controlled web and model results. Captured validator callbacks also receive independent matching and differing answers. These tests establish application behavior, not live validator decisions.
 
-The Node 22 suite has 82 passing tests covering encrypted custody, public input validation, indexed record retrieval, safe public evidence rendering, capital redemption estimates, execution receipts, operation retries, exact signed transaction recovery, archived capital access and fixed confirmation repair routes. TypeScript and ESLint pass. The latest hosting and browser results are recorded below only after publication checks complete.
+The Node 22 suite has 82 passing tests covering encrypted custody, public input validation, indexed record retrieval, safe public evidence rendering, capital redemption estimates, execution receipts, operation retries, exact signed transaction recovery, archived capital access and fixed confirmation repair routes. TypeScript and ESLint pass. The corrected application also passed its production Vercel build and all eight hosted browser checks.
 
 The Neon operation migration completed. Tables are namespaced for Ballast. No user records were inserted to simulate authentication. Signed broadcasts are encrypted before relay and are excluded from API responses.
 
@@ -28,7 +28,9 @@ Original production capital remains in its immutable pool. The transition inspec
 
 ## Browser and hosting
 
-The public app is https://ballast-cover.vercel.app. Email delivery and authenticated interaction require the actual mailbox; no bypass is installed. Browser tests cover public data, navigation, theme persistence, email only authentication, mobile bounds, sticky navigation, hostile public URLs, older record lookup and confirmation recovery. Headless Chromium uses locally extracted system libraries under `/tmp/ballast-browser-deps`, which are not application dependencies.
+Production deployment `dpl_3wAzNVRKDkqBQke7HEuBLeAkmpNe` is ready at https://ballast-cover.vercel.app. Its build passed on Node 22. On 17 October 2026 all eight hosted Playwright checks passed in 47.3 seconds. The actual public API returned a fresh snapshot with all three corrected addresses and an empty application pool. Desktop dark and mobile light screenshots were reviewed for layout, typography and overflow. Email delivery and authenticated interaction require the actual mailbox; no bypass is installed. Browser tests cover public data, navigation, theme persistence, email only authentication, mobile bounds, sticky navigation, hostile public URLs, older record lookup and confirmation recovery. Headless Chromium uses locally extracted system libraries under `/tmp/ballast-browser-deps`, which are not application dependencies.
+
+Scans found no supplied credentials in tracked source, public live evidence, the local browser build, or the hosted HTML and eleven entry scripts. Controlled actor keys and the Git credential were also checked against the public evidence and hosted entry scripts. The checklist, local environment, signed journals and controlled actor key file remain ignored.
 
 Hosting credentials are server environment variables. The deployer key is not installed on Vercel. Public cache entries are scoped to the exact pool address and stale data is identified. Current deployment hashes, verification times and transaction hashes are in `deployments/studio.json`; the preceding pool remains in `deployments/previous-studio.json` after promotion.
 
