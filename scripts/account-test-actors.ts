@@ -19,7 +19,7 @@ await mkdir(folder,{recursive:true,mode:0o700});
 const path=folder+'/actors.json';
 const operator=process.env.BALLAST_ACCOUNT_ADDRESS;
 assert.match(operator??'',/^0x[a-fA-F0-9]{40}$/,'Supply the authenticated public account address');
-type Check = {hash:string;done?:boolean;expectedExecution?:string;receipt?:ReturnType<typeof inspectReceipt>};
+type Check = {hash:string;done?:boolean;expectedExecution?:string;rejectionReason?:string;receipt?:ReturnType<typeof inspectReceipt>};
 type CaseRecord = {id:string;policyId:string;incidentRef:string;incidentAt:number;amount:string;statement:string;evidenceUrls:string[]};
 type ActorState = {operator:string;keys:Record<string,`0x${string}`>;checks:Record<string,Check>;funded:Record<string,boolean>;vaults:Record<string,`0x${string}`>;history?:Record<string,unknown>;incidents?:Record<string,unknown>;historyReady?:boolean;claims?:Record<string,CaseRecord>};
 let state: ActorState; // Tooling state stays in the ignored owner only directory.
@@ -131,7 +131,17 @@ if(stage==='history'){
    const resolved=await read(court,'get_claim',[claim.id]) as {event_key:string};
    const event=await read(deployment.underwriting as `0x${string}`,'get_final_event_record',[resolved.event_key]) as {paid:string};assert.ok(BigInt(event.paid)>0n);
    await write(caseKey+'_duplicate_refusal','claimant',court,'file_claim',[original.id,claim.incidentRef.toUpperCase().replace('0X','0x'),claim.incidentAt,10n**17n,claim.statement,claim.evidenceUrls],10n**16n,'error');
-   assert.match(state.checks[caseKey+'_duplicate_refusal'].receipt?.error??'',/already been compensated/);
+   const full=await actors.claimant.client.getTransaction({hash:state.checks[caseKey+'_duplicate_refusal'].hash as TransactionHash});
+   const receipts=full.consensus_data?.leader_receipt;
+   const leader=Array.isArray(receipts)?receipts[0]:receipts;
+   const result=leader?.result as unknown;
+   let reason='';
+   if(typeof result==='object'&&result!==null&&'payload' in result&&typeof result.payload==='string')reason=result.payload;
+   else if(typeof result==='string'){
+    const bytes=Buffer.from(result,'base64');if([1,2].includes(bytes[0]))reason=bytes.subarray(1).toString('utf8');
+   }
+   assert.match(reason,/This claimant loss has already been compensated/);
+   state.checks[caseKey+'_duplicate_refusal'].rejectionReason='This claimant loss has already been compensated';await save();
   }
   else if(stage==='claimant_appeal'||stage==='claimant_payout_appeal'){
    const payout=stage==='claimant_payout_appeal';

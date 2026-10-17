@@ -17,6 +17,8 @@ async function main(){
  const read=async(address:string,functionName:string,args:CalldataEncodable[]=[])=>jsonSafe(await client.readContract({address:address as `0x${string}`,functionName,args,transactionHashVariant:TransactionHashVariant.LATEST_FINAL}));
  const active=JSON.parse(await readFile(folder+'/continuation/active-claim.json','utf8'));
  const original=JSON.parse(await readFile(folder+'/claim-first_1.json','utf8'));
+ const actors=JSON.parse(await readFile(folder+'/continuation/actors-public.json','utf8'));
+ const claimant=actors.addresses.claimant as `0x${string}`;assert.match(claimant,/^0x[a-f0-9]{40}$/i);
  const result={observedAt:new Date().toISOString(),account,deployment,
   nativeWei:(await client.getBalance({address:account as `0x${string}`})).toString(),
   pool:await read(deployment.underwriting,'get_account',[account!]),
@@ -29,6 +31,7 @@ async function main(){
   courtAccount:await read(deployment.court,'get_account_cases',[account!]),
   poolNativeWei:(await client.getBalance({address:deployment.underwriting as `0x${string}`})).toString(),
   courtNativeWei:(await client.getBalance({address:deployment.court as `0x${string}`})).toString(),
+  controlledClaimant:{address:claimant,nativeWei:(await client.getBalance({address:claimant})).toString()},
  };
  await writeFile(folder+'/public-chain-reconciliation.json',JSON.stringify(result,null,2)+'\n',{mode:0o600});
  console.log('Saved actual finalized public chain reconciliation. No signing key was loaded.');

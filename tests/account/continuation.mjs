@@ -75,7 +75,7 @@ export async function earlyRecovery(page,expect){
 }
 export async function duplicate(page,expect){
  const actors=await load('actors-public');const row=await page.qa.test('claim filing',2,async()=>{
-  const check=actors.checks.first_2_duplicate_refusal;expect(check.done).toBe(true);expect(check.expectedExecution).toBe('error');expect(check.receipt.error).toContain('already been compensated');const c=await claim(page,expect);expect(BigInt(c.settled_payout)).toBeGreaterThan(0n);
+  const check=actors.checks.first_2_duplicate_refusal;expect(check.done).toBe(true);expect(check.expectedExecution).toBe('error');expect(check.rejectionReason).toContain('already been compensated');const c=await claim(page,expect);expect(BigInt(c.settled_payout)).toBeGreaterThan(0n);
   return {transaction:check.hash,canonicalCompensatedEventRejected:true,crossPolicyReplayRefused:true,caseAliasNormalized:true,claimId:c.id};
  });return {status:row.status,error:row.error,evidence:row.evidence};
 }
@@ -88,7 +88,13 @@ export async function finish(page,expect){
   const a=await page.qa.account('continuation/before-bond-withdrawal');expect(BigInt(a.bondCredit)).toBeGreaterThan(0n);return {actualCreditWei:a.bondCredit};
  }));
  rows.push(await page.qa.test('bond withdrawal',2,async()=>{
-  const before=await page.qa.account();const op=await page.qa.execute('continuation-operator-withdraw-bonds',{kind:'withdraw_bonds'});const after=await page.qa.account('continuation/after-bond-withdrawal');expect(after.bondCredit).toBe('0');expect(BigInt(after.balance)-BigInt(before.balance)).toBe(BigInt(before.bondCredit));return {transaction:op.tx_hash,amountWei:before.bondCredit,exactNativeIncrease:true};
+  const before=await load('before-bond-withdrawal');expect(BigInt(before.bondCredit)).toBeGreaterThan(0n);
+  const op=await page.qa.execute('continuation-operator-withdraw-bonds',{kind:'withdraw_bonds'});let after;
+  for(let attempt=0;attempt<12;attempt++){
+   after=await page.qa.account();if(after.bondCredit==='0'&&BigInt(after.balance)-BigInt(before.balance)===BigInt(before.bondCredit))break;
+   await new Promise(resolve=>setTimeout(resolve,15000));
+  }
+  await persist(page,'after-bond-withdrawal',after);expect(after.bondCredit).toBe('0');expect(BigInt(after.balance)-BigInt(before.balance)).toBe(BigInt(before.bondCredit));return {transaction:op.tx_hash,amountWei:before.bondCredit,exactNativeIncrease:true};
  }));
  rows.push(await page.qa.test('bond withdrawal',3,async()=>{
   const op=await page.qa.execute('continuation-empty-bond-withdrawal',{kind:'withdraw_bonds'},'error');expect(op.error).not.toContain('did not agree');return {transaction:op.tx_hash,duplicatePaymentRefused:true};
