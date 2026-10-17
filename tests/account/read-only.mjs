@@ -2,6 +2,14 @@ export async function run(page,context,expect){
  const results=[];
  const check=async(feature,n,fn)=>results.push(await page.qa.test(feature,n,fn));
  await page.qa.close();
+ const funding=page.qa.matrix.scenarios.find(row=>row.feature==='account and funds'&&row.case===3);
+ if(funding.evidence?.recoveredObservation){funding.previousObservation=funding.evidence;funding.status='pending';}
+ await check('account and funds',3,async()=>{
+  const before=await page.qa.account();expect(BigInt(before.balance)).toBeGreaterThan(25n*10n**18n);
+  const r=await page.qa.api('/actions',{method:'POST',data:{kind:'faucet'},headers:{'Idempotency-Key':crypto.randomUUID()}});expect(r.status).toBe(429);
+  const after=await page.qa.account();expect(after.balance).toBe(before.balance);
+  return {httpStatus:429,beforeWei:before.balance,afterWei:after.balance,higherBalancePreserved:true,dailyCooldownEnforced:true};
+ });
  await check('capital contributions',3,async()=>{
   for(const amount of ['0','-1','101']){
    const result=await page.qa.api('/actions',{method:'POST',data:{kind:'stake',tranche:'junior',amount},headers:{'Idempotency-Key':crypto.randomUUID()}});

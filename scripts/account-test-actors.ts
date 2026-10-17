@@ -123,9 +123,16 @@ if(stage==='history'){
    await writeFile(folder+'/audit-'+caseKey+'.json',JSON.stringify(jsonSafe(audit),null,2)+'\n',{mode:0o600});
   }else if(stage==='withdraw_case')await write(caseKey+'_withdraw','claimant',court,'withdraw_claim',[claim.id]);
   else if(stage==='duplicate_claim')await write(caseKey+'_duplicate_refusal','claimant',court,'file_claim',[claim.policyId,claim.incidentRef,claim.incidentAt,10n**17n,claim.statement,claim.evidenceUrls],10n**16n,'error');
-  else if(stage==='claimant_appeal'){
-   const reason='Please independently verify the scope finding against the registered approval rule and exact root transaction. This controlled test asks each party to exercise its own review right. The public source records show the actual debit without claimant approval; do not treat this request as new facts.';
-   await write(caseKey+'_claimant_appeal','claimant',court,'appeal_finding',[claim.id,'scope',reason,claim.evidenceUrls],10n**16n);
+  else if(stage==='claimant_appeal'||stage==='claimant_payout_appeal'){
+   const payout=stage==='claimant_payout_appeal';
+   if(payout){
+    const current=await read(court,'get_claim',[claim.id]) as {status:string;findings:{harm:boolean;causation:boolean;scope:boolean};verified_loss:string;event_key:string};
+    assert.equal(current.status,'challenge');assert.equal(current.findings.harm,true);assert.equal(current.findings.causation,true);assert.equal(current.findings.scope,false);assert.equal(current.verified_loss,'200000000000000000');
+    const compensated=await read(deployment.underwriting as `0x${string}`,'get_final_event_record',[current.event_key]) as {paid:string};assert.equal(compensated.paid,'0');
+   }
+   const reason=payout?'Please reconsider payout using the actual Ballast v1 coverage rule. The agent mandate is NOT the policy coverage boundary: unauthorized native spending OUTSIDE that mandate is the covered peril. The court payout rubric explicitly says zero if scope is TRUE, not when scope is FALSE. This case already has harm=true, causation=true, scope=false and verified_loss=200000000000000000. Its requested amount is only 100000000000000000. The earlier case was withdrawn and its finalized settlement paid ZERO, so there is no prior compensation. The initial payout reason cites spend_without_approval as excluded by the mandate; that is exactly why this debit is unauthorized, not proof of a policy exclusion. Please fetch the existing signed actual incident and root transaction again and independently determine the supported fraction under this rule. No new loss, refund or facts are alleged.':'Please independently verify the scope finding against the registered approval rule and exact root transaction. This controlled test asks each party to exercise its own review right. The public source records show the actual debit without claimant approval; do not treat this request as new facts.';
+   const sources=payout?[...claim.evidenceUrls,'https://raw.githubusercontent.com/dotmantissa/ballast/189d7e40d2a9ff59476e8b44384d3ef49aa99cc5/README.md']:claim.evidenceUrls;
+   await write(caseKey+(payout?'_claimant_payout_appeal':'_claimant_appeal'),'claimant',court,'appeal_finding',[claim.id,payout?'payout':'scope',reason,sources],10n**16n);
   }else if(stage==='claimant_accept')await write(caseKey+'_claimant_accept','claimant',court,'accept_decision',[claim.id]);
   else if(stage==='claimant_withdraw'){
    const paymentPath=folder+'/withdrawal-'+caseKey+'.json';
@@ -140,16 +147,18 @@ if(stage==='history'){
     const content=JSON.stringify(payment,null,2)+'\n';await writeFile(paymentPath+'.tmp',content,{mode:0o600});await rename(paymentPath+'.tmp',paymentPath);
     const backup='.git/ballast-account-tests-backup/'+localPath;await mkdir(backup,{recursive:true,mode:0o700});await writeFile(backup+'/withdrawal-'+caseKey+'.json',content,{mode:0o600});
    }
-   await savePayment();
-   if(BigInt(payment.payoutWei)>0n)await write(caseKey+'_claimant_payout','claimant',deployment.underwriting as `0x${string}`,'withdraw');
-   if(BigInt(payment.bondWei)>0n)await write(caseKey+'_claimant_bonds','claimant',court,'withdraw_bonds');
-   const expected=BigInt(payment.beforeWei)+BigInt(payment.payoutWei)+BigInt(payment.bondWei);
-   for(let attempt=0;attempt<12;attempt++){
-    payment.afterWei=(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString();
-    if(BigInt(payment.afterWei)===expected)break;
-    await new Promise(resolve=>setTimeout(resolve,15000));
+   if(!payment.exactNativeIncrease){
+    await savePayment();
+    if(BigInt(payment.payoutWei)>0n)await write(caseKey+'_claimant_payout','claimant',deployment.underwriting as `0x${string}`,'withdraw');
+    if(BigInt(payment.bondWei)>0n)await write(caseKey+'_claimant_bonds','claimant',court,'withdraw_bonds');
+    const expected=BigInt(payment.beforeWei)+BigInt(payment.payoutWei)+BigInt(payment.bondWei);
+    for(let attempt=0;attempt<12;attempt++){
+     payment.afterWei=(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString();
+     if(BigInt(payment.afterWei)===expected)break;
+     await new Promise(resolve=>setTimeout(resolve,15000));
+    }
+    assert.equal(BigInt(payment.afterWei!),expected);payment.exactNativeIncrease=true;await savePayment();
    }
-   assert.equal(BigInt(payment.afterWei!),expected);payment.exactNativeIncrease=true;await savePayment();
   }else throw Error('Unknown account testing stage');
  }
 }
