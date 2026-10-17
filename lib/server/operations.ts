@@ -38,6 +38,14 @@ function publicOperation(row: Record<string, unknown>) {
 function savedState(row: Record<string, unknown>) {
   return recoveryState(operationRow(row));
 }
+async function requireConfirmation(contract: ContractName, method: string, recordId: string) {
+  try {
+    const record = await read<{id?: string}>(contract, method, [recordId]);
+    if (!record?.id) throw Error("Confirmation is pending");
+  } catch {
+    throw new HttpError(409, "This record is not confirmed yet, or the network is briefly unavailable. Give it a moment, then refresh its confirmation and try again.");
+  }
+}
 
 export async function submitAction(
   user: { id: string; email: string },
@@ -189,6 +197,7 @@ export async function submitAction(
         args = [action.claimId];
         break;
       case "quote":
+        await requireConfirmation("registry", "get_final_agent", action.agentId);
         method = "quote_policy";
         args = [action.agentId, parseUnits(action.limit, 18), action.peerUrls];
         break;
@@ -222,6 +231,7 @@ export async function submitAction(
         method = "withdraw_bonds";
         break;
       case "claim":
+        await requireConfirmation("underwriting", "get_final_policy", action.policyId);
         contract = "court";
         method = "file_claim";
         args = [
@@ -262,6 +272,7 @@ export async function submitAction(
         break;
       }
       case "acknowledge":
+        await requireConfirmation("underwriting", "get_final_settlement", action.claimId);
         contract = "court";
         method = "acknowledge_settlement";
         args = [action.claimId];
@@ -272,10 +283,12 @@ export async function submitAction(
         args = [action.claimId];
         break;
       case "settle":
+        await requireConfirmation("court", "get_final_claim", action.claimId);
         method = "settle_claim";
         args = [action.claimId];
         break;
       case "sync_loss":
+        await requireConfirmation("underwriting", "get_final_settlement", action.claimId);
         contract = "registry";
         method = "sync_loss";
         args = [action.claimId];

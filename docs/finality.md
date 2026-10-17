@@ -8,6 +8,8 @@ Only these callbacks can populate the `get_final_*` records. Consumers read thos
 
 A source may have several versions. Immutable policy versions remain available for delayed callbacks, and monotonic pointers prevent older messages from replacing newer confirmations. The registry uses the same rule for manifest revisions. Final operator records advance only with their settlement count. A court verdict cannot be edited after finalization. Settlement recomputes the canonical claimant event, enforces the independently evidenced loss, checks policy dates and applies the remaining aggregate policy limit locally.
 
+The server checks confirmation availability before signing a quote, claim, settlement or acknowledgment request. A pending confirmation or network outage leaves an unsigned, safely retryable operation with a clear message. Contract checks remain authoritative.
+
 A pool settlement first confirms its accounting record. Only after that confirmation itself finalizes does it emit the court acknowledgment. An interrupted message can be republished safely. Acknowledgment never controls payment and cannot reduce exposure twice. The unresolved account index retains the case until acknowledgment succeeds.
 
 Expiry has an additional barrier. After the filing window closes, the court seals the cumulative amount requested by every filed case. It confirms this immutable seal before asking the pool to expire cover. The pool retains the smaller of remaining cover and sealed requests less requests it has already settled. It does not infer that there are no claims from an absent or delayed message, and acknowledgment delays do not hold extra capital. No new case can be filed after sealing.

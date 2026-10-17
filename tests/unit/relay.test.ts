@@ -192,6 +192,7 @@ vi.mock("../../lib/server/db", () => {
   return { db: () => sql };
 });
 import { submitAction, syncOperation } from "../../lib/server/operations";
+import { read } from "../../lib/server/chain";
 const user = { id: "relay-test-user", email: "relay@example.org" };
 const action = {
   kind: "resolve",
@@ -206,6 +207,7 @@ function advance(seconds: number) {
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-16T12:00:00Z"));
+  vi.mocked(read).mockReset();
   model.rows.clear();
   model.history = [];
   model.lease = null;
@@ -361,4 +363,25 @@ it.each([false,true])("requires a final filing seal before choosing expiry, seal
   vi.mocked(read).mockResolvedValueOnce(sealed?{policy_id:"a".repeat(24),total_requested:"1"}:{});
   await submitAction(user,{kind:"expire",policyId:"a".repeat(24)},key);
   expect(model.write).toHaveBeenCalledWith(expect.objectContaining({address:sealed?addresses.underwriting:addresses.court,functionName:sealed?"expire_policy":"seal_policy",value:0n}));
+});
+
+
+it.each([
+  [{kind:"quote",agentId:"a".repeat(24),limit:"1",peerUrls:["https://peer.example.org/history"]},"registry","get_final_agent"],
+  [{kind:"claim",policyId:"a".repeat(24),incidentRef:"0x"+"a".repeat(64),incidentAt:1,amount:"1",statement:"The executor caused an actual unauthorized native debit of my funds.",evidenceUrls:["https://one.example.org/record","https://two.example.net/record"],publicConsent:true},"underwriting","get_final_policy"],
+  [{kind:"settle",claimId:"a".repeat(24)},"court","get_final_claim"],
+  [{kind:"acknowledge",claimId:"a".repeat(24)},"underwriting","get_final_settlement"],
+  [{kind:"sync_loss",claimId:"a".repeat(24)},"underwriting","get_final_settlement"],
+] satisfies [import("../../lib/validation").Action,string,string][])("waits for the required confirmation before signing %j",async(action,contract,method)=>{
+  vi.mocked(read).mockResolvedValueOnce({});
+  await expect(submitAction(user,action,key)).rejects.toThrow("not confirmed yet");
+  expect(read).toHaveBeenCalledWith(contract,method,["a".repeat(24)]);
+  expect(model.write).not.toHaveBeenCalled();
+  const row=[...model.rows.values()][0];
+  expect(row.status).toBe("error");expect(row.signed_payload).toBeNull();
+  advance(6);
+  vi.mocked(read).mockResolvedValueOnce({id:"a".repeat(24)});
+  const retried=await submitAction(user,action,key);
+  expect(retried.attempt).toBe(2);
+  expect(model.write).toHaveBeenCalledTimes(1);
 });
