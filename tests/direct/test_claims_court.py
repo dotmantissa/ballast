@@ -3,7 +3,7 @@ def hx(value):
 
 import json
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pytest
 
 UNIT=10**18
@@ -22,14 +22,14 @@ def court(direct_vm,direct_deploy,direct_alice,direct_bob,direct_charlie):
     settled={}
     events={}
     direct_vm.ballast_claimant=str(Address(hx(direct_alice)))
-    view=SimpleNamespace(get_policy=lambda _:policy,get_agent=lambda _:agent,get_agent_revision=lambda *args:agent,get_event_record=lambda key:events.get(key,{'paid':'0','loss':'0'}),get_settlement=lambda key:settled.get(key,{}))
+    view=SimpleNamespace(get_final_policy=lambda _:policy,get_agent=lambda _:agent,get_final_agent_revision=lambda *args:agent,get_final_event_record=lambda key:events.get(key,{'paid':'0','loss':'0'}),get_final_settlement=lambda key:settled.get(key,{}))
     original_get=gl.nondet.web.get
     def get(url):
         if url.startswith('https://explorer-studio.genlayer.com/api/transactions/'):
             record={'hash':url.rsplit('/',1)[1],'status':'FINALIZED','from_address':agent['executor_address'],'triggered_by_hash':None}
             return SimpleNamespace(status=200,body=json.dumps({'transaction':record}).encode())
         return original_get(url)
-    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda **kwargs:view)), patch.object(gl.nondet.web,'get',side_effect=get):
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda **kwargs:view,emit=MagicMock(return_value=MagicMock()))), patch.object(gl.nondet.web,'get',side_effect=get):
         yield contract,policy,settled,view,events
 
 
@@ -341,12 +341,11 @@ def test_event_identity_survives_agent_policy_and_hash_case_aliases(court,direct
         court[0].file_claim('p2',TX.upper(),1,UNIT,'The same realized loss cannot be compensated again under a new policy or agent.',URLS)
 
 
-def test_all_authoritative_court_reads_select_finalized_storage(court,direct_vm):
+def test_all_authoritative_court_reads_use_finalized_projections(court,direct_vm):
     from genlayer import gl
-    from genlayer.py.public_abi import StorageType
     view=court[3]
     def select(**kwargs):
-        assert kwargs.get('state')==StorageType.LATEST_FINAL
+        assert kwargs == {}
         return view
     with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=select)):
         cid=file(court,direct_vm);mock_finding(direct_vm,'harm',True);court[0].resolve_finding(cid,'harm')
@@ -492,3 +491,62 @@ def test_unavailable_canonical_chain_record_is_recoverable_not_a_denial(court,di
     assert court[0].get_claim(cid)['findings']=={}
     court[0].resolve_finding(cid,'harm')
     assert court[0].get_claim(cid)['findings']['harm'] is True
+
+
+def test_final_decision_is_unavailable_until_authenticated_confirmation(court,direct_vm):
+    from genlayer import gl
+    c=court[0];cid=file(court,direct_vm)
+    c.withdraw_claim(cid)
+    with direct_vm.expect_revert('pending'):c.get_final_claim(cid)
+    decision=c._decision(c.get_claim(cid));payload=json.dumps(decision,sort_keys=True)
+    with direct_vm.expect_revert('Only a finalized'):c.confirm_claim(payload)
+    with direct_vm.prank(gl.message.contract_address):
+        c.confirm_claim(payload);c.confirm_claim(payload)
+        with direct_vm.expect_revert('immutable'):
+            c.confirm_claim(json.dumps({**decision,'payout':str(UNIT)},sort_keys=True))
+    assert c.get_final_claim(cid)==decision
+    c.publish_final_claim(cid)
+    assert c.list_account_claims(c.get_claim(cid)['claimant'],True,-1,50)['total']==1
+
+
+def test_filing_seal_is_cumulative_immutable_and_authenticated(court,direct_vm):
+    from genlayer import gl
+    c,policy,*_=court
+    first=file(court,direct_vm)
+    direct_vm.value=UNIT//100
+    second=c.file_claim('p1',OTHER_TX,1,UNIT,'A second separate actual native debit needs its own full case commitment.',URLS)
+    c.withdraw_claim(first)
+    with direct_vm.expect_revert('still open'):c.seal_policy('p1')
+    direct_vm.warp('2100-01-10T00:00:00Z')
+    c.seal_policy('p1')
+    assert c.get_final_policy_seal('p1')=={}
+    payload=c.policy_seals['p1']
+    assert json.loads(payload)['total_requested']==str(2*UNIT)
+    with direct_vm.expect_revert('Only a finalized'):c.confirm_policy_seal(payload)
+    with direct_vm.prank(gl.message.contract_address):
+        with direct_vm.expect_revert('immutable'):c.confirm_policy_seal(json.dumps({'policy_id':'p1','total_requested':'0'},sort_keys=True))
+        c.confirm_policy_seal(payload)
+    assert c.get_final_policy_seal('p1')['total_requested']==str(2*UNIT)
+    c.seal_policy('p1')
+    assert c.policy_seals['p1']==payload
+    # Even if a clock fixture moves backwards, sealing permanently closes filing.
+    direct_vm.warp('2030-01-01T00:00:00Z')
+    with direct_vm.expect_revert('not open'):
+        c.file_claim('p1','0x'+'c'*64,1,UNIT,'A sufficiently detailed statement cannot reopen a sealed filing window.',URLS)
+    assert c.get_claim(second)['status']=='filed'
+
+
+def test_all_court_confirmations_wait_for_parent_finality(court,direct_vm):
+    from genlayer import gl
+    c=court[0];cid=file(court,direct_vm);emitter=MagicMock()
+    view=court[3]
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda:view,emit=emitter)):
+        c.withdraw_claim(cid)
+        emitter.assert_called_with(on='finalized')
+        payload=emitter.return_value.confirm_claim.call_args.args[0]
+        with direct_vm.prank(gl.message.contract_address):c.confirm_claim(payload)
+        direct_vm.warp('2100-01-10T00:00:00Z');c.seal_policy('p1')
+        seal=emitter.return_value.confirm_policy_seal.call_args.args[0]
+        with direct_vm.prank(gl.message.contract_address):c.confirm_policy_seal(seal)
+        assert all(call.kwargs=={'on':'finalized'} for call in emitter.call_args_list)
+        emitter.return_value.expire_policy.assert_called_with('p1')

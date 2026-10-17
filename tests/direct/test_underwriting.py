@@ -4,7 +4,7 @@ def hx(value):
 import json
 import hashlib
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pytest
 
 UNIT = 10**18
@@ -20,8 +20,8 @@ def pool(direct_vm, direct_deploy, direct_alice, direct_bob):
     agent = {'id':'a1','name':'Test agent','operator':operator,'manifest_hash':'abc','scope':'Spend only with approval','history_urls':URLS[:1]}
     policy_claim = {'value':''}
     settlements = {}
-    view = SimpleNamespace(get_agent=lambda _:agent, get_loss_record=lambda _:{'claims':0,'paid':'0'}, get_policy_claim=lambda _:policy_claim['value'],get_policy_exposure=lambda _: {'requested':str(UNIT) if policy_claim['value'] else '0','open_count':1 if policy_claim['value'] else 0}, get_settlement=lambda key:settlements.get(key, {}))
-    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs:view,emit=lambda **kwargs:SimpleNamespace(acknowledge_settlement=lambda _:None))):
+    view = SimpleNamespace(get_agent=lambda _:agent, get_final_agent=lambda _:agent, get_loss_record=lambda _:{'claims':0,'paid':'0'}, get_policy_claim=lambda _:policy_claim['value'],get_final_policy_seal=lambda _: {'total_requested':str(UNIT) if policy_claim['value'] else '0'}, get_settlement=lambda key:settlements.get(key, {}))
+    with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs:view,emit=MagicMock(return_value=MagicMock()))):
         yield contract, view, policy_claim
 
 
@@ -144,7 +144,7 @@ def test_settlement_partial_and_denied_preserve_cover(pool,direct_vm,direct_bob,
     from genlayer import Address
     claimant=str(Address(hx(direct_charlie)))
     claim=claim_record(c,qid,'claim1',claimant,4*UNIT)
-    view.get_claim=lambda _:claim
+    view.get_final_claim=lambda _:claim
     c.settle_claim('claim1')
     assert c.get_policy(qid)['remaining']==str(6*UNIT)
     assert c.get_policy(qid)['status']=='active'
@@ -161,7 +161,7 @@ def test_settlement_partial_and_denied_preserve_cover(pool,direct_vm,direct_bob,
 def test_unfinalized_and_oversize_settlement(pool,direct_vm,direct_bob):
     c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
     claim=claim_record(c,qid,'c1',hx(direct_bob),11*UNIT,'challenge')
-    view.get_claim=lambda _:claim
+    view.get_final_claim=lambda _:claim
     with direct_vm.expect_revert('not final'): c.settle_claim('c1')
     claim['status']='final'
     with direct_vm.expect_revert('exceeds cover'):c.settle_claim('c1')
@@ -172,7 +172,7 @@ def test_expiry_cannot_release_open_claim(pool,direct_vm,direct_bob):
     with direct_vm.expect_revert('cannot expire'):c.expire_policy(qid)
     direct_vm.warp('2035-01-01T00:00:00Z')
     prior['value']='open-claim'
-    view.get_claim=lambda _: {'amount':str(UNIT)}
+    view.get_final_claim=lambda _: {'amount':str(UNIT)}
     c.expire_policy(qid)
     assert c.get_policy(qid)['status']=='runoff'
     assert c.get_dashboard()['reserved']==str(UNIT)
@@ -210,7 +210,7 @@ def test_junior_first_loss_senior_protection_and_live_loss_pricing(pool,direct_v
     assert d['junior']==str(3*UNIT+4*UNIT//10)
     assert d['senior']==str(10*UNIT+UNIT//10)
     claim=claim_record(c,qid,'waterfall',hx(direct_charlie),5*UNIT)
-    view.get_claim=lambda _:claim
+    view.get_final_claim=lambda _:claim
     c.settle_claim('waterfall')
     d=c.get_dashboard()
     assert d['junior']=='0' and d['senior']==str(85*UNIT//10)
@@ -261,7 +261,7 @@ def test_quote_rejects_malformed_public_sources(pool,direct_vm,bad):
 def test_canonical_compensation_ledger_blocks_second_award(pool,direct_vm,direct_bob,direct_charlie):
     c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
     claim=claim_record(c,qid,'first',hx(direct_charlie),UNIT)
-    view.get_claim=lambda _:claim
+    view.get_final_claim=lambda _:claim
     c.settle_claim('first')
     event=c.get_event_record(claim['event_key'])
     assert event['paid']==str(UNIT) and event['loss']==str(10*UNIT)
@@ -273,7 +273,7 @@ def test_canonical_compensation_ledger_blocks_second_award(pool,direct_vm,direct
 def test_settlement_enforces_actual_loss_and_actual_event_dates(pool,direct_vm,direct_bob,direct_charlie):
     c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
     claim=claim_record(c,qid,'invalid',hx(direct_charlie),UNIT)
-    view.get_claim=lambda _:claim
+    view.get_final_claim=lambda _:claim
     claim['verified_loss']=str(UNIT//2)
     with direct_vm.expect_revert('evidenced loss'):c.settle_claim('invalid')
     claim['verified_loss']=str(UNIT);claim['verified_incident_at']=claim['incident_at']-1
@@ -283,7 +283,7 @@ def test_settlement_enforces_actual_loss_and_actual_event_dates(pool,direct_vm,d
 def test_runoff_releases_unclaimed_cover_then_zero_settlement_releases_rest(pool,direct_vm,direct_bob,direct_charlie):
     c,view,prior=pool;qid=bind(pool,direct_vm,direct_bob)
     claim=claim_record(c,qid,'unavailable',hx(direct_charlie),0)
-    claim['amount']=str(UNIT);view.get_claim=lambda _:claim;prior['value']='unavailable'
+    claim['amount']=str(UNIT);view.get_final_claim=lambda _:claim;prior['value']='unavailable'
     direct_vm.warp('2035-01-01T00:00:00Z');c.expire_policy(qid)
     assert c.get_dashboard()['reserved']==str(UNIT)
     assert c.get_policy(qid)['status']=='runoff'
@@ -291,15 +291,14 @@ def test_runoff_releases_unclaimed_cover_then_zero_settlement_releases_rest(pool
     assert c.get_dashboard()['reserved']=='0' and c.get_policy(qid)['status']=='expired'
 
 
-def test_settlement_uses_finalized_court_storage(pool,direct_vm,direct_bob,direct_charlie):
+def test_settlement_uses_finalized_court_projection(pool,direct_vm,direct_bob,direct_charlie):
     from genlayer import gl
-    from genlayer.py.public_abi import StorageType
     c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
-    view.get_claim=lambda _:claim_record(c,qid,'final-state',hx(direct_charlie),UNIT)
+    view.get_final_claim=lambda _:claim_record(c,qid,'final-state',hx(direct_charlie),UNIT)
     def select(**kwargs):
-        assert kwargs.get('state')==StorageType.LATEST_FINAL
+        assert kwargs == {}
         return view
-    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=select,emit=lambda **kwargs:SimpleNamespace(acknowledge_settlement=lambda _:None))):
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=select,emit=MagicMock(return_value=MagicMock()))):
         c.settle_claim('final-state')
 
 
@@ -325,7 +324,7 @@ def test_new_capital_cannot_inherit_wiped_generation_shares(pool,direct_vm,direc
     direct_vm.value=20*UNIT;c.stake('senior')
     qid=quote(pool,direct_vm);direct_vm.value=UNIT//2;c.bind_policy(qid)
     claim=claim_record(c,qid,'wipe',hx(direct_charlie),2*UNIT)
-    view.get_claim=lambda _:claim;c.settle_claim('wipe')
+    view.get_final_claim=lambda _:claim;c.settle_claim('wipe')
     assert c.get_dashboard()['junior']=='0'
     with direct_vm.prank(direct_charlie):
         direct_vm.value=UNIT;c.stake('junior')
@@ -345,7 +344,7 @@ def test_policy_allocations_keep_other_liabilities_funded(pool,direct_vm,direct_
     mock_risk(direct_vm);second=c.quote_policy('a2',10*UNIT,URLS[1:]);direct_vm.value=UNIT//2;c.bind_policy(second)
     original_second=c.get_policy(second)
     claim=claim_record(c,first,'loss-first',hx(direct_charlie),5*UNIT)
-    view.get_claim=lambda _:claim;c.settle_claim('loss-first')
+    view.get_final_claim=lambda _:claim;c.settle_claim('loss-first')
     assert c.get_policy(second)['junior_locked']==original_second['junior_locked']
     assert c.get_policy(second)['senior_locked']==original_second['senior_locked']
     d=c.get_dashboard()
@@ -375,7 +374,7 @@ def test_operator_quote_index_has_stable_earlier_page_cursor(pool,direct_vm,dire
 def test_concurrent_awards_share_one_aggregate_limit_and_zero_cases_can_close(pool,direct_vm,direct_bob,direct_charlie):
     c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
     claim=claim_record(c,qid,'first',hx(direct_charlie),8*UNIT)
-    view.get_claim=lambda _:claim
+    view.get_final_claim=lambda _:claim
     c.settle_claim('first')
     claim['id']='second';claim['incident_ref']='0x'+'b'*64
     claim['event_key']=hashlib.sha256(('genlayer-studio:'+claim['incident_ref']+':'+claim['claimant'].lower()).encode()).hexdigest()
@@ -395,20 +394,108 @@ def test_concurrent_awards_share_one_aggregate_limit_and_zero_cases_can_close(po
 
 def test_runoff_preserves_other_cases_and_releases_only_unused_commitments(pool,direct_vm,direct_bob,direct_charlie):
     c,view,_=pool;qid=bind(pool,direct_vm,direct_bob)
-    exposure={'requested':str(5*UNIT),'open_count':2}
-    view.get_policy_exposure=lambda _:exposure
+    exposure={'total_requested':str(5*UNIT)}
+    view.get_final_policy_seal=lambda _:exposure
     direct_vm.warp('2035-01-01T00:00:00Z');c.expire_policy(qid)
     assert c.get_dashboard()['reserved']==str(5*UNIT)
     claim=claim_record(c,qid,'first',hx(direct_charlie),UNIT)
-    claim['amount']=str(2*UNIT);view.get_claim=lambda _:claim
+    claim['amount']=str(2*UNIT);view.get_final_claim=lambda _:claim
     c.settle_claim('first')
     assert c.get_dashboard()['reserved']==str(3*UNIT)
     assert c.get_policy(qid)['remaining']==str(3*UNIT)
     assert c.get_policy(qid)['status']=='runoff'
-    exposure.update(requested=str(3*UNIT),open_count=1)
+    # The cumulative filing seal remains unchanged after settlement.
     claim['id']='second';claim['amount']=str(3*UNIT);claim['payout']='0'
     c.settle_claim('second')
     assert c.get_dashboard()['reserved']=='0'
     assert c.get_policy(qid)['status']=='expired'
     assert c.get_dashboard()['junior_locked']=='0'
     assert c.get_dashboard()['senior_locked']=='0'
+
+
+def test_policy_confirmation_is_authenticated_immutable_and_monotonic(pool,direct_vm,direct_bob):
+    from genlayer import gl
+    c=pool[0];pid=bind(pool,direct_vm,direct_bob)
+    first=c.get_policy(pid);payload=json.dumps(first,sort_keys=True)
+    with direct_vm.expect_revert('pending'):c.get_final_policy(pid)
+    with direct_vm.expect_revert('Only a finalized'):c.confirm_policy(payload)
+    direct_vm.warp('2035-01-01T00:00:00Z');c.expire_policy(pid)
+    second=c.get_policy(pid);new_payload=json.dumps(second,sort_keys=True)
+    with direct_vm.prank(gl.message.contract_address):
+        c.confirm_policy(new_payload);c.confirm_policy(payload)
+        with direct_vm.expect_revert('immutable'):
+            c.confirm_policy(json.dumps({**second,'remaining':str(UNIT)},sort_keys=True))
+    assert c.get_final_policy(pid)==second
+    assert c.get_final_agent_policy(first['agent_id'])==second
+
+
+def test_settlement_requires_final_decision_proof_not_application_status(pool,direct_vm,direct_bob,direct_charlie):
+    c,view,_=pool;pid=bind(pool,direct_vm,direct_bob)
+    view.get_claim=lambda _:claim_record(c,pid,'pending',hx(direct_charlie),UNIT)
+    def pending(_):
+        from genlayer import gl
+        raise gl.vm.UserError('Final decision confirmation is pending')
+    view.get_final_claim=pending
+    before=c.get_dashboard()
+    with direct_vm.expect_revert('confirmation is pending'):c.settle_claim('pending')
+    assert c.get_dashboard()==before and c.get_settlement('pending')=={}
+
+
+def test_expiry_requires_finalized_cumulative_filing_seal(pool,direct_vm,direct_bob):
+    c,view,_=pool;pid=bind(pool,direct_vm,direct_bob)
+    direct_vm.warp('2035-01-01T00:00:00Z')
+    view.get_final_policy_seal=lambda _:{}
+    before=c.get_dashboard()
+    with direct_vm.expect_revert('Finalized filing seal'):c.expire_policy(pid)
+    assert c.get_dashboard()==before
+    view.get_final_policy_seal=lambda _:{'total_requested':str(3*UNIT)}
+    c.expire_policy(pid)
+    assert c.get_dashboard()['reserved']==str(3*UNIT)
+
+
+def test_settlement_proof_and_loss_projections_cannot_be_forged_or_rewound(pool,direct_vm,direct_bob,direct_charlie):
+    from genlayer import gl
+    c,view,_=pool;pid=bind(pool,direct_vm,direct_bob)
+    claim=claim_record(c,pid,'first',hx(direct_charlie),UNIT)
+    view.get_final_claim=lambda _:claim
+    c.settle_claim('first')
+    first=c.settlement_messages['first'];event1=claim['event_key']
+    assert c.get_final_settlement('first')=={}
+    assert c.get_final_event_record(event1)['paid']=='0'
+    with direct_vm.expect_revert('Only a finalized'):c.confirm_settlement(first)
+    claim['id']='second';claim['incident_ref']='0x'+'b'*64
+    claim['event_key']=hashlib.sha256(('genlayer-studio:'+claim['incident_ref']+':'+claim['claimant'].lower()).encode()).hexdigest()
+    c.settle_claim('second');second=c.settlement_messages['second']
+    with direct_vm.prank(gl.message.contract_address):
+        c.confirm_settlement(second);c.confirm_settlement(first);c.confirm_settlement(first)
+        forged=json.loads(first);forged['settlement']['paid']='999'
+        with direct_vm.expect_revert('immutable'):c.confirm_settlement(json.dumps(forged,sort_keys=True))
+    assert c.get_final_settlement('first')['paid']==str(UNIT)
+    assert c.get_final_event_record(event1)['paid']==str(UNIT)
+    assert c.get_final_operator_record(claim['operator'])['settled_claims']==2
+    assert c.get_final_operator_record(claim['operator'])['paid']==str(2*UNIT)
+
+
+def test_bind_rejects_manifest_whose_final_confirmation_is_stale(pool,direct_vm,direct_bob):
+    c,view,_=pool;c.wire_court(hx(direct_bob))
+    direct_vm.value=20*UNIT;c.stake('junior')
+    pid=quote(pool,direct_vm)
+    view.get_final_agent=lambda _:{**view.get_agent('a1'),'manifest_hash':'older'}
+    direct_vm.value=int(c.get_quote(pid)['premium'])
+    with direct_vm.expect_revert('Manifest changed'):c.bind_policy(pid)
+
+
+def test_pool_confirmation_and_acknowledgment_emissions_wait_for_finality(pool,direct_vm,direct_bob,direct_charlie):
+    from genlayer import gl
+    c,view,_=pool;emitter=MagicMock()
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda:view,emit=emitter)):
+        pid=bind(pool,direct_vm,direct_bob)
+        policy_payload=emitter.return_value.confirm_policy.call_args.args[0]
+        with direct_vm.prank(gl.message.contract_address):c.confirm_policy(policy_payload)
+        view.get_final_claim=lambda _:claim_record(c,pid,'confirmed',hx(direct_charlie),UNIT)
+        c.settle_claim('confirmed')
+        emitter.return_value.acknowledge_settlement.assert_not_called()
+        payload=emitter.return_value.confirm_settlement.call_args.args[0]
+        with direct_vm.prank(gl.message.contract_address):c.confirm_settlement(payload)
+        emitter.return_value.acknowledge_settlement.assert_called_once_with('confirmed')
+        assert all(call.kwargs=={'on':'finalized'} for call in emitter.call_args_list)

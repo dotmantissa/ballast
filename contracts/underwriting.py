@@ -4,7 +4,6 @@ import json
 import hashlib
 import re
 from urllib.parse import urlsplit, urlunsplit
-from genlayer.py.public_abi import StorageType
 from datetime import datetime, timezone
 
 UNIT = 10**18
@@ -69,6 +68,88 @@ class Underwriting(gl.Contract):
     exhausted_supply: TreeMap[str, u256]
     account_indexes: TreeMap[str, str]
     account_counts: TreeMap[str, u256]
+    policy_versions: TreeMap[str, str]
+    final_policies: TreeMap[str, str]
+    final_agent_policies: TreeMap[str, str]
+    settlement_messages: TreeMap[str, str]
+    final_settlements: TreeMap[str, str]
+    final_events: TreeMap[str, str]
+    final_operators: TreeMap[str, str]
+    settled_requested: TreeMap[str, u256]
+
+    def _save_policy(self, policy: dict) -> None:
+        policy['state_revision'] = policy.get('state_revision',0)+1
+        payload = json.dumps(policy,sort_keys=True)
+        self.policies[policy['id']] = payload
+        self.policy_versions[policy['id']+':'+str(policy['state_revision'])] = payload
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_policy(payload)
+
+    @gl.public.write
+    def confirm_policy(self, payload: str) -> None:
+        if gl.message.sender_address != gl.message.contract_address:
+            raise gl.vm.UserError('Only a finalized pool message may confirm a policy')
+        policy = json.loads(payload)
+        if self.policy_versions.get(policy['id']+':'+str(policy['state_revision']),'') != payload:
+            raise gl.vm.UserError('Policy confirmation does not match an immutable version')
+        previous = json.loads(self.final_policies.get(policy['id'],'{}'))
+        if policy['state_revision'] > previous.get('state_revision',0):
+            self.final_policies[policy['id']] = payload
+        agent_previous = json.loads(self.final_agent_policies.get(policy['agent_id'],'{}'))
+        if (policy['policy_sequence'],policy['state_revision']) > (agent_previous.get('policy_sequence',0),agent_previous.get('state_revision',0)):
+            self.final_agent_policies[policy['agent_id']] = payload
+
+    @gl.public.write
+    def publish_policy(self, policy_id: str) -> None:
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_policy(self.policies[policy_id])
+
+    @gl.public.view
+    def get_final_policy(self, policy_id: str) -> dict:
+        if policy_id not in self.final_policies:
+            raise gl.vm.UserError('Policy confirmation is pending')
+        return json.loads(self.final_policies[policy_id])
+
+    @gl.public.view
+    def get_final_agent_policy(self, agent_id: str) -> dict:
+        return json.loads(self.final_agent_policies.get(agent_id,'{}'))
+
+    @gl.public.write
+    def confirm_settlement(self, payload: str) -> None:
+        if gl.message.sender_address != gl.message.contract_address:
+            raise gl.vm.UserError('Only a finalized pool message may confirm a settlement')
+        message = json.loads(payload)
+        settlement = message['settlement']
+        claim_id = settlement['id']
+        if self.settlement_messages.get(claim_id,'') != payload:
+            raise gl.vm.UserError('Settlement confirmation does not match the immutable record')
+        self.final_settlements[claim_id] = json.dumps(settlement,sort_keys=True)
+        event = message['event']
+        prior = self.get_final_event_record(message['event_key'])
+        if int(event['paid']) > int(prior['paid']):
+            self.final_events[message['event_key']] = json.dumps(event,sort_keys=True)
+        operator = settlement['operator']
+        previous = self.get_final_operator_record(operator)
+        if message['operator_record']['settled_claims'] > previous['settled_claims']:
+            self.final_operators[operator] = json.dumps(message['operator_record'],sort_keys=True)
+        # Deliver the acknowledgment only after this proof has itself finalized.
+        gl.get_contract_at(Address(self.court)).emit(on='finalized').acknowledge_settlement(claim_id)
+
+    @gl.public.write
+    def publish_settlement(self, claim_id: str) -> None:
+        if claim_id not in self.settlement_messages:
+            raise gl.vm.UserError('Settlement not found')
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_settlement(self.settlement_messages[claim_id])
+
+    @gl.public.view
+    def get_final_settlement(self, claim_id: str) -> dict:
+        return json.loads(self.final_settlements.get(claim_id,'{}'))
+
+    @gl.public.view
+    def get_final_event_record(self, event_key: str) -> dict:
+        return json.loads(self.final_events.get(event_key,'{"paid":"0","loss":"0"}'))
+
+    @gl.public.view
+    def get_final_operator_record(self, operator: str) -> dict:
+        return json.loads(self.final_operators.get(str(Address(operator)),'{"claims":0,"settled_claims":0,"paid":"0"}'))
 
     def _index_account(self, kind: str, account: str, record_id: str) -> None:
         prefix = kind + ':' + str(Address(account))
@@ -174,8 +255,8 @@ class Underwriting(gl.Contract):
     def quote_policy(self, agent_id: str, limit: int, peer_urls: list[str]) -> str:
         if not UNIT // 10 <= limit <= CAP:
             raise gl.vm.UserError('Cover must be between 0.1 and 100 GEN')
-        registry = gl.get_contract_at(Address(self.registry)).view(state=StorageType.LATEST_FINAL)
-        agent = registry.get_agent(agent_id)
+        registry = gl.get_contract_at(Address(self.registry)).view()
+        agent = registry.get_final_agent(agent_id)
         if Address(agent['operator']) != gl.message.sender_address:
             raise gl.vm.UserError('Only the registered operator can request cover')
         if not 1 <= len(peer_urls) <= 3:
@@ -232,8 +313,10 @@ class Underwriting(gl.Contract):
             raise gl.vm.UserError('Only the quoted operator may bind')
         if quote['bound'] or quote['expires_at'] < _now() or quote['band'] == 'declined':
             raise gl.vm.UserError('Quote is not available')
-        current_agent = gl.get_contract_at(Address(self.registry)).view(state=StorageType.LATEST_FINAL).get_agent(quote['agent_id'])
-        if current_agent['manifest_hash'] != quote['manifest_hash']:
+        registry = gl.get_contract_at(Address(self.registry)).view()
+        current_agent = registry.get_agent(quote['agent_id'])
+        final_agent = registry.get_final_agent(quote['agent_id'])
+        if current_agent['manifest_hash'] != quote['manifest_hash'] or final_agent['manifest_hash'] != quote['manifest_hash']:
             raise gl.vm.UserError('Manifest changed; request a fresh quote')
         prior_id = self.agent_policy.get(quote['agent_id'], '')
         if prior_id and self.get_policy(prior_id)['status'] in ['active', 'runoff']:
@@ -254,11 +337,11 @@ class Underwriting(gl.Contract):
         self.premium_total = u256(int(self.premium_total) + premium)
         self.reserved = u256(int(self.reserved) + limit)
         policy_id = quote_id
-        policy = {**quote, 'id':policy_id, 'status':'active', 'starts_at':_now(), 'ends_at':_now()+30*86400, 'paid':'0', 'remaining':str(limit), 'claim_id':''}
+        policy = {**quote, 'id':policy_id, 'status':'active', 'starts_at':_now(), 'ends_at':_now()+30*86400, 'paid':'0', 'remaining':str(limit), 'claim_id':'', 'policy_sequence':len(self.policy_ids)+1}
         junior_backing = min(limit,junior_free)
         # Each policy carries its own first loss allocation. Premium shares stay at risk.
         self._resize_locks(policy, junior_backing+junior_premium, limit-junior_backing+premium-junior_premium)
-        self.policies[policy_id] = json.dumps(policy, sort_keys=True)
+        self._save_policy(policy)
         self.policy_ids.append(policy_id)
         self._index_account('policies',quote['operator'],policy_id)
         self.agent_policy[quote['agent_id']] = policy_id
@@ -272,7 +355,7 @@ class Underwriting(gl.Contract):
             raise gl.vm.UserError('Court is not wired')
         if claim_id in self.settlements:
             raise gl.vm.UserError('Claim is already settled')
-        claim = gl.get_contract_at(Address(self.court)).view(state=StorageType.LATEST_FINAL).get_claim(claim_id)
+        claim = gl.get_contract_at(Address(self.court)).view().get_final_claim(claim_id)
         if claim['status'] != 'final':
             raise gl.vm.UserError('Claim is not final')
         policy = self.get_policy(claim['policy_id'])
@@ -314,11 +397,14 @@ class Underwriting(gl.Contract):
         self.paid_total = u256(int(self.paid_total) + amount)
         self._credit(claim['claimant'], amount)
         remaining = int(policy['remaining']) - amount
+        self.settled_requested[policy['id']] = u256(int(self.settled_requested.get(policy['id'],u256(0)))+int(claim['amount']))
         runoff = policy['status'] == 'runoff'
         old_status = policy['status']
         if runoff:
-            exposure = gl.get_contract_at(Address(self.court)).view(state=StorageType.LATEST_FINAL).get_policy_exposure(policy['id'])
-            keep = min(remaining,max(0,int(exposure['requested'])-int(claim['amount'])))
+            seal = gl.get_contract_at(Address(self.court)).view().get_final_policy_seal(policy['id'])
+            if not seal:
+                raise gl.vm.UserError('Finalized filing seal is required for runoff')
+            keep = min(remaining,max(0,int(seal['total_requested'])-int(self.settled_requested[policy['id']])))
             release = remaining-keep
             self.reserved = u256(int(self.reserved)-release)
             target = int(policy['junior_locked'])+int(policy['senior_locked'])-release
@@ -335,18 +421,22 @@ class Underwriting(gl.Contract):
         record['claims'] += 1 if amount > 0 else 0
         record['paid'] = str(int(record['paid']) + amount)
         self.operator_records[policy['operator']] = json.dumps(record, sort_keys=True)
-        self.policies[policy['id']] = json.dumps(policy, sort_keys=True)
-        gl.get_contract_at(Address(self.court)).emit(on='finalized').acknowledge_settlement(claim_id)
+        self._save_policy(policy)
+        payload = json.dumps({'settlement':self.get_settlement(claim_id),'event_key':expected_key,'event':self.get_event_record(expected_key),'operator_record':record},sort_keys=True)
+        self.settlement_messages[claim_id] = payload
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_settlement(payload)
 
     @gl.public.write
     def expire_policy(self, policy_id: str) -> None:
         policy = self.get_policy(policy_id)
         if policy['status'] not in ['active','runoff'] or _now() <= policy['ends_at'] + 7*86400:
             raise gl.vm.UserError('Policy cannot expire yet')
-        court = gl.get_contract_at(Address(self.court)).view(state=StorageType.LATEST_FINAL)
-        exposure = court.get_policy_exposure(policy_id)
-        if exposure['open_count'] > 0:
-            keep = min(int(exposure['requested']), int(policy['remaining']))
+        seal = gl.get_contract_at(Address(self.court)).view().get_final_policy_seal(policy_id)
+        if not seal:
+            raise gl.vm.UserError('Finalized filing seal is required before releasing cover')
+        outstanding = max(0,int(seal['total_requested'])-int(self.settled_requested.get(policy_id,u256(0))))
+        if outstanding > 0:
+            keep = min(outstanding, int(policy['remaining']))
             release = int(policy['remaining']) - keep
             target = int(policy['junior_locked']) + int(policy['senior_locked']) - release
             junior_keep = min(int(policy['junior_locked']),target)
@@ -359,7 +449,7 @@ class Underwriting(gl.Contract):
             self.reserved = u256(int(self.reserved) - int(policy['remaining']))
             self._resize_locks(policy,0,0)
             policy.update({'status':'expired', 'remaining':'0'})
-        self.policies[policy_id] = json.dumps(policy, sort_keys=True)
+        self._save_policy(policy)
 
     @gl.public.view
     def get_event_record(self, event_key: str) -> dict:

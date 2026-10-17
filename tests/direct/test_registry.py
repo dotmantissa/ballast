@@ -79,7 +79,7 @@ def test_loss_is_verified_and_recorded_once(registry, direct_vm, direct_bob, dir
     registry.wire_underwriting(hx(direct_bob))
     assert registry.get_config()['underwriting'] == hx(direct_bob)
     policy = {}
-    view = SimpleNamespace(get_settlement=lambda _: policy, get_operator_record=lambda op:json.loads(registry.losses.get(op, '{"claims":0,"paid":"0"}')))
+    view = SimpleNamespace(get_final_settlement=lambda _: policy, get_final_operator_record=lambda op:json.loads(registry.losses.get(op, '{"claims":0,"paid":"0"}')))
     from genlayer import gl
     with patch.object(gl, 'get_contract_at', return_value=SimpleNamespace(view=lambda **kwargs: view)):
         with direct_vm.expect_revert('not settled'):
@@ -122,15 +122,14 @@ def test_revisions_preserve_identity_and_old_manifest(registry, manifest, direct
         with direct_vm.expect_revert('Only'):registry.revise_agent(aid,manifest,['https://example.org/history'])
 
 
-def test_active_policy_prevents_revision_and_reads_final_state(registry, manifest, direct_vm, direct_bob):
+def test_active_policy_prevents_revision_using_current_and_final_projections(registry, manifest, direct_vm, direct_bob):
     from genlayer import gl
-    from genlayer.py.public_abi import StorageType
     aid=registry.register_agent(manifest,['https://example.org/history'])
     registry.wire_underwriting(hx(direct_bob))
     data=json.loads(manifest);data['spend_limit_gen']=1
     def view(**kwargs):
-        assert kwargs['state']==StorageType.LATEST_FINAL
-        return SimpleNamespace(get_agent_policy=lambda _: {'status':'active'})
+        assert kwargs == {}
+        return SimpleNamespace(get_agent_policy=lambda _: {'status':'active'},get_final_agent_policy=lambda _: {})
     with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=view)):
         with direct_vm.expect_revert('Close existing'):
             registry.revise_agent(aid,json.dumps(data),['https://example.org/history'])
@@ -172,3 +171,46 @@ def test_duplicate_json_keys_are_not_a_manifest_revision(registry,manifest,direc
     with direct_vm.expect_revert('valid JSON'):
         registry.register_agent(ambiguous,['https://example.org/history'])
     assert registry.get_config()['agent_count']==0
+
+
+def test_agent_confirmation_requires_finalized_self_message_and_preserves_revision_order(registry,manifest,direct_vm):
+    from genlayer import gl
+    from unittest.mock import MagicMock
+    emitter=MagicMock()
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(emit=emitter)):
+        aid=registry.register_agent(manifest,['https://example.org/history'])
+        original=registry.get_agent(aid)
+        first=json.dumps(original,sort_keys=True)
+        emitter.assert_called_with(on='finalized')
+        emitter.return_value.confirm_agent.assert_called_with(first)
+        with direct_vm.expect_revert('pending'):registry.get_final_agent(aid)
+        with direct_vm.expect_revert('Only a finalized'):registry.confirm_agent(first)
+        data=json.loads(manifest);data['spend_limit_gen']=1
+        registry.revise_agent(aid,json.dumps(data),['https://example.net/history'])
+        latest=registry.get_agent(aid);second=json.dumps(latest,sort_keys=True)
+        with direct_vm.prank(gl.message.contract_address):
+            registry.confirm_agent(second)
+            registry.confirm_agent(first)
+            registry.confirm_agent(second)
+            forged={**latest,'scope':'Spend without any restriction.'}
+            with direct_vm.expect_revert('immutable'):registry.confirm_agent(json.dumps(forged,sort_keys=True))
+        assert registry.get_final_agent(aid)==latest
+        assert registry.get_final_agent_revision(aid,original['manifest_hash'])==original
+        registry.publish_agent(aid)
+        emitter.return_value.confirm_agent.assert_called_with(second)
+
+
+def test_unconfirmed_policy_closure_cannot_unlock_manifest_revision(registry,manifest,direct_vm,direct_bob):
+    from genlayer import gl
+    aid=registry.register_agent(manifest,['https://example.org/history'])
+    registry.wire_underwriting(hx(direct_bob))
+    data=json.loads(manifest);data['spend_limit_gen']=1
+    current={'id':'p1','status':'expired','state_revision':2}
+    final={}
+    view=SimpleNamespace(get_agent_policy=lambda _:current,get_final_agent_policy=lambda _:final)
+    with patch.object(gl,'get_contract_at',return_value=SimpleNamespace(view=lambda:view)):
+        with direct_vm.expect_revert('Wait for'):registry.revise_agent(aid,json.dumps(data),['https://example.org/history'])
+        final.update(id='p1',status='active',state_revision=1)
+        with direct_vm.expect_revert('Close existing'):registry.revise_agent(aid,json.dumps(data),['https://example.org/history'])
+        final.update(status='expired',state_revision=1)
+        with direct_vm.expect_revert('Wait for'):registry.revise_agent(aid,json.dumps(data),['https://example.org/history'])

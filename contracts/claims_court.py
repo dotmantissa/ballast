@@ -4,7 +4,6 @@ import json
 import hashlib
 import re
 from urllib.parse import urlsplit, urlunsplit
-from genlayer.py.public_abi import StorageType
 from datetime import datetime, timezone
 
 UNIT = 10**18
@@ -65,6 +64,69 @@ class ClaimsCourt(gl.Contract):
     open_positions: TreeMap[str, u256]
     policy_exposure: TreeMap[str, u256]
     policy_open_count: TreeMap[str, u256]
+    final_claims: TreeMap[str, str]
+    policy_total_requested: TreeMap[str, u256]
+    policy_seals: TreeMap[str, str]
+    final_policy_seals: TreeMap[str, str]
+
+    def _decision(self, claim: dict) -> dict:
+        # Only immutable accounting facts belong in the final decision proof.
+        fields = ['id','policy_id','agent_id','operator','claimant','event_key',
+                  'incident_ref','incident_at','amount','verified_loss',
+                  'verified_incident_at','findings','payout','finalized_at','outcome']
+        return {**{key:claim[key] for key in fields},'status':'final'}
+
+    def _publish_claim(self, claim: dict) -> None:
+        payload = json.dumps(self._decision(claim),sort_keys=True)
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_claim(payload)
+
+    @gl.public.write
+    def confirm_claim(self, payload: str) -> None:
+        if gl.message.sender_address != gl.message.contract_address:
+            raise gl.vm.UserError('Only a finalized court message may confirm a decision')
+        decision = json.loads(payload)
+        claim = self.get_claim(decision['id'])
+        if claim['status'] not in ['final','settled'] or json.dumps(self._decision(claim),sort_keys=True) != payload:
+            raise gl.vm.UserError('Decision confirmation does not match the immutable final facts')
+        self.final_claims[claim['id']] = payload
+
+    @gl.public.write
+    def publish_final_claim(self, claim_id: str) -> None:
+        claim = self.get_claim(claim_id)
+        if claim['status'] not in ['final','settled']:
+            raise gl.vm.UserError('Claim is not final')
+        self._publish_claim(claim)
+
+    @gl.public.view
+    def get_final_claim(self, claim_id: str) -> dict:
+        if claim_id not in self.final_claims:
+            raise gl.vm.UserError('Final decision confirmation is pending')
+        return json.loads(self.final_claims[claim_id])
+
+    @gl.public.write
+    def seal_policy(self, policy_id: str) -> None:
+        policy = self._pool().get_final_policy(policy_id)
+        if _now() <= policy['ends_at']+7*86400:
+            raise gl.vm.UserError('The filing window is still open')
+        payload = self.policy_seals.get(policy_id,'')
+        if not payload:
+            payload = json.dumps({'policy_id':policy_id,'total_requested':str(self.policy_total_requested.get(policy_id,u256(0)))},sort_keys=True)
+            self.policy_seals[policy_id] = payload
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_policy_seal(payload)
+
+    @gl.public.write
+    def confirm_policy_seal(self, payload: str) -> None:
+        if gl.message.sender_address != gl.message.contract_address:
+            raise gl.vm.UserError('Only a finalized court message may confirm a filing seal')
+        seal = json.loads(payload)
+        if self.policy_seals.get(seal['policy_id'],'') != payload:
+            raise gl.vm.UserError('Filing seal does not match its immutable record')
+        self.final_policy_seals[seal['policy_id']] = payload
+        gl.get_contract_at(Address(self.underwriting)).emit(on='finalized').expire_policy(seal['policy_id'])
+
+    @gl.public.view
+    def get_final_policy_seal(self, policy_id: str) -> dict:
+        return json.loads(self.final_policy_seals.get(policy_id,'{}'))
 
     def _index_account(self, kind: str, account: str, record_id: str) -> None:
         prefix = kind + ':' + str(Address(account))
@@ -107,16 +169,16 @@ class ClaimsCourt(gl.Contract):
         self.underwriting = underwriting
 
     def _pool(self):
-        return gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL)
+        return gl.get_contract_at(Address(self.underwriting)).view()
 
     @gl.public.write.payable
     def file_claim(self, policy_id: str, incident_ref: str, incident_at: int, amount: int, statement: str, evidence_urls: list[str]) -> str:
         pool = self._pool()
-        policy = pool.get_policy(policy_id)
+        policy = pool.get_final_policy(policy_id)
         claimant = str(gl.message.sender_address)
         if Address(policy['operator']) == gl.message.sender_address:
             raise gl.vm.UserError('Cover protects a third party, not the operator')
-        if policy['status'] != 'active' or _now() > policy['ends_at'] + 7*86400:
+        if policy['status'] != 'active' or _now() > policy['ends_at'] + 7*86400 or policy_id in self.policy_seals:
             raise gl.vm.UserError('Policy is not open for claims')
         if not policy['starts_at'] <= incident_at <= min(_now(), policy['ends_at']):
             raise gl.vm.UserError('Incident must occur during the coverage period')
@@ -131,11 +193,11 @@ class ClaimsCourt(gl.Contract):
         _urls(evidence_urls)
         evidence_urls = list(dict.fromkeys(_url(url) for url in evidence_urls))
         event_key = hashlib.sha256(('genlayer-studio:' + incident_ref + ':' + claimant.lower()).encode()).hexdigest()
-        event = pool.get_event_record(event_key)
+        event = pool.get_final_event_record(event_key)
         if int(event['paid']) > 0:
             raise gl.vm.UserError('This claimant loss has already been compensated')
         previous = self.incidents.get(event_key, '')
-        if previous and not pool.get_settlement(previous):
+        if previous and not pool.get_final_settlement(previous):
             raise gl.vm.UserError('This incident already has an open claim')
         bond = max(UNIT//100, amount//100)
         if int(gl.message.value) != bond:
@@ -157,6 +219,7 @@ class ClaimsCourt(gl.Contract):
         self.policy_claims[policy_id] = claim_id
         self.policy_exposure[policy_id] = u256(int(self.policy_exposure.get(policy_id,u256(0)))+amount)
         self.policy_open_count[policy_id] = u256(int(self.policy_open_count.get(policy_id,u256(0)))+1)
+        self.policy_total_requested[policy_id] = u256(int(self.policy_total_requested.get(policy_id,u256(0)))+amount)
         self.incidents[event_key] = claim_id
         return claim_id
 
@@ -181,9 +244,9 @@ class ClaimsCourt(gl.Contract):
         self.claims[claim_id] = json.dumps(claim, sort_keys=True)
 
     def _finding(self, claim: dict, field: str, appeal_reason: str):
-        policy = self._pool().get_policy(claim['policy_id'])
-        agent = gl.get_contract_at(Address(self.registry)).view(state=StorageType.LATEST_FINAL).get_agent_revision(claim['agent_id'], policy['manifest_hash'])
-        compensation = self._pool().get_event_record(claim['event_key'])
+        policy = self._pool().get_final_policy(claim['policy_id'])
+        agent = gl.get_contract_at(Address(self.registry)).view().get_final_agent_revision(claim['agent_id'], policy['manifest_hash'])
+        compensation = self._pool().get_final_event_record(claim['event_key'])
         context = json.dumps({'claim':claim, 'policy':policy, 'manifest':agent,
                               'prior_compensation':compensation, 'network':'genlayer-studio',
                               'appeal_reason':appeal_reason}, sort_keys=True)
@@ -348,6 +411,7 @@ class ClaimsCourt(gl.Contract):
         claimant = claim['claimant']
         self.credits[claimant] = u256(int(self.credits.get(claimant,u256(0))) + int(claim['claim_bond']))
         self.claims[claim['id']] = json.dumps(claim, sort_keys=True)
+        self._publish_claim(claim)
 
     @gl.public.write
     def close_unresolved_claim(self, claim_id: str) -> None:
@@ -370,7 +434,7 @@ class ClaimsCourt(gl.Contract):
             raise gl.vm.UserError('Challenge period has not closed')
         findings = claim['findings']
         eligible = findings['harm'] and findings['causation'] and not findings['scope']
-        compensated = int(self._pool().get_event_record(claim['event_key'])['paid'])
+        compensated = int(self._pool().get_final_event_record(claim['event_key'])['paid'])
         supported = max(0, int(claim['verified_loss']) - compensated) if compensated == 0 else 0
         claim['payout'] = str(min(int(claim['amount']) * findings['payout'] // 100, supported) if eligible else 0)
         claim['status'] = 'final'
@@ -379,13 +443,16 @@ class ClaimsCourt(gl.Contract):
         recipient = claim['claimant'] if int(claim['payout']) > 0 else claim['operator']
         self.credits[recipient] = u256(int(self.credits.get(recipient,u256(0))) + int(claim['claim_bond']))
         self.claims[claim_id] = json.dumps(claim, sort_keys=True)
+        self._publish_claim(claim)
 
     @gl.public.write
     def acknowledge_settlement(self, claim_id: str) -> None:
         claim = self.get_claim(claim_id)
+        if claim['status'] == 'settled':
+            return
         if claim['status'] != 'final':
             raise gl.vm.UserError('Only an unsettled final claim can be acknowledged')
-        settlement = self._pool().get_settlement(claim_id)
+        settlement = self._pool().get_final_settlement(claim_id)
         if not settlement or settlement['policy_id'] != claim['policy_id']:
             raise gl.vm.UserError('Finalized pool settlement is required')
         claim['status'] = 'settled'

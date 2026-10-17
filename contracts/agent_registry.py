@@ -4,7 +4,6 @@ import hashlib
 import json
 import re
 from urllib.parse import urlsplit, urlunsplit
-from genlayer.py.public_abi import StorageType
 from datetime import datetime, timezone
 
 
@@ -52,6 +51,41 @@ class AgentRegistry(gl.Contract):
     revisions: TreeMap[str, str]
     account_indexes: TreeMap[str, str]
     account_counts: TreeMap[str, u256]
+    final_revisions: TreeMap[str, str]
+    final_agents: TreeMap[str, str]
+
+    def _publish_agent(self, agent: dict) -> None:
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_agent(json.dumps(agent,sort_keys=True))
+
+    @gl.public.write
+    def confirm_agent(self, payload: str) -> None:
+        if gl.message.sender_address != gl.message.contract_address:
+            raise gl.vm.UserError('Only a finalized registry message may confirm an agent')
+        agent = json.loads(payload)
+        key = agent['id']+':'+agent['manifest_hash']
+        if self.revisions.get(key,'') != payload:
+            raise gl.vm.UserError('Agent confirmation does not match the immutable revision')
+        self.final_revisions[key] = payload
+        previous = json.loads(self.final_agents.get(agent['id'],'{}'))
+        if agent['revision'] > previous.get('revision',0):
+            self.final_agents[agent['id']] = payload
+
+    @gl.public.write
+    def publish_agent(self, agent_id: str) -> None:
+        self._publish_agent(self.get_agent(agent_id))
+
+    @gl.public.view
+    def get_final_agent(self, agent_id: str) -> dict:
+        if agent_id not in self.final_agents:
+            raise gl.vm.UserError('Agent confirmation is pending')
+        return json.loads(self.final_agents[agent_id])
+
+    @gl.public.view
+    def get_final_agent_revision(self, agent_id: str, manifest_hash: str) -> dict:
+        key = agent_id+':'+manifest_hash
+        if key not in self.final_revisions:
+            raise gl.vm.UserError('Manifest confirmation is pending')
+        return json.loads(self.final_revisions[key])
 
     def _index_account(self, kind: str, account: str, record_id: str) -> None:
         prefix = kind + ':' + str(Address(account))
@@ -129,11 +163,13 @@ class AgentRegistry(gl.Contract):
         if agent['id'] in self.agents:
             raise gl.vm.UserError('This executor is already registered; use a manifest revision')
         self.executor_operators[agent['executor_address']] = agent['operator']
+        agent['revision'] = 1
         encoded = json.dumps(agent, sort_keys=True)
         self.agents[agent['id']] = encoded
         self.revisions[agent['id'] + ':' + agent['manifest_hash']] = encoded
         self.agent_ids.append(agent['id'])
         self._index_account('agents',agent['operator'],agent['id'])
+        self._publish_agent(agent)
         return agent['id']
 
     @gl.public.write
@@ -147,13 +183,19 @@ class AgentRegistry(gl.Contract):
         if agent_id + ':' + after['manifest_hash'] in self.revisions:
             raise gl.vm.UserError('This manifest revision is already registered')
         if self.underwriting:
-            policy = gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_agent_policy(agent_id)
-            if policy and policy['status'] in ['active', 'runoff']:
+            pool = gl.get_contract_at(Address(self.underwriting)).view()
+            policy = pool.get_agent_policy(agent_id)
+            final_policy = pool.get_final_agent_policy(agent_id)
+            if any(p and p['status'] in ['active','runoff'] for p in [policy,final_policy]):
                 raise gl.vm.UserError('Close existing cover before revising the manifest')
+            if policy and (not final_policy or policy['id'] != final_policy['id'] or policy['state_revision'] != final_policy['state_revision']):
+                raise gl.vm.UserError('Wait for the policy closure confirmation before revising')
         after['registered_at'] = before['registered_at']
+        after['revision'] = before['revision']+1
         encoded = json.dumps(after, sort_keys=True)
         self.agents[agent_id] = encoded
         self.revisions[agent_id + ':' + after['manifest_hash']] = encoded
+        self._publish_agent(after)
 
     @gl.public.view
     def get_agent_revision(self, agent_id: str, manifest_hash: str) -> dict:
@@ -178,7 +220,7 @@ class AgentRegistry(gl.Contract):
     def get_loss_record(self, operator: str) -> dict:
         operator = str(Address(operator))
         if self.underwriting:
-            return gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_operator_record(operator)
+            return gl.get_contract_at(Address(self.underwriting)).view().get_final_operator_record(operator)
         return {'claims':0, 'settled_claims':0, 'paid':'0'}
 
     @gl.public.write
@@ -187,7 +229,7 @@ class AgentRegistry(gl.Contract):
             raise gl.vm.UserError("Pool is not wired")
         if self.recorded.get(claim_id, False):
             raise gl.vm.UserError("Loss already recorded")
-        policy = gl.get_contract_at(Address(self.underwriting)).view(state=StorageType.LATEST_FINAL).get_settlement(claim_id)
+        policy = gl.get_contract_at(Address(self.underwriting)).view().get_final_settlement(claim_id)
         if not policy:
             raise gl.vm.UserError("Claim has not settled")
         operator = str(Address(policy['operator']))
