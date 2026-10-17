@@ -72,6 +72,9 @@ async function confirmed(address: `0x${string}`, method: string, args: CalldataE
     try { value=await read(address,method,args);return field?!!value[field]:!!value.id; }
     catch { return false; }
   },"Finalized confirmation did not arrive for "+method+"; inspect emitted receipts and use the ID only publish method to repair.");
+  state.confirmations??={};
+  state.confirmations[method]={address,recordId:String(args[0]),observedAt:new Date().toISOString(),record:value};
+  await save();
   return value!;
 }
 async function signed(file:string,payload:unknown,signers:(keyof typeof actors)[]) {
@@ -203,7 +206,7 @@ if(phase==="history"){
   state.finalPoolBalance=String(await balance(state.underwriting));
   assert.ok(BigInt(state.finalPoolBalance)>=BigInt(state.finalDashboard.tvg));
   state.completedAt=new Date().toISOString();
-  await writeFile("docs/review-integration-result.json",JSON.stringify(jsonSafe({network:"studionet",verifiedAt:state.completedAt,sourceHashes:state.sourceHashes,registry:state.registry,underwriting:state.underwriting,court:state.court,vault:state.vault,peerVault:state.peerVault,actors:state.actors,historyCommit:state.historyCommit,incidentCommit:state.incidentCommit,caseId:state.caseId,checks:state.checks,policy:state.policy,initialClaim:state.initialClaim,appealedClaim:state.appealedClaim,finalClaim:await read(state.court,"get_claim",[state.claimId]),settlement:state.settlement,lossRecord:state.lossRecord,finalPolicy:state.finalPolicy,finalDashboard:state.finalDashboard,poolBalanceWei:state.finalPoolBalance,withdrawal:{before:state.beforeWithdraw,after:state.afterWithdraw,paid:state.loss.amount_wei,bond_before:state.beforeBondWithdraw,bond_after:String(await balance(claimant.account.address))},result:"passed",scope:"Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, four findings, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/bond withdrawals. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."}),null,2)+"\n");
+  await writeFile("docs/review-integration-result.json",JSON.stringify(jsonSafe({network:"studionet",verifiedAt:state.completedAt,sourceHashes:state.sourceHashes,registry:state.registry,underwriting:state.underwriting,court:state.court,vault:state.vault,peerVault:state.peerVault,actors:state.actors,historyCommit:state.historyCommit,incidentCommit:state.incidentCommit,caseId:state.caseId,checks:state.checks,confirmations:state.confirmations,policy:state.policy,initialClaim:state.initialClaim,appealedClaim:state.appealedClaim,finalClaim:await read(state.court,"get_claim",[state.claimId]),settlement:state.settlement,lossRecord:state.lossRecord,finalPolicy:state.finalPolicy,finalDashboard:state.finalDashboard,poolBalanceWei:state.finalPoolBalance,withdrawal:{before:state.beforeWithdraw,after:state.afterWithdraw,paid:state.loss.amount_wei,bond_before:state.beforeBondWithdraw,bond_after:String(await balance(claimant.account.address))},result:"passed",scope:"Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, four findings, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/bond withdrawals. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."}),null,2)+"\n");
   state.result="passed";await save();
   console.log("Full real Studio lifecycle passed, including claimant receipt of native funds.");
 }else throw Error("Unknown review phase");
