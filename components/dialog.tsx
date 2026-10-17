@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
 export function Dialog({
   title,
@@ -13,6 +13,8 @@ export function Dialog({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
   useEffect(() => {
     const dialog = ref.current;
     dialog?.showModal();
@@ -26,6 +28,8 @@ export function Dialog({
     <dialog
       ref={ref}
       className="dialog"
+      aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
       onCancel={onClose}
       onClick={(e) => {
         if (e.target === ref.current) {
@@ -42,8 +46,8 @@ export function Dialog({
     >
       <div className="dialog-head">
         <div>
-          <h2>{title}</h2>
-          {description && <p>{description}</p>}
+          <h2 id={titleId}>{title}</h2>
+          {description && <p id={descriptionId}>{description}</p>}
         </div>
         <button
           className="icon-button"
