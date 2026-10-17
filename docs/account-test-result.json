@@ -1,0 +1,1228 @@
+{
+  "application": "https://ballast-cover.vercel.app",
+  "account": "0x115a0d969bBB326E1CBE628CEDb21B76A8141D10",
+  "snapshotAt": "2026-10-17T12:46:57.677Z",
+  "network": "GenLayer Studio",
+  "deployment": {
+    "network": "studionet",
+    "purpose": "Clean application deployment after reviewer remediation",
+    "deploymentGeneration": "review-remediation-production-v1",
+    "transactions": {
+      "registry": "0x4b52f2627fb284fec535932f18a200652d3fa07081579222c5c91967922716c7",
+      "underwriting": "0x0445cf81430a411ff58c12be48006ae2c1810ed027d07149258c2b0b8050ab8b",
+      "court": "0x32119d6e2ff4ac3e42f5b6498ebce78ace44f7605c3670f29e124e0ab96c84d9",
+      "wire_registry": "0x70e18eadda6109af60d8f1d8e0448eeacb77527b5774f3bd03276396af6920a7",
+      "wire_pool": "0xcb231fcb66088f010056f94b8b127c7cd6586f297e174860c1f2c2cd69b550ea"
+    },
+    "sourceHashes": {
+      "registry": "f8004769e45b43d284ab12aa9dce34c34811f52d4d9cc172861e024a8b490198",
+      "underwriting": "b7de43b60702c25dc612b2b9085c11d425b7c2a813ed31d731f9aa8ab5b2fc67",
+      "court": "0cac9c757c24e16a83a43fa0a502744b8bc5976d157aa9c28ae164666b64e58e"
+    },
+    "registry": "0x5BB4F3C8D04803128452958604f99637D4A2c8Fb",
+    "underwriting": "0x30B2751eff76306B968123f5dAb24043b1DDF09A",
+    "court": "0x10f330aeCB384F4181Eccd3789781E45F0389934",
+    "wired": {
+      "wire_registry": true,
+      "wire_pool": true
+    },
+    "verifiedAt": "2026-10-17T02:22:18.496Z",
+    "chainId": 61999,
+    "sourceVerifiedAt": "2026-10-17T02:23:51.744Z",
+    "emptyVerifiedAt": "2026-10-17T02:23:51.744Z"
+  },
+  "scenarioCount": 78,
+  "counts": {
+    "passed": 73,
+    "not run": 5
+  },
+  "complete": false,
+  "stoppedAtOwnerRequest": true,
+  "recoveredObservationCount": 40,
+  "ownerAssistedObservationCount": 2,
+  "verification": {
+    "unitTests": 112,
+    "directContractTests": 140,
+    "hostedBrowserTests": 9,
+    "lint": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed"
+  },
+  "nativeWei": "44109000000000000000",
+  "earlierPool": {
+    "junior_value": "0",
+    "senior_value": "5000000000000000000",
+    "credit": "0"
+  },
+  "pool": {
+    "junior_shares": "375000000000000000",
+    "senior_shares": "500000000000000000",
+    "junior_value": "278200000000000000",
+    "senior_value": "500800000000000000",
+    "credit": "0"
+  },
+  "dashboard": {
+    "junior": "278200000000000000",
+    "senior": "500800000000000000",
+    "junior_locked": "101600000000000000",
+    "senior_locked": "400000000000000",
+    "reserved": "100000000000000000",
+    "paid": "100000000000000000",
+    "tvg": "779000000000000000"
+  },
+  "policies": [
+    {
+      "id": "8fafe68551a4e08efdc8b90d",
+      "status": "settled",
+      "remaining": "0",
+      "paid": "100000000000000000",
+      "starts_at": 1792240422,
+      "ends_at": 1794832422
+    },
+    {
+      "id": "bba7cc9bb25beb3386ff798d",
+      "status": "active",
+      "remaining": "100000000000000000",
+      "paid": "0",
+      "starts_at": 1792227954,
+      "ends_at": 1794819954
+    }
+  ],
+  "originalClaim": {
+    "id": "ab49942be3d9a29c2253d38a",
+    "policy_id": "bba7cc9bb25beb3386ff798d",
+    "status": "challenge",
+    "findings": {
+      "causation": true,
+      "harm": true,
+      "payout": 100,
+      "scope": false
+    },
+    "verified_loss": "200000000000000000",
+    "payout": "0",
+    "settled_payout": null,
+    "challenge_until": 1792326287,
+    "review_deadline": 1792843900,
+    "outcome": null
+  },
+  "additionalClaim": {
+    "id": "4c4a3238148445a1ca9e696c",
+    "policy_id": "8fafe68551a4e08efdc8b90d",
+    "status": "settled",
+    "findings": {
+      "causation": true,
+      "harm": true,
+      "payout": 100,
+      "scope": false
+    },
+    "verified_loss": "200000000000000000",
+    "payout": "100000000000000000",
+    "settled_payout": "100000000000000000",
+    "challenge_until": 1792242914,
+    "review_deadline": 1792846054,
+    "outcome": "adjudicated"
+  },
+  "additionalSettlement": {
+    "awarded": "100000000000000000",
+    "id": "4c4a3238148445a1ca9e696c",
+    "operator": "0x115a0d969bBB326E1CBE628CEDb21B76A8141D10",
+    "paid": "100000000000000000",
+    "policy_id": "8fafe68551a4e08efdc8b90d",
+    "reason": "Within the remaining shared policy limit"
+  },
+  "controlledClaimant": {
+    "address": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+    "nativeWei": "24190000000000000000"
+  },
+  "claimantPayment": {
+    "beforeWei": "24060000000000000000",
+    "payoutWei": "100000000000000000",
+    "bondWei": "40000000000000000",
+    "afterWei": "24200000000000000000",
+    "exactNativeIncrease": true,
+    "transactions": {
+      "first_2_claimant_payout": "0x2f36d16f47ca4ca54d23f7c75c3ef3c852c7b63f79c58858e0b655f7a346ae09",
+      "first_2_claimant_bonds": "0x0460889e1bd8ee1f1cb902bf79d76b4b19b9299943c023c0f00f6820342b2580",
+      "first_2_duplicate_refusal": "0x333bdb5863007ec8d6b7667a355698c2e0c18e6b94bd0995c0731ca1f994cce5"
+    }
+  },
+  "judgmentReview": {
+    "initialFindings": {
+      "causation": true,
+      "harm": true,
+      "payout": 0,
+      "scope": false
+    },
+    "initialPayoutReason": "https://raw.githubusercontent.com/dotmantissa/ballast/6aec5311433662230f4408f082486b5295606f01/docs/live-cases/registered-account-continuation-20261017/first-history.json and manifest scope explicitly exclude spend_without_approval; tx 0xf467a979cef0eed6acf9d24efa2bd7b34c8cbcb035ce391776f38ee14cd18364 is spend_without_approval to executor 0xf800A850341763301e22Acc8011821882206fe43 per https://explorer-studio.genlayer.com/api/transactions/0xf467a979cef0eed6acf9d24efa2bd7b34c8cbcb035ce391776f38ee14cd18364; scope false in findings and evidence confirms outside policy",
+    "currentFindings": {
+      "causation": true,
+      "harm": true,
+      "payout": 100,
+      "scope": false
+    },
+    "payoutAppeals": [
+      {
+        "field": "payout",
+        "by": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+        "before": 0,
+        "after": 100,
+        "changed": true,
+        "evidence_urls": [
+          "https://explorer-studio.genlayer.com/api/transactions/0xf467a979cef0eed6acf9d24efa2bd7b34c8cbcb035ce391776f38ee14cd18364",
+          "https://raw.githubusercontent.com/dotmantissa/ballast/860f85314b386fbf33ff16509b6fa07da04f1c2d/docs/live-cases/registered-account-continuation-20261017/first-incident.json",
+          "https://raw.githubusercontent.com/dotmantissa/ballast/189d7e40d2a9ff59476e8b44384d3ef49aa99cc5/README.md"
+        ]
+      }
+    ]
+  },
+  "lossRecord": {
+    "claims": 1,
+    "paid": "100000000000000000",
+    "settled_claims": 2
+  },
+  "nativeAccounting": {
+    "poolNativeWei": "781000000000000000",
+    "courtNativeWei": "30000000000000000",
+    "failedPayableTestValueWei": "12000000000000000",
+    "controlledReplayRefusalValueWei": "10000000000000000",
+    "note": "Studio retained 0.002 GEN from a failed repeated bind and 0.01 GEN from an operator self claim refusal. The application now refuses these known invalid paid requests before signing. These amounts are separate from tranche NAV and credited bonds."
+  },
+  "recoveryNote": "The contract runner cleared its former artifacts directory during verification. The original private browser journals and controlled actor keys were lost. Earlier observed passes are flagged above; public signed evidence, server operation records and the registered account custody remained intact. Private state now lives outside generated output and has a separate owner only backup. The additional controlled fixture uses its own backed up keys; its actual outcomes appear in the ledger.",
+  "scenarios": [
+    {
+      "feature": "email sign in",
+      "case": 1,
+      "scenario": "Existing email authenticates through a real Privy code",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "email sign in",
+      "case": 2,
+      "scenario": "Authenticated reload retains the same address",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "email sign in",
+      "case": 3,
+      "scenario": "Sign out removes access to private account routes",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "signedOut": true,
+        "temporarySessionRemoved": true
+      }
+    },
+    {
+      "feature": "account and funds",
+      "case": 1,
+      "scenario": "Baseline balances and previous pool positions load",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "account and funds",
+      "case": 2,
+      "scenario": "Request daily Studio funds and reconcile native balance",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "actualDailyWindow": true,
+        "submittedThroughUI": true
+      }
+    },
+    {
+      "feature": "account and funds",
+      "case": 3,
+      "scenario": "Repeat request is throttled without reducing an existing higher balance",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "higherBalancePreserved": true,
+        "dailyCooldownEnforced": true
+      }
+    },
+    {
+      "feature": "executor authorization",
+      "case": 1,
+      "scenario": "Controlled executor authorizes the registered operator",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "executor authorization",
+      "case": 2,
+      "scenario": "Unauthorized executor registration is rejected",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "executor authorization",
+      "case": 3,
+      "scenario": "Registered executor ownership cannot be reassigned",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "agent registration",
+      "case": 1,
+      "scenario": "Register the first independently authorized executor",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "agent registration",
+      "case": 2,
+      "scenario": "Register a second executor with a distinct manifest",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "agent registration",
+      "case": 3,
+      "scenario": "Register a third executor and recover all three through Mine",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "manifest revisions",
+      "case": 1,
+      "scenario": "Revise an uncovered test agent and preserve identity",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "manifest revisions",
+      "case": 2,
+      "scenario": "Duplicate semantic revision is rejected",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "manifest revisions",
+      "case": 3,
+      "scenario": "Revision while covered is rejected without changing the policy manifest",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xa5e206d5d9a1e73ce4e3c11332448e1936f2f821e55d064f788f6977d6e090aa"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "risk quotes",
+      "case": 1,
+      "scenario": "Real validators assess the first eligible test agent",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xa7ccc1d14c09a5b30425641ef9f3eb3e68d352088861712492676e9092cb7940"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "risk quotes",
+      "case": 2,
+      "scenario": "Real validators assess the second eligible test agent",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x67659547e5f884129e91182a7bbd8370cac14c534cc5bd51a656282780807240"
+      ],
+      "recordIds": [
+        "c9c11ef8382c78f79695c95a"
+      ],
+      "checks": {
+        "submittedThroughUI": true
+      }
+    },
+    {
+      "feature": "risk quotes",
+      "case": 3,
+      "scenario": "Real validators assess the third eligible test agent",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x776ee6e19a2e5dd15779aace65347e88d71d502b33ca92f2d43647d6213f9714"
+      ],
+      "recordIds": [
+        "7aed75a9864ef00416ebc01a"
+      ],
+      "checks": {
+        "submittedThroughUI": true
+      }
+    },
+    {
+      "feature": "coverage binding",
+      "case": 1,
+      "scenario": "Bind one real accepted quote and reconcile premium/reserves",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xd4f87b248fe47209058f4a0eca58f92f24252c340730ef94d47fd475868f6aa8"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "coverage binding",
+      "case": 2,
+      "scenario": "Repeat binding cannot create overlapping cover",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x2efc1a7e7a096ded757463d4e6bcfa096229e426d3efccaf80bfca0429a3f746"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "coverage binding",
+      "case": 3,
+      "scenario": "Binding a stale revision quote is rejected",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "staleManifestQuoteRejected": true,
+        "noPremiumSent": true,
+        "balanceUnchanged": true
+      }
+    },
+    {
+      "feature": "capital contributions",
+      "case": 1,
+      "scenario": "Contribute a small junior test position",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "capital contributions",
+      "case": 2,
+      "scenario": "Contribute a small senior test position",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "capital contributions",
+      "case": 3,
+      "scenario": "Zero or invalid amount is rejected before submission",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "capital redemption",
+      "case": 1,
+      "scenario": "Redeem only a new available test position",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "capital redemption",
+      "case": 2,
+      "scenario": "Excess share redemption is rejected",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x11733c395f8a6db8af1188b62c6a1fc03f1f55717fc17fbca5a93824620e8bda"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "capital redemption",
+      "case": 3,
+      "scenario": "Locked liability backing cannot be redeemed",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xf02221e2d78c619e6cc9b4ea84176b65783864fa352f0f42b20a6f431053caf6"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "pool withdrawals",
+      "case": 1,
+      "scenario": "Withdraw newly created test redemption credit",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "pool withdrawals",
+      "case": 2,
+      "scenario": "Native balance increases by exactly the credited amount",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "pool withdrawals",
+      "case": 3,
+      "scenario": "Repeat withdrawal with no credit is rejected or disabled",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "claim filing",
+      "case": 1,
+      "scenario": "File an evidenced real controlled loss from a separate claimant",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [
+        "ab49942be3d9a29c2253d38a",
+        "bba7cc9bb25beb3386ff798d"
+      ],
+      "checks": {}
+    },
+    {
+      "feature": "claim filing",
+      "case": 2,
+      "scenario": "Duplicate canonical loss is rejected",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x333bdb5863007ec8d6b7667a355698c2e0c18e6b94bd0995c0731ca1f994cce5"
+      ],
+      "recordIds": [
+        "4c4a3238148445a1ca9e696c"
+      ],
+      "checks": {
+        "canonicalCompensatedEventRejected": true,
+        "crossPolicyReplayRefused": true,
+        "caseAliasNormalized": true
+      }
+    },
+    {
+      "feature": "claim filing",
+      "case": 3,
+      "scenario": "Operator cannot file against their own policy",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x1ae17e01e4deaaab9e35f36b84efe7aeca9bb8697b8e4712696b66543f79be05"
+      ],
+      "recordIds": [],
+      "checks": {
+        "operatorSelfClaimRejected": true
+      }
+    },
+    {
+      "feature": "additional evidence",
+      "case": 1,
+      "scenario": "Add reachable independent corroboration to the case",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xbaa7ed59487a0cd662de367cb22d4813793240e77247528935fb0baf4c4bb5c4"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "additional evidence",
+      "case": 2,
+      "scenario": "Same host aliases do not count as separate hosts",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "sameHostAliasesRejected": true
+      }
+    },
+    {
+      "feature": "additional evidence",
+      "case": 3,
+      "scenario": "Malformed source is rejected without breaking the case view",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "malformedSourceRejected": true
+      }
+    },
+    {
+      "feature": "four findings",
+      "case": 1,
+      "scenario": "Resolve actual harm and verify evidenced amount and time",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [
+        "ab49942be3d9a29c2253d38a"
+      ],
+      "checks": {
+        "harm": true,
+        "actualEventTimeVerified": true
+      }
+    },
+    {
+      "feature": "four findings",
+      "case": 2,
+      "scenario": "Resolve actual causation and scope independently",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [
+        "ab49942be3d9a29c2253d38a"
+      ],
+      "checks": {
+        "causation": true,
+        "withinScope": false
+      }
+    },
+    {
+      "feature": "four findings",
+      "case": 3,
+      "scenario": "Resolve payout and show all four actual findings",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [
+        "ab49942be3d9a29c2253d38a"
+      ],
+      "checks": {
+        "allFourRendered": true,
+        "realValidatorJudgments": true
+      }
+    },
+    {
+      "feature": "scoped appeals",
+      "case": 1,
+      "scenario": "Operator appeals a finding with reachable evidence",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x7b67194815986f9b9810c90d190f9626049ea0223e0e8d55b8d16458aae83549"
+      ],
+      "recordIds": [
+        "4c4a3238148445a1ca9e696c"
+      ],
+      "checks": {
+        "actualFinding": false,
+        "additionalControlledFixture": true
+      }
+    },
+    {
+      "feature": "scoped appeals",
+      "case": 2,
+      "scenario": "Claimant retains their independent challenge right",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [
+        "4c4a3238148445a1ca9e696c"
+      ],
+      "checks": {
+        "independentPartyRights": true
+      }
+    },
+    {
+      "feature": "scoped appeals",
+      "case": 3,
+      "scenario": "A consumed party right cannot be used twice",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "repeatRightRefused": true,
+        "noBondSent": true,
+        "balanceUnchanged": true
+      }
+    },
+    {
+      "feature": "decision and settlement",
+      "case": 1,
+      "scenario": "Both parties can accept the actual decision",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xe7efdbf288beb2f08780d0b6f92e47fb8873bffee1a5ce089357070213622171"
+      ],
+      "recordIds": [
+        "4c4a3238148445a1ca9e696c"
+      ],
+      "checks": {
+        "bothPartiesAccepted": true
+      }
+    },
+    {
+      "feature": "decision and settlement",
+      "case": 2,
+      "scenario": "Finalize only after the decision becomes eligible",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x4bc6dfc02a21fc079509cb22e02e0261af32375420b86615b601dd7bd0547ed7"
+      ],
+      "recordIds": [
+        "4c4a3238148445a1ca9e696c"
+      ],
+      "checks": {}
+    },
+    {
+      "feature": "decision and settlement",
+      "case": 3,
+      "scenario": "Settle only with an authenticated finalized decision proof",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xf1e66be0a638a033ccb52157c8760f8052c24a09c779adbcd0fe6a954d5b2b2d"
+      ],
+      "recordIds": [
+        "4c4a3238148445a1ca9e696c"
+      ],
+      "checks": {
+        "authenticatedFinalProofChecked": true
+      }
+    },
+    {
+      "feature": "bond withdrawal",
+      "case": 1,
+      "scenario": "Read actual bond credit after case closure",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "bond withdrawal",
+      "case": 2,
+      "scenario": "Withdraw available returned test bonds",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xc15771daba95989f75da3b425001246ee57c88ca7e6df540d30999a073792943"
+      ],
+      "recordIds": [],
+      "checks": {
+        "exactNativeIncrease": true
+      }
+    },
+    {
+      "feature": "bond withdrawal",
+      "case": 3,
+      "scenario": "Repeat empty bond withdrawal cannot pay twice",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xd4023a11663dd0e77d24b0560ac35b9604fab04de20911dc6715f9148b32309f"
+      ],
+      "recordIds": [],
+      "checks": {
+        "duplicatePaymentRefused": true
+      }
+    },
+    {
+      "feature": "loss history",
+      "case": 1,
+      "scenario": "Sync the actually settled claim into the agent record",
+      "status": "not run",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "stoppedAtOwnerRequest": true
+      }
+    },
+    {
+      "feature": "loss history",
+      "case": 2,
+      "scenario": "Repeat sync cannot count the claim twice",
+      "status": "not run",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "stoppedAtOwnerRequest": true
+      }
+    },
+    {
+      "feature": "loss history",
+      "case": 3,
+      "scenario": "Paid totals match the settled compensation amount",
+      "status": "not run",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "stoppedAtOwnerRequest": true
+      }
+    },
+    {
+      "feature": "claim recovery",
+      "case": 1,
+      "scenario": "Republish a finalized case confirmation without changing its decision",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x5a5b39374b9254f8d8c2e74d2abdf065299f1016b72f98896cd05e614e88422f"
+      ],
+      "recordIds": [],
+      "checks": {
+        "decisionUnchanged": true
+      }
+    },
+    {
+      "feature": "claim recovery",
+      "case": 2,
+      "scenario": "Withdraw an unassessed separate test case and return bond",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x47efb732243a46c097276cec1a16c2a8b061e62bda8adc0d6440dbad519079a4"
+      ],
+      "recordIds": [
+        "efd190ac4296caeab31c7b51"
+      ],
+      "checks": {
+        "claimBondReturned": true,
+        "unassessedCaseClosed": true
+      }
+    },
+    {
+      "feature": "claim recovery",
+      "case": 3,
+      "scenario": "An unelapsed unresolved deadline cannot be closed early",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x5749e7cf81d85d43936ecedb83e593c98e7e0d67996cd270ae9623a6a5397b56"
+      ],
+      "recordIds": [
+        "4c4a3238148445a1ca9e696c"
+      ],
+      "checks": {
+        "unresolvedAtSubmission": true,
+        "earlyTimeoutRejected": true
+      }
+    },
+    {
+      "feature": "policy expiry",
+      "case": 1,
+      "scenario": "Active policy cannot release cover early",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x03dbbd005c0c26a59919524e40c03b8904dfa4f341a90a744a7ed10f2bad17d1"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "policy expiry",
+      "case": 2,
+      "scenario": "Fully closed policy remains readable by ID",
+      "status": "not run",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "stoppedAtOwnerRequest": true
+      }
+    },
+    {
+      "feature": "policy expiry",
+      "case": 3,
+      "scenario": "Runoff or expiry with unelapsed filing deadline is safely refused",
+      "status": "not run",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "stoppedAtOwnerRequest": true
+      }
+    },
+    {
+      "feature": "records and filtering",
+      "case": 1,
+      "scenario": "Mine returns the target account test agents",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [
+        "4258a4951810ed750dc49246",
+        "43525bad248e3980f4843359",
+        "ed013b116c0e464096e53f86"
+      ],
+      "checks": {
+        "mineOnly": true
+      }
+    },
+    {
+      "feature": "records and filtering",
+      "case": 2,
+      "scenario": "Direct policy and claim lookup matches actual stored IDs",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [
+        "ab49942be3d9a29c2253d38a",
+        "bba7cc9bb25beb3386ff798d"
+      ],
+      "checks": {
+        "directLookupsMatch": true
+      }
+    },
+    {
+      "feature": "records and filtering",
+      "case": 3,
+      "scenario": "Pagination cursors remain valid and records are not lost",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "absoluteCursorStable": true,
+        "zeroCursorEmpty": true,
+        "invalidCursorRejected": true,
+        "liveDatasetBelow50": true
+      }
+    },
+    {
+      "feature": "activity and retries",
+      "case": 1,
+      "scenario": "Activity records actual submitted transaction IDs",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "realTransactionIds": true,
+        "failedConsensusDisplayedAccurately": true
+      }
+    },
+    {
+      "feature": "activity and retries",
+      "case": 2,
+      "scenario": "Identical idempotency key returns the same operation",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [
+        "0xbaa7ed59487a0cd662de367cb22d4813793240e77247528935fb0baf4c4bb5c4"
+      ],
+      "recordIds": [],
+      "checks": {
+        "sameKeySameOperation": true
+      }
+    },
+    {
+      "feature": "activity and retries",
+      "case": 3,
+      "scenario": "Changed action under a reused key is rejected",
+      "status": "passed",
+      "recoveredObservation": false,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {
+        "changedBodyRejected": true
+      }
+    },
+    {
+      "feature": "navigation and accessibility",
+      "case": 1,
+      "scenario": "Desktop navigation remains available while scrolling",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "navigation and accessibility",
+      "case": 2,
+      "scenario": "Mobile navigation and Back to top operate without overflow",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "navigation and accessibility",
+      "case": 3,
+      "scenario": "Visible focus and reduced motion work on signed in pages",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "themes and account UI",
+      "case": 1,
+      "scenario": "Light mode remains legible with populated records",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "themes and account UI",
+      "case": 2,
+      "scenario": "Dark mode persists on authenticated reload",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "themes and account UI",
+      "case": 3,
+      "scenario": "Account controls show the correct public address without exposing secrets",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "dialog accessibility",
+      "case": 1,
+      "scenario": "Account dialog has a proper accessible name",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "dialog accessibility",
+      "case": 2,
+      "scenario": "Capital dialog has a proper accessible name and description",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "dialog accessibility",
+      "case": 3,
+      "scenario": "Registration dialog has a proper accessible name and description",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "earlier pool redemption",
+      "case": 1,
+      "scenario": "Observe the account owner\u2019s confirmed 15 GEN junior redemption",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": true,
+      "transactions": [
+        "0x6107b7cdde4dc007211e2ec56b75ed4b66d570f87e923ec5f985911e1a4d8ddb"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "earlier pool redemption",
+      "case": 2,
+      "scenario": "An empty earlier junior position cannot redeem shares",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x6ab6dd1ed065590b0ff9f9da9bcde009e092923c6bb9f401c5d5578e98f51b4b"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "earlier pool redemption",
+      "case": 3,
+      "scenario": "Oversized earlier senior redemption preserves the existing position",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x85d6ca89e8216d7f3c31e7d7ace2d3b47c12837a2c11ade12b0852d5db910779"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "earlier pool withdrawal",
+      "case": 1,
+      "scenario": "Observe the account owner\u2019s confirmed 15 GEN native withdrawal",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": true,
+      "transactions": [
+        "0xc06750a55025e523fc3911c4415176bd09f143f52820f16e2a8c2d6394688065"
+      ],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "earlier pool withdrawal",
+      "case": 2,
+      "scenario": "Empty earlier credit disables its withdrawal control",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [],
+      "recordIds": [],
+      "checks": {}
+    },
+    {
+      "feature": "earlier pool withdrawal",
+      "case": 3,
+      "scenario": "A direct empty credit withdrawal cannot pay twice",
+      "status": "passed",
+      "recoveredObservation": true,
+      "ownerAssisted": false,
+      "transactions": [
+        "0x12f2d610b0dfa86b685fb5bab208030d70acf9a62fb2a872802881bab02d45b8"
+      ],
+      "recordIds": [],
+      "checks": {}
+    }
+  ]
+}

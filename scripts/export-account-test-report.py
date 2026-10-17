@@ -63,6 +63,7 @@ report = {
     'deployment': snapshot['deployment'],
     'scenarioCount': len(rows), 'counts': dict(counts),
     'complete': counts['passed'] == len(rows),
+    'stoppedAtOwnerRequest': any(row['status'] == 'not run' for row in rows),
     'recoveredObservationCount': sum(row['recoveredObservation'] for row in rows),
     'ownerAssistedObservationCount': sum(row['ownerAssisted'] for row in rows),
     'verification': {'unitTests': 112, 'directContractTests': 140, 'hostedBrowserTests': 9, 'lint': 'passed', 'typecheck': 'passed', 'productionBuild': 'passed'},
@@ -90,8 +91,8 @@ def gen(value):
 
 areas = list(dict.fromkeys(row['feature'] for row in rows))
 lines = ['# Registered account checks', '',
-    f"The live account journey contains {len(rows)} scenarios, three per area. {counts['passed']} passed. The [complete ledger](account-test-result.json) retains each result and available transaction references.", '',
-    f"The final public chain read was taken at {snapshot['observedAt']}. The account used real email authentication and the normal Ballast relay. Controlled counterparties supplied their own Studio test funds and actual transaction evidence.", '',
+    f"The live account journey planned {len(rows)} scenarios, three per area. {counts['passed']} passed; {counts['not run']} were not run because the owner asked to close testing. The [result ledger](account-test-result.json) retains each outcome and available transaction references.", '',
+    f"The closing public chain reads started at {snapshot['observedAt']}. The account used real email authentication and the normal Ballast relay. Controlled counterparties supplied their own Studio test funds and actual transaction evidence.", '',
     '| Area | Passed | Other results |', '| :--- | ---: | :--- |']
 for area in areas:
     state = Counter(row['status'] for row in rows if row['feature'] == area)
@@ -106,7 +107,7 @@ lines += ['',
     f"The account holds {gen(snapshot['nativeWei'])} native GEN. Its earlier senior position remains {gen(snapshot['earlierPool']['senior_value'])} GEN. Current reserved cover is {gen(snapshot['dashboard']['reserved'])} GEN; allocated backing and premiums remain locked under the contract rules.", '',
     'Two initial payable refusal tests left 0.012 GEN in the Studio contracts. The new server preflight rejects known invalid premium and bond submissions before signing. Live checks verified unchanged account balances for stale quotes, repeated binding and operator self claims.', '',
     f"{report['recoveredObservationCount']} earlier observed passes were reconstructed after the runner removed the original private journals. Those rows are labelled individually. Two successful earlier pool actions were performed by the account owner and explicitly confirmed during testing. The remaining checks record their own live observations.", '',
-    'Verification also passed 112 unit tests, 140 direct contract tests, lint, type checking, the production build and nine hosted browser checks. Direct tests use controlled SDK stand ins. Four browser regressions supply deliberately malformed public records, while the other five read the live deployment. Live account scenarios use actual application responses and Studio outcomes. The live cursor tests cover the current small dataset; the separate direct tests cover records beyond 50.', '',
+    'Verification also passed 112 unit tests, 140 direct contract tests, lint, type checking, the production build and nine hosted browser checks. Direct tests use controlled SDK stand ins. Four browser regressions supply controlled public records, while the other five read the live deployment. Live account scenarios use actual application responses and Studio outcomes. The live cursor tests cover the current small dataset; the separate direct tests cover records beyond 50.', '',
     'Private sessions, signing keys and request credentials are excluded from this report. The recovery checklist remains local and Git ignored.', '']
 Path('docs/account-testing.md').write_text('\n'.join(lines))
 print(json.dumps({'report': str(output), 'counts': dict(counts), 'complete': report['complete']}))

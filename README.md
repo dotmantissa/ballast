@@ -87,6 +87,8 @@ Direct contract tests cover permissions, validation, reserve accounting, rejecte
 
 The [review exercise](docs/review-integration-result.json) completed a real claim for 0.2 Studio GEN, including a scoped appeal, settlement and claimant receipt of native funds. [Regression coverage](docs/reviewer-remediation.md) maps the review findings to the changes and evidence.
 
+The [registered account checks](docs/account-testing.md) planned three scenarios in each of 26 areas through real email authentication and the live application. Testing closed at the owner’s request with 73 passed and five not run. The ledger records actual decisions, payments, refusals and remaining commitments. It also preserves an initial payout judgment that changed on appeal and identifies observations recovered after a local test runner cleanup.
+
 For a fresh Studio deployment, start with an empty address record, provide `GENLAYER_DEPLOYER_KEY` in the local environment and run `npm run deploy:contracts`. The integration deployment can use a separate record through `BALLAST_DEPLOYMENT_FILE`. Local tooling also supports `BALLAST_CURL_RPC=1` when the environment’s Node HTTP transport cannot reach Studio; curl must be installed. See [verification notes](docs/verification.md) for commands, results and the limits of what was exercised.
 
 ## Operational notes
