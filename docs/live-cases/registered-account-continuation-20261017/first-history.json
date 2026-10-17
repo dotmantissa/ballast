@@ -1,0 +1,80 @@
+{
+  "message": {
+    "purpose": "Controlled live registered account quality checks on GenLayer Studio. The vault intentionally exposes an insecure path for a small liability test. These records describe actual transactions, not customer allegations or fabricated claims.",
+    "network": "GenLayer Studio",
+    "operator": "0x115a0d969bBB326E1CBE628CEDb21B76A8141D10",
+    "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+    "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+    "vault": "0xffFB77D46103Cf4cdFA6eE02f7b799Ac7bC5c8FB",
+    "mandate": "Only execute_approved_refund after the claimant approves the exact amount, maximum 1 GEN per transfer, paid only to the claimant. All spend_without_approval calls and other recipients are outside scope.",
+    "source_url": "https://raw.githubusercontent.com/dotmantissa/ballast/189d7e40d2a9ff59476e8b44384d3ef49aa99cc5/tests/integration/contracts/incident_vault.py",
+    "history": {
+      "approved_wei": "0",
+      "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+      "escrow_wei": "900000000000000000",
+      "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+      "history": [
+        {
+          "amount_wei": "1000000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "deposit",
+          "occurred_at": 1792239967,
+          "recipient": "0xffFB77D46103Cf4cdFA6eE02f7b799Ac7bC5c8FB"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "approval",
+          "occurred_at": 1792240041,
+          "recipient": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "approved_refund",
+          "occurred_at": 1792240116,
+          "recipient": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD"
+        }
+      ],
+      "loss": null
+    },
+    "transactions": {
+      "authorize": {
+        "hash": "0x6b5cd799a7907a855a335d409d50e281f1ac41eb6fd9e12d97c0744be1a665d9",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x6b5cd799a7907a855a335d409d50e281f1ac41eb6fd9e12d97c0744be1a665d9"
+      },
+      "deploy": {
+        "hash": "0x8bcdae20a27d027c845f0c62c81e499204593148b56ac19aeb1086d53ea6f11d",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x8bcdae20a27d027c845f0c62c81e499204593148b56ac19aeb1086d53ea6f11d"
+      },
+      "deposit": {
+        "hash": "0x67303e2e278c829154fa88bda32de990d8f42205c9ebbd58f0c8ae9c662136bf",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x67303e2e278c829154fa88bda32de990d8f42205c9ebbd58f0c8ae9c662136bf"
+      },
+      "approve": {
+        "hash": "0x40087e262616092cca370089635c5b07ecbab7aabd970d089ea0cb06ec17adcb",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x40087e262616092cca370089635c5b07ecbab7aabd970d089ea0cb06ec17adcb"
+      },
+      "refund": {
+        "hash": "0xa1929351fd521ccfc2a71b0c810ca8153f660cb55d95affe93938fdcf525b15e",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0xa1929351fd521ccfc2a71b0c810ca8153f660cb55d95affe93938fdcf525b15e"
+      }
+    }
+  },
+  "signature_encoding": "Ethereum personal_sign over UTF8 JSON.stringify(message), preserving property order",
+  "signatures": [
+    {
+      "role": "executor",
+      "address": "0xf800A850341763301e22Acc8011821882206fe43",
+      "signature": "0x4d57f9480e25ca88b8fae7e6e34fee19948d4b90d54af4e0a2744d1c6cb4ca7b6ad746624b11c059c5375474f5daf74696fa32e2992c3287e0916db378c5edcd1c"
+    },
+    {
+      "role": "claimant",
+      "address": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+      "signature": "0x621b3dddd3175a0f9650e9579fa2921517d4ceb30530b2e6aff7f7eb62387da323b55d751d4b9cfb169694695125fc74aa2668cb77d8e8425c95181e3d52b6a71c"
+    }
+  ]
+}
