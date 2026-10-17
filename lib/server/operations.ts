@@ -280,10 +280,24 @@ export async function submitAction(
         method = "sync_loss";
         args = [action.claimId];
         break;
-      case "expire":
-        method = "expire_policy";
+      case "publish_confirmation": {
+        const routes = {
+          agent: ["registry", "publish_agent"],
+          policy: ["underwriting", "publish_policy"],
+          claim: ["court", "publish_final_claim"],
+          settlement: ["underwriting", "publish_settlement"],
+        } as const;
+        [contract, method] = routes[action.target];
+        args = [action.recordId];
+        break;
+      }
+      case "expire": {
+        const seal = await read<Record<string, unknown>>("court", "get_final_policy_seal", [action.policyId]);
+        contract = seal.policy_id ? "underwriting" : "court";
+        method = seal.policy_id ? "expire_policy" : "seal_policy";
         args = [action.policyId];
         break;
+      }
     }
     const balance = await client.getBalance({ address: account.address });
     if (balance < value)

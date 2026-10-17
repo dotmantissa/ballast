@@ -94,6 +94,7 @@ const operationNames: Record<string, string> = {
   sync_loss: "Record loss history",
   acknowledge: "Confirm settlement",
   expire: "Release expired cover",
+  publish_confirmation: "Refresh a confirmation",
   faucet: "Add test funds",
 };
 
@@ -955,6 +956,18 @@ export function BallastApp() {
                         <span className="mono">
                           Scope {short(agent.manifest_hash, 12)}
                         </span>
+                        {isMine(agent.operator) && (
+                          <button
+                            className="text-button"
+                            disabled={busy !== null}
+                            onClick={() => void quick(
+                              { kind: "publish_confirmation", target: "agent", recordId: agent.id },
+                              agent.id + "confirm",
+                            )}
+                          >
+                            Refresh confirmation
+                          </button>
+                        )}
                         <button
                           className="button small secondary"
                           onClick={() =>
@@ -1047,6 +1060,16 @@ export function BallastApp() {
                               <Status status={p.status} />
                             </td>
                             <td>
+                              <button
+                                className="text-button"
+                                disabled={busy !== null}
+                                onClick={() => void quick(
+                                  { kind: "publish_confirmation", target: "policy", recordId: p.id },
+                                  p.id + "confirm",
+                                )}
+                              >
+                                Refresh confirmation
+                              </button>
                               {p.status === "active" && (
                                 <button
                                   className="text-button"
@@ -1057,7 +1080,7 @@ export function BallastApp() {
                                   File claim
                                 </button>
                               )}
-                              {p.status === "active" &&
+                              {["active", "runoff"].includes(p.status) &&
                                 now / 1000 > p.ends_at + 7 * 86400 && (
                                   <button
                                     className="text-button"
@@ -1216,6 +1239,10 @@ export function BallastApp() {
                       }
                       busy={busy}
                       accountAddress={account?.address}
+                      onRepair={(target) => void quick(
+                        { kind: "publish_confirmation", target, recordId: currentClaim.id },
+                        currentClaim.id + "confirm",
+                      )}
                       onAcknowledge={() =>
                         void quick(
                           { kind: "acknowledge", claimId: currentClaim.id },
@@ -1801,6 +1828,7 @@ function ClaimDetail({
   onSync,
   accountAddress,
   onAcknowledge,
+  onRepair,
   onEvidence,
   onWithdraw,
   onCloseOverdue,
@@ -1808,6 +1836,7 @@ function ClaimDetail({
 }: {
   accountAddress?: string;
   onAcknowledge: () => void;
+  onRepair: (target: "claim" | "settlement") => void;
   onEvidence: () => void;
   onWithdraw: () => void;
   onCloseOverdue: () => void;
@@ -2059,6 +2088,21 @@ function ClaimDetail({
               Confirm the settled record
             </button>
           )}
+          <details className="confirmation-recovery">
+            <summary>Waiting on a confirmation?</summary>
+            <p>
+              Network messages sometimes need another nudge. Refreshing sends
+              the same recorded facts again. It cannot change a decision or pay twice.
+            </p>
+            <div>
+              <button className="text-button" disabled={busy !== null} onClick={() => onRepair("claim")}>
+                Refresh the final decision
+              </button>
+              <button className="text-button" disabled={busy !== null} onClick={() => onRepair("settlement")}>
+                Refresh the pool settlement
+              </button>
+            </div>
+          </details>
           <p>
             Settle first, then update the operator’s loss record. Paid claims
             become pool credits. Withdraw them from your account. Final

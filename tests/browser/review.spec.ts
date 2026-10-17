@@ -154,3 +154,16 @@ test("mobile record lookup stays within the viewport and the header remains visi
     animations: "disabled",
   });
 });
+
+test("final cases expose confirmation recovery without losing mobile layout",async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  const finalCase={...claim(latest,"A final case awaiting confirmed pool settlement remains recoverable."),status:"final",outcome:"adjudicated",payout:"1000000000000000000",findings:{harm:true,causation:true,scope:false,payout:100}};
+  await page.route("**/api/overview",r=>r.fulfill({json:{...overview,claims:[finalCase]}}));
+  await page.goto("/");
+  await page.getByRole("button",{name:"Open navigation"}).click();
+  await page.getByRole("button",{name:/^Claims court/}).click();
+  await page.getByText("Waiting on a confirmation?",{exact:true}).click();
+  await expect(page.getByRole("button",{name:"Refresh the final decision",exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Refresh the pool settlement",exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

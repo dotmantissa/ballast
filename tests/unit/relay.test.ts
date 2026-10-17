@@ -344,3 +344,21 @@ it.each(["redeem_legacy","withdraw_legacy"] as const)("routes %s only to the arc
   await submitAction(user,kind==="redeem_legacy"?{kind,tranche:"junior",shares:"1"}:{kind},key);
   expect(model.write).toHaveBeenCalledWith(expect.objectContaining({address:previous.underwriting,functionName:kind==="redeem_legacy"?"redeem":"withdraw",value:0n}));
 });
+
+it.each([
+  ["agent", "registry", "publish_agent"],
+  ["policy", "underwriting", "publish_policy"],
+  ["claim", "court", "publish_final_claim"],
+  ["settlement", "underwriting", "publish_settlement"],
+] as const)("republishes %s confirmations through a fixed zero value route", async (target, contract, method) => {
+  const { addresses } = await import("../../lib/server/chain");
+  await submitAction(user, {kind:"publish_confirmation",target,recordId:"a".repeat(24)},key);
+  expect(model.write).toHaveBeenCalledWith(expect.objectContaining({address:addresses[contract],functionName:method,args:["a".repeat(24)],value:0n}));
+});
+
+it.each([false,true])("requires a final filing seal before choosing expiry, sealed=%s",async(sealed)=>{
+  const { read, addresses }=await import("../../lib/server/chain");
+  vi.mocked(read).mockResolvedValueOnce(sealed?{policy_id:"a".repeat(24),total_requested:"1"}:{});
+  await submitAction(user,{kind:"expire",policyId:"a".repeat(24)},key);
+  expect(model.write).toHaveBeenCalledWith(expect.objectContaining({address:sealed?addresses.underwriting:addresses.court,functionName:sealed?"expire_policy":"seal_policy",value:0n}));
+});

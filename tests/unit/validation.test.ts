@@ -66,3 +66,9 @@ describe("action boundary", () => {
     ).toBe(false);
   });
 });
+
+it("limits confirmation recovery to known records and methods",()=>{
+  expect(actionSchema.safeParse({kind:"publish_confirmation",target:"claim",recordId:id}).success).toBe(true);
+  expect(actionSchema.safeParse({kind:"publish_confirmation",target:"withdraw",recordId:id}).success).toBe(false);
+  expect(actionSchema.safeParse({kind:"publish_confirmation",target:"policy",recordId:"../secret"}).success).toBe(false);
+});

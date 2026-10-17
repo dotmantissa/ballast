@@ -1184,6 +1184,7 @@ body:has(.activity-tray) .footer {
 }
 .agent-block-foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--line);
@@ -1636,6 +1637,20 @@ td strong {
 .settlement-box > p {
   font-size: 11px;
   color: var(--muted);
+}
+.confirmation-recovery summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+.confirmation-recovery p {
+  margin: 10px 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.confirmation-recovery > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .appeal-history {
   margin-top: 24px;

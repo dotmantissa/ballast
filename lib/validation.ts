@@ -114,6 +114,11 @@ export const actionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("settle"), claimId: id }),
   z.object({ kind: z.literal("sync_loss"), claimId: id }),
   z.object({ kind: z.literal("expire"), policyId: id }),
+  z.object({
+    kind: z.literal("publish_confirmation"),
+    target: z.enum(["agent", "policy", "claim", "settlement"]),
+    recordId: id,
+  }),
   z.object({ kind: z.literal("faucet") }),
 ]);
 export type Action = z.infer<typeof actionSchema>;
