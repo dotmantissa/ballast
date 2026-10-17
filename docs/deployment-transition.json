@@ -1,0 +1,22 @@
+{
+  "network": "studionet",
+  "verifiedAt": "2026-10-17T02:25:59.374Z",
+  "previous": {
+    "registry": "0xB345B7C5DEB66974ca235e59feb96d88439d9586",
+    "underwriting": "0x373f3909d77ec6834fcd643DF34a1A866fEabB32",
+    "court": "0xCBEdCEd831c7548B30Cf0582A27E981fBC11241f",
+    "nativeBalanceWei": "20000000000000000000",
+    "tvgWei": "20000000000000000000",
+    "agentCount": 0,
+    "policyCount": 0,
+    "claimCount": 0
+  },
+  "candidate": {
+    "registry": "0x5BB4F3C8D04803128452958604f99637D4A2c8Fb",
+    "underwriting": "0x30B2751eff76306B968123f5dAb24043b1DDF09A",
+    "court": "0x10f330aeCB384F4181Eccd3789781E45F0389934",
+    "sourceVerifiedAt": "2026-10-17T02:23:51.744Z",
+    "emptyVerifiedAt": "2026-10-17T02:23:51.744Z"
+  },
+  "policy": "Existing positions remain in the earlier immutable pool. The app exposes holder initiated redemption and withdrawal there. New capital and cover use the corrected deployment. No holder funds were moved."
+}

@@ -1,25 +1,28 @@
 {
-  "chainId": 61999,
   "network": "studionet",
-  "rpc": "https://studio.genlayer.com/api",
-  "registry": "0xB345B7C5DEB66974ca235e59feb96d88439d9586",
-  "underwriting": "0x373f3909d77ec6834fcd643DF34a1A866fEabB32",
-  "court": "0xCBEdCEd831c7548B30Cf0582A27E981fBC11241f",
+  "purpose": "Clean application deployment after reviewer remediation",
+  "deploymentGeneration": "review-remediation-production-v1",
   "transactions": {
-    "registry": "0x1f3bbedb0a1a62dd8b90209eea16274c4dfe55cf0befb350d5aeaa289c95bb1f",
-    "underwriting": "0x547b4719c468b74117fc0a58f7436c20a37c0f0b71ee769860bdc4eebbb2bd88",
-    "court": "0xd0c7a26b562a8460019904f081bb7297a18fbb02f3f78d4353928b536cf61f73",
-    "wire_registry": "0x71281cc02edd61d656c325e872a4410d8f884430aa6b5d7a444b6a4a1dce0df1",
-    "wire_pool": "0x411291dbf18a070b7b78f439b535e7f9ef4aa1a8cf4d0706b8eac5846c20cf51"
+    "registry": "0x4b52f2627fb284fec535932f18a200652d3fa07081579222c5c91967922716c7",
+    "underwriting": "0x0445cf81430a411ff58c12be48006ae2c1810ed027d07149258c2b0b8050ab8b",
+    "court": "0x32119d6e2ff4ac3e42f5b6498ebce78ace44f7605c3670f29e124e0ab96c84d9",
+    "wire_registry": "0x70e18eadda6109af60d8f1d8e0448eeacb77527b5774f3bd03276396af6920a7",
+    "wire_pool": "0xcb231fcb66088f010056f94b8b127c7cd6586f297e174860c1f2c2cd69b550ea"
   },
   "sourceHashes": {
-    "registry": "6da17e02797f6c937a49aa2d956d9075b3763512f8f04b2aa95d788bda1fd63b",
-    "underwriting": "e878d2731333eb73a4b62c18ee0f0e29722b84432989867c52e5130b2ee368dd",
-    "court": "b6cdceb22fbd8c473ff0ceb01eeeef1a47936ead31f580bb10fad977e546b1e7"
+    "registry": "f8004769e45b43d284ab12aa9dce34c34811f52d4d9cc172861e024a8b490198",
+    "underwriting": "b7de43b60702c25dc612b2b9085c11d425b7c2a813ed31d731f9aa8ab5b2fc67",
+    "court": "0cac9c757c24e16a83a43fa0a502744b8bc5976d157aa9c28ae164666b64e58e"
   },
+  "registry": "0x5BB4F3C8D04803128452958604f99637D4A2c8Fb",
+  "underwriting": "0x30B2751eff76306B968123f5dAb24043b1DDF09A",
+  "court": "0x10f330aeCB384F4181Eccd3789781E45F0389934",
   "wired": {
     "wire_registry": true,
     "wire_pool": true
   },
-  "verifiedAt": "2026-10-16T10:32:29.947Z"
+  "verifiedAt": "2026-10-17T02:22:18.496Z",
+  "chainId": 61999,
+  "sourceVerifiedAt": "2026-10-17T02:23:51.744Z",
+  "emptyVerifiedAt": "2026-10-17T02:23:51.744Z"
 }
