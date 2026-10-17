@@ -75,8 +75,8 @@ export async function earlyRecovery(page,expect){
 }
 export async function duplicate(page,expect){
  const actors=await load('actors-public');const row=await page.qa.test('claim filing',2,async()=>{
-  const check=actors.checks.first_2_duplicate_refusal;expect(check.done).toBe(true);expect(check.expectedExecution).toBe('error');expect(check.receipt.error).not.toContain('did not agree');const c=await claim(page,expect);expect(BigInt(c.settled_payout)).toBeGreaterThan(0n);
-  return {transaction:check.hash,canonicalCompensatedEventRejected:true,claimId:c.id};
+  const check=actors.checks.first_2_duplicate_refusal;expect(check.done).toBe(true);expect(check.expectedExecution).toBe('error');expect(check.receipt.error).toContain('already been compensated');const c=await claim(page,expect);expect(BigInt(c.settled_payout)).toBeGreaterThan(0n);
+  return {transaction:check.hash,canonicalCompensatedEventRejected:true,crossPolicyReplayRefused:true,caseAliasNormalized:true,claimId:c.id};
  });return {status:row.status,error:row.error,evidence:row.evidence};
 }
 export async function finish(page,expect){

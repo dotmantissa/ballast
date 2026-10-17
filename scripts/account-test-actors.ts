@@ -122,7 +122,17 @@ if(stage==='history'){
    const audit={observedAt:new Date().toISOString(),claim:await read(court,'get_claim',[claim.id]),finalClaim,finalSettlement:await read(deployment.underwriting as `0x${string}`,'get_final_settlement',[claim.id]),policy:await read(deployment.underwriting as `0x${string}`,'get_final_policy',[claim.policyId]),lossRecord:await read(deployment.registry as `0x${string}`,'get_loss_record',[operator!]),claimantPool:await read(deployment.underwriting as `0x${string}`,'get_account',[actors.claimant.account.address]),claimantCourt:await read(court,'get_account_cases',[actors.claimant.account.address]),claimantBalance:(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString()};
    await writeFile(folder+'/audit-'+caseKey+'.json',JSON.stringify(jsonSafe(audit),null,2)+'\n',{mode:0o600});
   }else if(stage==='withdraw_case')await write(caseKey+'_withdraw','claimant',court,'withdraw_claim',[claim.id]);
-  else if(stage==='duplicate_claim')await write(caseKey+'_duplicate_refusal','claimant',court,'file_claim',[claim.policyId,claim.incidentRef,claim.incidentAt,10n**17n,claim.statement,claim.evidenceUrls],10n**16n,'error');
+  else if(stage==='duplicate_claim'){
+   // Use another still open policy so exhaustion cannot mask the global event guard.
+   const original=JSON.parse(await readFile('.ballast-private/account-tests/policy-first.json','utf8'));
+   assert.notEqual(original.id,claim.policyId);
+   const target=await read(deployment.underwriting as `0x${string}`,'get_final_policy',[original.id]) as {status:string;remaining:string;starts_at:number;ends_at:number};
+   assert.equal(target.status,'active');assert.ok(BigInt(target.remaining)>=10n**17n);assert.ok(target.starts_at<=claim.incidentAt&&claim.incidentAt<=target.ends_at);
+   const resolved=await read(court,'get_claim',[claim.id]) as {event_key:string};
+   const event=await read(deployment.underwriting as `0x${string}`,'get_final_event_record',[resolved.event_key]) as {paid:string};assert.ok(BigInt(event.paid)>0n);
+   await write(caseKey+'_duplicate_refusal','claimant',court,'file_claim',[original.id,claim.incidentRef.toUpperCase().replace('0X','0x'),claim.incidentAt,10n**17n,claim.statement,claim.evidenceUrls],10n**16n,'error');
+   assert.match(state.checks[caseKey+'_duplicate_refusal'].receipt?.error??'',/already been compensated/);
+  }
   else if(stage==='claimant_appeal'||stage==='claimant_payout_appeal'){
    const payout=stage==='claimant_payout_appeal';
    if(payout){
