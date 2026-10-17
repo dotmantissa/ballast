@@ -1,5 +1,6 @@
 paths:
   contracts: contracts
+  artifacts: artifacts/contracts
 networks:
   default: studionet
   studionet: {}

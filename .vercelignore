@@ -17,3 +17,5 @@ deployments/*integration*.json
 playwright-report/
 test-results/
 coverage/
+
+.ballast-private/
