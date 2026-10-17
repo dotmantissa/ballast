@@ -31,6 +31,8 @@ import {
 import { inspectReceipt } from "../receipt";
 import type { Action } from "../validation";
 import type { Quote, Claim, Operation } from "../types";
+import type { Agent, Policy } from "../types";
+import { canAppeal } from "../claims";
 
 function publicOperation(row: Record<string, unknown>) {
   return operationView(operationRow(row));
@@ -38,10 +40,11 @@ function publicOperation(row: Record<string, unknown>) {
 function savedState(row: Record<string, unknown>) {
   return recoveryState(operationRow(row));
 }
-async function requireConfirmation(contract: ContractName, method: string, recordId: string) {
+async function requireConfirmation<T extends {id?: string} = {id?: string}>(contract: ContractName, method: string, recordId: string): Promise<T> {
   try {
-    const record = await read<{id?: string}>(contract, method, [recordId]);
+    const record = await read<T>(contract, method, [recordId]);
     if (!record?.id) throw Error("Confirmation is pending");
+    return record;
   } catch {
     throw new HttpError(409, "This record is not confirmed yet, or the network is briefly unavailable. Give it a moment, then refresh its confirmation and try again.");
   }
@@ -207,6 +210,14 @@ export async function submitAction(
         ]);
         if (quote.operator.toLowerCase() !== account.address.toLowerCase())
           throw new HttpError(403, "This quote belongs to another operator.");
+        if (quote.bound || quote.band === "declined" || quote.expires_at <= Math.floor(Date.now() / 1000))
+          throw new HttpError(409, "This quote is already bound, expired or declined. Request a fresh quote.");
+        const agent = await read<Agent>("registry", "get_agent", [quote.agent_id]);
+        if (agent.manifest_hash !== quote.manifest_hash)
+          throw new HttpError(409, "The manifest changed after this quote. Request a fresh quote before paying a premium.");
+        const existing = await read<Partial<Policy>>("underwriting", "get_agent_policy", [quote.agent_id]);
+        if (existing.status === "active" || existing.status === "runoff")
+          throw new HttpError(409, "This agent already has active cover or an unresolved filing period.");
         method = "bind_policy";
         args = [action.quoteId];
         value = BigInt(quote.premium);
@@ -230,8 +241,15 @@ export async function submitAction(
         contract = "court";
         method = "withdraw_bonds";
         break;
-      case "claim":
-        await requireConfirmation("underwriting", "get_final_policy", action.policyId);
+      case "claim": {
+        const policy = await requireConfirmation<Policy>("underwriting", "get_final_policy", action.policyId);
+        if (policy.operator.toLowerCase() === account.address.toLowerCase())
+          throw new HttpError(403, "Cover protects a third party. You cannot claim against your own policy.");
+        const now = Math.floor(Date.now() / 1000);
+        if (policy.status !== "active" || now > policy.ends_at + 7 * 86400 || action.incidentAt < policy.starts_at || action.incidentAt > Math.min(now, policy.ends_at))
+          throw new HttpError(409, "This policy does not cover that incident time or is closed to new claims.");
+        if (parseUnits(action.amount, 18) > BigInt(policy.remaining))
+          throw new HttpError(409, "The requested amount exceeds the remaining shared cover.");
         contract = "court";
         method = "file_claim";
         args = [
@@ -245,6 +263,7 @@ export async function submitAction(
         value = parseUnits(action.amount, 18) / 100n;
         if (value < 10n ** 16n) value = 10n ** 16n;
         break;
+      }
       case "resolve":
         contract = "court";
         method = "resolve_finding";
@@ -259,6 +278,8 @@ export async function submitAction(
           ].includes(account.address.toLowerCase())
         )
           throw new HttpError(403, "Only the claimant or operator can appeal.");
+        if (claim.status !== "challenge" || claim.challenge_until <= Math.floor(Date.now() / 1000) || !Object.hasOwn(claim.findings, action.finding) || !canAppeal(claim, action.finding, account.address))
+          throw new HttpError(409, "This finding is not open to another appeal from your account.");
         contract = "court";
         method = "appeal_finding";
         args = [

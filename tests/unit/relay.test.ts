@@ -380,7 +380,7 @@ it.each([
   const row=[...model.rows.values()][0];
   expect(row.status).toBe("error");expect(row.signed_payload).toBeNull();
   advance(6);
-  vi.mocked(read).mockResolvedValueOnce({id:"a".repeat(24)});
+  vi.mocked(read).mockResolvedValueOnce(action.kind === 'claim' ? {id:"a".repeat(24),operator:'0x'+'9'.repeat(40),status:'active',starts_at:0,ends_at:Math.floor(Date.now()/1000)+100,remaining:'2000000000000000000'} : {id:"a".repeat(24)});
   const retried=await submitAction(user,action,key);
   expect(retried.attempt).toBe(2);
   expect(model.write).toHaveBeenCalledTimes(1);
@@ -405,4 +405,32 @@ it('does not recheck another account operation or broadcast while verifying',asy
   const first=await submitAction(user,action,key);advance(10);
   await expect(syncOperation('another-user',first.id,true)).rejects.toThrow('Activity not found');
   expect(model.getTransaction).not.toHaveBeenCalled();expect(model.write).toHaveBeenCalledTimes(1);
+});
+
+describe('paid actions refuse known invalid requests before signing',()=>{
+ const operator='0x'+'1'.repeat(40);
+ const other='0x'+'9'.repeat(40);
+ const id='a'.repeat(24);
+ const quote=()=>({id,operator,agent_id:'b'.repeat(24),premium:'2000000000000000',manifest_hash:'hash-a',band:'low',bound:false,expires_at:Math.floor(Date.now()/1000)+3600});
+ it.each(['bound','expired','declined','revised','overlapping'])('does not send a premium for a %s quote',async(condition)=>{
+  vi.mocked(read).mockResolvedValueOnce({...quote(),...(condition==='bound'?{bound:true}:condition==='expired'?{expires_at:0}:condition==='declined'?{band:'declined'}:{})});
+  if(['revised','overlapping'].includes(condition))vi.mocked(read).mockResolvedValueOnce({manifest_hash:condition==='revised'?'hash-b':'hash-a'});
+  if(condition==='overlapping')vi.mocked(read).mockResolvedValueOnce({status:'active'});
+  await expect(submitAction(user,{kind:'bind',quoteId:id},key)).rejects.toMatchObject({status:409});
+  expect(model.write).not.toHaveBeenCalled();expect([...model.rows.values()][0].signed_payload).toBeNull();
+ });
+ it('still sends the quoted premium for a current eligible quote',async()=>{
+  vi.mocked(read).mockResolvedValueOnce(quote()).mockResolvedValueOnce({manifest_hash:'hash-a'}).mockResolvedValueOnce({});
+  await submitAction(user,{kind:'bind',quoteId:id},key);expect(model.write).toHaveBeenCalledWith(expect.objectContaining({functionName:'bind_policy',value:2000000000000000n}));
+ });
+ it.each(['self','outside dates','over limit'])('does not send a claim bond for %s',async(condition)=>{
+  vi.mocked(read).mockResolvedValueOnce({id,operator:condition==='self'?operator:other,status:'active',starts_at:condition==='outside dates'?2:0,ends_at:Math.floor(Date.now()/1000)+100,remaining:condition==='over limit'?'1':'2000000000000000000'});
+  await expect(submitAction(user,{kind:'claim',policyId:id,incidentRef:'0x'+'a'.repeat(64),incidentAt:1,amount:'1',statement:'This test supplies actual evidence of a native debit.',evidenceUrls:['https://one.example.org/a','https://two.example.net/b'],publicConsent:true},key)).rejects.toMatchObject({status:condition==='self'?403:409});
+  expect(model.write).not.toHaveBeenCalled();
+ });
+ it.each(['consumed','closed','missing finding'])('does not send an appeal bond when the right is %s',async(condition)=>{
+  vi.mocked(read).mockResolvedValueOnce({id,claimant:other,operator,status:condition==='closed'?'final':'challenge',challenge_until:Math.floor(Date.now()/1000)+100,eligibility_revision:0,findings:condition==='missing finding'?{}:{scope:false},appeals:condition==='consumed'?[{field:'scope',by:operator,revision:0}]:[],amount:'100000000000000000'});
+  await expect(submitAction(user,{kind:'appeal',claimId:id,finding:'scope',reason:'Please check the real scope and the evidence of approval.',evidenceUrls:['https://one.example.org/a','https://two.example.net/b'],publicConsent:true},key)).rejects.toMatchObject({status:409});
+  expect(model.write).not.toHaveBeenCalled();
+ });
 });
