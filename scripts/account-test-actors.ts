@@ -114,7 +114,12 @@ if(stage==='history'){
  }else{
   const claim=state.claims?.[caseKey];assert.ok(claim,'File the real case first');
   if(stage==='audit'){
-   const audit={observedAt:new Date().toISOString(),claim:await read(court,'get_claim',[claim.id]),finalClaim:await read(court,'get_final_claim',[claim.id]),finalSettlement:await read(deployment.underwriting as `0x${string}`,'get_final_settlement',[claim.id]),policy:await read(deployment.underwriting as `0x${string}`,'get_final_policy',[claim.policyId]),lossRecord:await read(deployment.registry as `0x${string}`,'get_loss_record',[operator!]),claimantPool:await read(deployment.underwriting as `0x${string}`,'get_account',[actors.claimant.account.address]),claimantCourt:await read(court,'get_account_cases',[actors.claimant.account.address]),claimantBalance:(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString()};
+   let finalClaim;for(let attempt=0;attempt<12;attempt++){
+    try{finalClaim=await read(court,'get_final_claim',[claim.id]);break;}
+    catch{console.log('Waiting for the actual finalized court confirmation.');await new Promise(resolve=>setTimeout(resolve,15000));}
+   }
+   assert.ok(finalClaim,'Court confirmation still pending; resume this read only audit');
+   const audit={observedAt:new Date().toISOString(),claim:await read(court,'get_claim',[claim.id]),finalClaim,finalSettlement:await read(deployment.underwriting as `0x${string}`,'get_final_settlement',[claim.id]),policy:await read(deployment.underwriting as `0x${string}`,'get_final_policy',[claim.policyId]),lossRecord:await read(deployment.registry as `0x${string}`,'get_loss_record',[operator!]),claimantPool:await read(deployment.underwriting as `0x${string}`,'get_account',[actors.claimant.account.address]),claimantCourt:await read(court,'get_account_cases',[actors.claimant.account.address]),claimantBalance:(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString()};
    await writeFile(folder+'/audit-'+caseKey+'.json',JSON.stringify(jsonSafe(audit),null,2)+'\n',{mode:0o600});
   }else if(stage==='withdraw_case')await write(caseKey+'_withdraw','claimant',court,'withdraw_claim',[claim.id]);
   else if(stage==='duplicate_claim')await write(caseKey+'_duplicate_refusal','claimant',court,'file_claim',[claim.policyId,claim.incidentRef,claim.incidentAt,10n**17n,claim.statement,claim.evidenceUrls],10n**16n,'error');
@@ -123,14 +128,28 @@ if(stage==='history'){
    await write(caseKey+'_claimant_appeal','claimant',court,'appeal_finding',[claim.id,'scope',reason,claim.evidenceUrls],10n**16n);
   }else if(stage==='claimant_accept')await write(caseKey+'_claimant_accept','claimant',court,'accept_decision',[claim.id]);
   else if(stage==='claimant_withdraw'){
-   const before=(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString();
-   const account=await read(deployment.underwriting as `0x${string}`,'get_account',[actors.claimant.account.address]) as {credit:string};
-   if(BigInt(account.credit)>0n)await write(caseKey+'_claimant_payout','claimant',deployment.underwriting as `0x${string}`,'withdraw');
-   const cases=await read(court,'get_account_cases',[actors.claimant.account.address]) as {bond_credit:string};
-   if(BigInt(cases.bond_credit)>0n)await write(caseKey+'_claimant_bonds','claimant',court,'withdraw_bonds');
-   const after=(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString();
-   assert.equal(BigInt(after)-BigInt(before),BigInt(account.credit)+BigInt(cases.bond_credit));
-   await writeFile(folder+'/withdrawal-'+caseKey+'.json',JSON.stringify({beforeWei:before,afterWei:after,payoutWei:account.credit,bondWei:cases.bond_credit,exactNativeIncrease:true},null,2)+'\n',{mode:0o600});
+   const paymentPath=folder+'/withdrawal-'+caseKey+'.json';
+   let payment:{beforeWei:string;payoutWei:string;bondWei:string;afterWei?:string;exactNativeIncrease?:boolean};
+   try{payment=JSON.parse(await readFile(paymentPath,'utf8'));}catch(error){
+    if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;
+    const account=await read(deployment.underwriting as `0x${string}`,'get_account',[actors.claimant.account.address]) as {credit:string};
+    const cases=await read(court,'get_account_cases',[actors.claimant.account.address]) as {bond_credit:string};
+    payment={beforeWei:(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString(),payoutWei:account.credit,bondWei:cases.bond_credit};
+   }
+   async function savePayment(){
+    const content=JSON.stringify(payment,null,2)+'\n';await writeFile(paymentPath+'.tmp',content,{mode:0o600});await rename(paymentPath+'.tmp',paymentPath);
+    const backup='.git/ballast-account-tests-backup/'+localPath;await mkdir(backup,{recursive:true,mode:0o700});await writeFile(backup+'/withdrawal-'+caseKey+'.json',content,{mode:0o600});
+   }
+   await savePayment();
+   if(BigInt(payment.payoutWei)>0n)await write(caseKey+'_claimant_payout','claimant',deployment.underwriting as `0x${string}`,'withdraw');
+   if(BigInt(payment.bondWei)>0n)await write(caseKey+'_claimant_bonds','claimant',court,'withdraw_bonds');
+   const expected=BigInt(payment.beforeWei)+BigInt(payment.payoutWei)+BigInt(payment.bondWei);
+   for(let attempt=0;attempt<12;attempt++){
+    payment.afterWei=(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString();
+    if(BigInt(payment.afterWei)===expected)break;
+    await new Promise(resolve=>setTimeout(resolve,15000));
+   }
+   assert.equal(BigInt(payment.afterWei!),expected);payment.exactNativeIncrease=true;await savePayment();
   }else throw Error('Unknown account testing stage');
  }
 }
