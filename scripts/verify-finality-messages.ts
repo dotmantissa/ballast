@@ -13,7 +13,8 @@ type Transaction = {
   consensus_data: {leader_receipt: Record<string,unknown> | Record<string,unknown>[]};
 };
 const state = JSON.parse(await readFile(process.env.BALLAST_DEPLOYMENT_FILE??"deployments/review-integration.json","utf8"));
-assert.equal(state.result,"passed","Complete the actual claimant withdrawal first");
+for(const name of ["register_agent","bind_policy","finalize_claim","settle_claim"])
+  assert.ok(state.checks?.[name]?.done,"Wait for the actual finalized "+name+" transaction");
 const curl=promisify(execFile);
 async function get(path:string) {
   const {stdout}=await curl("curl",["--fail","--silent","--show-error","--max-time","30","https://explorer-studio.genlayer.com/api/transactions"+path],{maxBuffer:4*1024*1024});

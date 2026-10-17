@@ -1,0 +1,186 @@
+{
+  "network": "studionet",
+  "verifiedAt": "2026-10-17T02:06:10.461Z",
+  "registry": "0xad10A9dE5D781dC3b79F3303aeb4fC890f5a2c2a",
+  "underwriting": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+  "court": "0x2D4B09442d3A57a6f351cd8f2F8C71B1A9645558",
+  "confirmations": {
+    "agent": {
+      "parent": "0x06a786679abff29ea6acc5ab2472d5ca685746d738d8b56058cea255c43e20b4",
+      "child": "0x333a1dacbdddad237bd13c25474e79523cb4ef8e83512d0d4e7d614f9d5e95d1",
+      "source": "0xad10A9dE5D781dC3b79F3303aeb4fC890f5a2c2a",
+      "target": "0xad10A9dE5D781dC3b79F3303aeb4fC890f5a2c2a",
+      "method": "confirm_agent",
+      "triggeredOn": "finalized",
+      "createdAt": "2026-10-17T01:31:51.249799+00:00",
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x84b5C0320Cf213d1e0F4313aD46dBde0cBA3a48b",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xF769c4bB25c74773982dFAE52dEB2A1A0B6c7A4B",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xF9fbED11ED0C4BbcE404f9c48591233a688883B6",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "policy": {
+      "parent": "0x4d4f02f8b12f6ab071c0119fdf4ece23bf9af9a964f5fd7f811096c4f6c11395",
+      "child": "0xf701a78ac1faa13da591ea2e74057f8ff322d346fb4163210f635814b3d4ec7b",
+      "source": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+      "target": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+      "method": "confirm_policy",
+      "triggeredOn": "finalized",
+      "createdAt": "2026-10-17T01:38:09.118020+00:00",
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x1b170f7676410646709fDF16A279Ae4f8c4dC7AE",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x6BCDDf292694Ec8AA930A53812DbBB546731bC17",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xF9fbED11ED0C4BbcE404f9c48591233a688883B6",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xbbA7b5E4630DC0db7f98939Db9bD8c47C5d7f0b8",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xbfC623617377D02992F9c125CBBC3Bb1Cb3c9E4D",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "decision": {
+      "parent": "0x2e4a607ba3eec418f70f0bdb64cbfca7c95a2644871f3c1fde53d283306a73ec",
+      "child": "0xb5ea27a314b688509e3c445c0bdd46699cfb9dc1c349ca347c9bdf8fe3e8a83c",
+      "source": "0x2D4B09442d3A57a6f351cd8f2F8C71B1A9645558",
+      "target": "0x2D4B09442d3A57a6f351cd8f2F8C71B1A9645558",
+      "method": "confirm_claim",
+      "triggeredOn": "finalized",
+      "createdAt": "2026-10-17T01:54:01.409601+00:00",
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x60929ddB1a5E6Db6f1E198038E0D56547c10f275",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x84b5C0320Cf213d1e0F4313aD46dBde0cBA3a48b",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xbfC623617377D02992F9c125CBBC3Bb1Cb3c9E4D",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "settlement": {
+      "parent": "0xbf3f69da4c7614cd4512af86edd2209436a9b7d4d0f7dae8d3686da8e4407582",
+      "child": "0x1bf29480ac790f26b73cb484ad176b99ba578c474f35a63743b4e089811ae327",
+      "source": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+      "target": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+      "method": "confirm_settlement",
+      "triggeredOn": "finalized",
+      "createdAt": "2026-10-17T01:55:59.444266+00:00",
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x7405D7e5f9e1016ed13847B93Bcf7D8553688Ec9",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x7902A9B1893526Db7C3cdCf9CAb88F9B408890cC",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xacb3A709E6212931De1a712a1710a6955c7d40c0",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xbbA7b5E4630DC0db7f98939Db9bD8c47C5d7f0b8",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xbfC623617377D02992F9c125CBBC3Bb1Cb3c9E4D",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "acknowledgment": {
+      "parent": "0x1bf29480ac790f26b73cb484ad176b99ba578c474f35a63743b4e089811ae327",
+      "child": "0x9c2b100545f46c900b89c90df59590ccba80d49e389ba645a27bf3c7b0c2ccd0",
+      "source": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+      "target": "0x2D4B09442d3A57a6f351cd8f2F8C71B1A9645558",
+      "method": "acknowledge_settlement",
+      "triggeredOn": "finalized",
+      "createdAt": "2026-10-17T01:56:36.795547+00:00",
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x4807398866238CaF8910A9c4Fe7eB444d2Ed144A",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xbfC623617377D02992F9c125CBBC3Bb1Cb3c9E4D",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    }
+  },
+  "result": "passed",
+  "scope": "Actual Studio emitted child transactions, exact parent calldata, finalized triggers, authenticated senders and successful finalized execution. No raw validator configuration is included."
+}
