@@ -37,5 +37,6 @@ if(process.env.BALLAST_REQUIRE_EMPTY==="1"){
 }
 state.network="studionet";state.chainId=61999;
 state.sourceVerifiedAt=new Date().toISOString();
+if(process.env.BALLAST_REQUIRE_EMPTY==="1")state.emptyVerifiedAt=state.sourceVerifiedAt;
 await writeFile(path+".tmp",JSON.stringify(state,null,2)+"\n");await rename(path+".tmp",path);
 console.log("Finalized deployment links verified"+(process.env.BALLAST_REQUIRE_EMPTY==="1"?"; production pool is empty.":"."));
