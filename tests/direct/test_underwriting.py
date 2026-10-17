@@ -499,3 +499,19 @@ def test_pool_confirmation_and_acknowledgment_emissions_wait_for_finality(pool,d
         with direct_vm.prank(gl.message.contract_address):c.confirm_settlement(payload)
         emitter.return_value.acknowledge_settlement.assert_called_once_with('confirmed')
         assert all(call.kwargs=={'on':'finalized'} for call in emitter.call_args_list)
+
+
+def test_delayed_old_policy_cannot_replace_a_new_agents_policy_confirmation(pool,direct_vm,direct_bob):
+    from genlayer import gl
+    c=pool[0];first=bind(pool,direct_vm,direct_bob)
+    direct_vm.warp('2035-01-01T00:00:00Z');c.expire_policy(first)
+    old_payload=json.dumps(c.get_policy(first),sort_keys=True)
+    second=quote(pool,direct_vm)
+    direct_vm.value=int(c.get_quote(second)['premium']);c.bind_policy(second)
+    new_payload=json.dumps(c.get_policy(second),sort_keys=True)
+    with direct_vm.prank(gl.message.contract_address):
+        c.confirm_policy(new_payload)
+        c.confirm_policy(old_payload)
+    assert c.get_final_agent_policy('a1')['id']==second
+    assert c.get_final_policy(first)['status']=='expired'
+    assert c.get_final_policy(second)['status']=='active'

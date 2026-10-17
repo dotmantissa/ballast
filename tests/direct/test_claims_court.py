@@ -550,3 +550,18 @@ def test_all_court_confirmations_wait_for_parent_finality(court,direct_vm):
         with direct_vm.prank(gl.message.contract_address):c.confirm_policy_seal(seal)
         assert all(call.kwargs=={'on':'finalized'} for call in emitter.call_args_list)
         emitter.return_value.expire_policy.assert_called_with('p1')
+
+
+def test_repeated_acknowledgment_and_late_confirmation_cannot_reopen_a_settled_case(court,direct_vm):
+    from genlayer import gl
+    c=court[0];cid=file(court,direct_vm);c.withdraw_claim(cid)
+    payload=json.dumps(c._decision(c.get_claim(cid)),sort_keys=True)
+    court[2][cid]={'policy_id':'p1','paid':'0'}
+    c.acknowledge_settlement(cid)
+    c.acknowledge_settlement(cid)
+    c.publish_final_claim(cid)
+    with direct_vm.prank(gl.message.contract_address):c.confirm_claim(payload)
+    assert c.get_claim(cid)['status']=='settled'
+    assert c.get_final_claim(cid)['status']=='final'
+    assert c.get_policy_exposure('p1')=={'requested':'0','open_count':0}
+    assert c.list_account_claims(c.get_claim(cid)['claimant'],True,-1,50)['total']==0
