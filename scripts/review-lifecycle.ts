@@ -23,9 +23,10 @@ catch (error) {
   await chmod(keyPath,0o600);
 }
 const ownerKey = process.env.GENLAYER_DEPLOYER_KEY as `0x${string}`;
-const owner = await transactionJournal(statePath+".owner.journal",ownerKey);
-const claimant = await transactionJournal(statePath+".claimant.journal",keys.claimant);
-const peer = await transactionJournal(statePath+".peer.journal",keys.peer);
+const journalPrefix = statePath+(state.deploymentGeneration?"."+state.deploymentGeneration:"");
+const owner = await transactionJournal(journalPrefix+".owner.journal",ownerKey);
+const claimant = await transactionJournal(journalPrefix+".claimant.journal",keys.claimant);
+const peer = await transactionJournal(journalPrefix+".peer.journal",keys.peer);
 const actors = {owner,claimant,peer};
 state.checks ??= {};
 state.caseId ??= "studio-review-"+new Date().toISOString().replace(/[^0-9]/g,"").slice(0,14);
@@ -42,15 +43,36 @@ async function read(address: `0x${string}`, method: string, args: CalldataEncoda
 async function write(name: string, actor: keyof typeof actors, address: `0x${string}`, method: string, args: CalldataEncodable[] = [], value = 0n) {
   if(state.checks[name]?.done)return;
   const a=actors[actor];
-  const hash=state.checks[name]?.hash ?? await a.submit(name,{address,method,args,value},()=>a.client.writeContract({address,functionName:method,args,value,leaderOnly:false}));
-  state.checks[name]={hash};await save();console.log(name+" submitted "+hash);
-  const receipt=await a.wait(hash as TransactionHash);
-  state.checks[name]={hash,done:true,receipt:inspectReceipt(receipt)};await save();console.log(name+" execution succeeded");
+  let prior=state.checks[name]??{attempt:1,history:[]};
+  if(prior.finalFailure){
+    const failed=inspectReceipt(await a.client.getTransaction({hash:prior.hash}));
+    assert.ok(failed.status==="CANCELED"||(failed.status==="FINALIZED"&&failed.execution==="error"),"A fresh attempt requires a confirmed terminal execution failure");
+    prior={attempt:(prior.attempt??1)+1,history:[...(prior.history??[]),{hash:prior.hash,receipt:failed}]};
+    state.checks[name]=prior;await save();
+  }
+  const attempt=prior.attempt??1;
+  const hash=prior.hash ?? await a.submit(name+":attempt:"+attempt,{address,method,args,value},()=>a.client.writeContract({address,functionName:method,args,value,leaderOnly:false}));
+  state.checks[name]={...prior,hash};await save();console.log(name+" submitted "+hash);
+  try {
+    const receipt=await a.wait(hash as TransactionHash);
+    state.checks[name]={...state.checks[name],done:true,receipt:inspectReceipt(receipt)};await save();console.log(name+" execution succeeded");
+  } catch(error) {
+    if((error as {finalFailure?:boolean}).finalFailure){state.checks[name].finalFailure=true;await save();}
+    throw error;
+  }
 }
 async function balance(address:`0x${string}`) {return await owner.client.getBalance({address});}
 async function eventually(check:()=>Promise<boolean>,message:string) {
   for(let i=0;i<30;i++){if(await check())return;await new Promise(r=>setTimeout(r,12000));}
   throw Error(message);
+}
+async function confirmed(address: `0x${string}`, method: string, args: CalldataEncodable[], field?: string) {
+  let value: Record<string,unknown> | undefined;
+  await eventually(async()=>{
+    try { value=await read(address,method,args);return field?!!value[field]:!!value.id; }
+    catch { return false; }
+  },"Finalized confirmation did not arrive for "+method+"; inspect emitted receipts and use the ID only publish method to repair.");
+  return value!;
 }
 async function signed(file:string,payload:unknown,signers:(keyof typeof actors)[]) {
   const message=JSON.stringify(jsonSafe(payload));
@@ -108,6 +130,7 @@ if(phase==="history"){
   const manifest=JSON.stringify({name:"Studio refund executor",scope:"This executor manages claimant owned native GEN escrow in vault "+state.vault+". It may only call execute_approved_refund after the claimant has recorded approve_refund for that exact amount. Maximum 1 GEN per transfer. It must return refunds to the claimant. Any spend_without_approval call or transfer to another recipient is expressly outside its authority, even though the test vault exposes that vulnerable path. V1 cover requested only for a native GEN debit of the claimant escrow.",executor_address:owner.account.address,spend_limit_gen:1});
   await write("register_agent","owner",state.registry,"register_agent",[manifest,[raw+"/history.json","https://explorer-studio.genlayer.com/api/transactions/"+state.checks.vault_refund.hash,"https://raw.githubusercontent.com/dotmantissa/ballast/"+state.historyCommit+"/tests/integration/contracts/incident_vault.py"]]);
   state.agentId=createHash("sha256").update("genlayer-studio:"+owner.account.address.toLowerCase()).digest("hex").slice(0,24);await save();
+  await confirmed(state.registry,"get_final_agent",[state.agentId]);
   await write("stake_junior","owner",state.underwriting,"stake",["junior"],2n*10n**18n);
   await write("stake_senior","owner",state.underwriting,"stake",["senior"],2n*10n**18n);
   await write("quote_policy","owner",state.underwriting,"quote_policy",[state.agentId,10n**18n,[raw+"/peer.json"]]);
@@ -116,6 +139,7 @@ if(phase==="history"){
   assert.notEqual(quote.band,"declined","Inspect the real validator reason; do not replace it with an approved fixture");
   await write("bind_policy","owner",state.underwriting,"bind_policy",[String(quote.id)],BigInt(String(quote.premium)));
   state.policy=await read(state.underwriting,"get_policy",[String(quote.id)]);await save();
+  await confirmed(state.underwriting,"get_final_policy",[String(quote.id)]);
   assert.equal(state.policy.status,"active");assert.equal(state.policy.remaining,"1000000000000000000");
   if(!state.preIncident){state.preIncident={recipientBalance:String(await balance(owner.account.address)),claimantBalance:String(await balance(claimant.account.address)),vault:await read(state.vault,"get_evidence")};await save();}
   await write("unapproved_debit","owner",state.vault,"spend_without_approval",[2n*10n**17n,owner.account.address]);
@@ -149,8 +173,10 @@ if(phase==="history"){
   await write("accept_operator","owner",state.court,"accept_decision",[state.claimId]);
   await write("finalize_claim","claimant",state.court,"finalize_claim",[state.claimId]);
   state.finalClaim ??= await read(state.court,"get_claim",[state.claimId]);await save();assert.equal(state.finalClaim.payout,state.loss.amount_wei);
+  await confirmed(state.court,"get_final_claim",[state.claimId]);
   await write("settle_claim","claimant",state.underwriting,"settle_claim",[state.claimId]);
   state.settlement=await read(state.underwriting,"get_settlement",[state.claimId]);await save();assert.equal(state.settlement.paid,state.loss.amount_wei);
+  await confirmed(state.underwriting,"get_final_settlement",[state.claimId]);
   // Let the finalized child acknowledgment finish before choosing a manual recovery.
   await eventually(async()=>(await read(state.court,"get_claim",[state.claimId])).status==="settled","Finalized settlement acknowledgment needs permissionless recovery; inspect the emitted child receipt before resuming.");
   if(!state.beforeWithdraw){state.beforeWithdraw=String(await balance(claimant.account.address));await save();}
