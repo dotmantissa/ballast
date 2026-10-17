@@ -1,0 +1,136 @@
+{
+  "message": {
+    "purpose": "Controlled live registered account quality checks on GenLayer Studio. The vault intentionally exposes an insecure path for a small liability test. These records describe actual transactions, not customer allegations or fabricated claims.",
+    "network": "GenLayer Studio",
+    "operator": "0x115a0d969bBB326E1CBE628CEDb21B76A8141D10",
+    "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+    "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+    "vault": "0xffFB77D46103Cf4cdFA6eE02f7b799Ac7bC5c8FB",
+    "mandate": "Only execute_approved_refund after the claimant approves the exact amount, maximum 1 GEN per transfer, paid only to the claimant. All spend_without_approval calls and other recipients are outside scope.",
+    "source_url": "https://raw.githubusercontent.com/dotmantissa/ballast/189d7e40d2a9ff59476e8b44384d3ef49aa99cc5/tests/integration/contracts/incident_vault.py",
+    "history": {
+      "approved_wei": "0",
+      "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+      "escrow_wei": "900000000000000000",
+      "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+      "history": [
+        {
+          "amount_wei": "1000000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "deposit",
+          "occurred_at": 1792239967,
+          "recipient": "0xffFB77D46103Cf4cdFA6eE02f7b799Ac7bC5c8FB"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "approval",
+          "occurred_at": 1792240041,
+          "recipient": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "approved_refund",
+          "occurred_at": 1792240116,
+          "recipient": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD"
+        }
+      ],
+      "loss": null
+    },
+    "transactions": {
+      "authorize": {
+        "hash": "0x6b5cd799a7907a855a335d409d50e281f1ac41eb6fd9e12d97c0744be1a665d9",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x6b5cd799a7907a855a335d409d50e281f1ac41eb6fd9e12d97c0744be1a665d9"
+      },
+      "deploy": {
+        "hash": "0x8bcdae20a27d027c845f0c62c81e499204593148b56ac19aeb1086d53ea6f11d",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x8bcdae20a27d027c845f0c62c81e499204593148b56ac19aeb1086d53ea6f11d"
+      },
+      "deposit": {
+        "hash": "0x67303e2e278c829154fa88bda32de990d8f42205c9ebbd58f0c8ae9c662136bf",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x67303e2e278c829154fa88bda32de990d8f42205c9ebbd58f0c8ae9c662136bf"
+      },
+      "approve": {
+        "hash": "0x40087e262616092cca370089635c5b07ecbab7aabd970d089ea0cb06ec17adcb",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x40087e262616092cca370089635c5b07ecbab7aabd970d089ea0cb06ec17adcb"
+      },
+      "refund": {
+        "hash": "0xa1929351fd521ccfc2a71b0c810ca8153f660cb55d95affe93938fdcf525b15e",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0xa1929351fd521ccfc2a71b0c810ca8153f660cb55d95affe93938fdcf525b15e"
+      },
+      "incident": {
+        "hash": "0xf467a979cef0eed6acf9d24efa2bd7b34c8cbcb035ce391776f38ee14cd18364",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0xf467a979cef0eed6acf9d24efa2bd7b34c8cbcb035ce391776f38ee14cd18364"
+      }
+    },
+    "incident_ref": "0xf467a979cef0eed6acf9d24efa2bd7b34c8cbcb035ce391776f38ee14cd18364",
+    "incident_at": 1792240544,
+    "loss_wei": "200000000000000000",
+    "after": {
+      "approved_wei": "0",
+      "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+      "escrow_wei": "700000000000000000",
+      "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+      "history": [
+        {
+          "amount_wei": "1000000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "deposit",
+          "occurred_at": 1792239967,
+          "recipient": "0xffFB77D46103Cf4cdFA6eE02f7b799Ac7bC5c8FB"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "approval",
+          "occurred_at": 1792240041,
+          "recipient": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "approved_refund",
+          "occurred_at": 1792240116,
+          "recipient": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD"
+        },
+        {
+          "amount_wei": "200000000000000000",
+          "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+          "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+          "kind": "unapproved_native_debit",
+          "occurred_at": 1792240544,
+          "recipient": "0xf800A850341763301e22Acc8011821882206fe43"
+        }
+      ],
+      "loss": {
+        "amount_wei": "200000000000000000",
+        "claimant": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+        "claimant_approval": false,
+        "executor": "0xf800A850341763301e22Acc8011821882206fe43",
+        "kind": "unapproved_native_debit",
+        "occurred_at": 1792240544,
+        "recipient": "0xf800A850341763301e22Acc8011821882206fe43"
+      }
+    }
+  },
+  "signature_encoding": "Ethereum personal_sign over UTF8 JSON.stringify(message), preserving property order",
+  "signatures": [
+    {
+      "role": "executor",
+      "address": "0xf800A850341763301e22Acc8011821882206fe43",
+      "signature": "0x07a5821c5358d12ec0197a8203c82975183f0665b97aa580a5b265e2a907a8cd1c40cc3a62a884d5e51637fdcc02578b88eb8a0aedecd518121157852e24e0361b"
+    },
+    {
+      "role": "claimant",
+      "address": "0x869Ff206C7Fd962306Acba1Db8695EaF84F947fD",
+      "signature": "0x181e0f447025079360c51f482828085900bb47e180f3592b792abaa0893f8cbf62dd02115fbe5a2b8693485259378386e32e51a0aa39038dd2c064f65ed79a311c"
+    }
+  ]
+}
