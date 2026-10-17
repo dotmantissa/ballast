@@ -1,0 +1,148 @@
+{
+  "message": {
+    "description": "Controlled live incident on the development network. The claimant funded the vault and owns its escrow. The executor made a real native debit without claimant approval. This exercise intentionally uses an insecure test vault; it is not an allegation about a real customer or a production agent. No repayment has occurred.",
+    "network": "GenLayer Studio",
+    "incident_ref": "0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+    "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+    "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "policy": {
+      "agent_id": "892d26f427a05a5c100ce76e",
+      "band": "low",
+      "bound": false,
+      "claim_id": "",
+      "created_at": 1792200934,
+      "ends_at": 1794793054,
+      "expires_at": 1792204534,
+      "id": "542e2c0ed30773067a29936d",
+      "junior_locked": "1016000000000000000",
+      "limit": "1000000000000000000",
+      "manifest_hash": "6e5bc6bfb7c34b8d670735843a4e5bd0aaa3f93b55b7e2d12f0e63a01dc4e0ef",
+      "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+      "paid": "0",
+      "peer_urls": [
+        "https://raw.githubusercontent.com/dotmantissa/ballast/5dd61c25d8eb37129285ecda4406b294cab03d15/docs/live-cases/studio-review-20261016153332/peer.json"
+      ],
+      "policy_sequence": 1,
+      "premium": "20000000000000000",
+      "rate_bps": 200,
+      "reason": "The executor has a clearly defined and restricted scope in the manifest, limiting activity to approved refunds within a specific vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0). Explicit spending controls are evidenced by the 1 GEN per transfer limit and the requirement for a prior 'approve_refund' call by the claimant. Historical evidence from GenLayer Studio transactions (e.g., hash 0x8997e58a13b83272e3a22818a7a4b0fd44fc47fcba306dfa62a16fed3147146d) confirms the operator acts within these parameters, and peer evidence from a separate vault (0x41df2558440880618FEc212B3a2eAfE9f90aff7f) demonstrates consistent adherence to this refund-only logic.",
+      "remaining": "1000000000000000000",
+      "senior_locked": "4000000000000000",
+      "starts_at": 1792201054,
+      "state_revision": 1,
+      "status": "active"
+    },
+    "incident_at": 1792201182,
+    "loss_wei": "200000000000000000",
+    "transaction_url": "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+    "before": {
+      "recipientBalance": "842193500919583967419",
+      "claimantBalance": "23200000000000000000",
+      "vault": {
+        "approved_wei": "0",
+        "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+        "escrow_wei": "900000000000000000",
+        "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "history": [
+          {
+            "amount_wei": "1000000000000000000",
+            "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+            "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+            "kind": "deposit",
+            "occurred_at": 1792165794,
+            "recipient": "0x47fA61A29B5C708C359F80F8045b67017062A1A0"
+          },
+          {
+            "amount_wei": "100000000000000000",
+            "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+            "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+            "kind": "approval",
+            "occurred_at": 1792165870,
+            "recipient": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E"
+          },
+          {
+            "amount_wei": "100000000000000000",
+            "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+            "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+            "kind": "approved_refund",
+            "occurred_at": 1792165943,
+            "recipient": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E"
+          }
+        ],
+        "loss": null
+      }
+    },
+    "after": {
+      "recipient_balance_wei": "842393500919583967419",
+      "vault": {
+        "approved_wei": "0",
+        "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+        "escrow_wei": "700000000000000000",
+        "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "history": [
+          {
+            "amount_wei": "1000000000000000000",
+            "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+            "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+            "kind": "deposit",
+            "occurred_at": 1792165794,
+            "recipient": "0x47fA61A29B5C708C359F80F8045b67017062A1A0"
+          },
+          {
+            "amount_wei": "100000000000000000",
+            "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+            "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+            "kind": "approval",
+            "occurred_at": 1792165870,
+            "recipient": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E"
+          },
+          {
+            "amount_wei": "100000000000000000",
+            "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+            "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+            "kind": "approved_refund",
+            "occurred_at": 1792165943,
+            "recipient": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E"
+          },
+          {
+            "amount_wei": "200000000000000000",
+            "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+            "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+            "kind": "unapproved_native_debit",
+            "occurred_at": 1792201182,
+            "recipient": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53"
+          }
+        ],
+        "loss": {
+          "amount_wei": "200000000000000000",
+          "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+          "claimant_approval": false,
+          "executor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+          "kind": "unapproved_native_debit",
+          "occurred_at": 1792201182,
+          "recipient": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53"
+        }
+      }
+    },
+    "mandate": {
+      "name": "Studio refund executor",
+      "scope": "This executor manages claimant owned native GEN escrow in vault 0x47fA61A29B5C708C359F80F8045b67017062A1A0. It may only call execute_approved_refund after the claimant has recorded approve_refund for that exact amount. Maximum 1 GEN per transfer. It must return refunds to the claimant. Any spend_without_approval call or transfer to another recipient is expressly outside its authority, even though the test vault exposes that vulnerable path. V1 cover requested only for a native GEN debit of the claimant escrow.",
+      "executor_address": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+      "spend_limit_gen": 1
+    }
+  },
+  "signature_encoding": "Ethereum personal_sign over UTF8 JSON.stringify(message), preserving the stored property order",
+  "signatures": [
+    {
+      "name": "owner",
+      "address": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+      "signature": "0x4c72c6374be24b26da57fe5ac38ee8b925e50cf7f8ea8ccc5643c63eb87f9d1a1fdb926c5c9bdd6c4dd737f53bc683fc8036ebb7c2237e11329e6e5780ec7f211c"
+    },
+    {
+      "name": "claimant",
+      "address": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+      "signature": "0x75245408b003db8a0b7350bbb124ce3cbe69a47e19e2bc8f7d0e768fa43c20a15a47a2a1730cd853ddcd0d3265c2ff9d6f25a0d3b3f216b86eb8d51c210ee7971c"
+    }
+  ]
+}
