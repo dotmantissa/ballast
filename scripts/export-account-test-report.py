@@ -43,6 +43,13 @@ additional = snapshot['additionalClaim']
 initial_path = private / 'continuation/initial-decision.json'
 initial = json.loads(initial_path.read_text()) if initial_path.exists() else additional
 assert initial['id'] == additional['id']
+payment = json.loads((private / 'continuation/withdrawal-first_2.json').read_text())
+actors = json.loads((private / 'continuation/actors-public.json').read_text())
+assert payment['exactNativeIncrease'] is True
+assert int(payment['afterWei']) - int(payment['beforeWei']) == int(payment['payoutWei']) + int(payment['bondWei'])
+assert payment['payoutWei'] == additional['settled_payout'] == snapshot['additionalSettlement']['paid']
+assert int(payment['payoutWei']) > 0
+claimant_receipts = {key: value['hash'] for key, value in actors['checks'].items() if key in ['first_2_claimant_payout', 'first_2_claimant_bonds', 'first_2_duplicate_refusal'] and value.get('done') and re.fullmatch(r'0x[a-fA-F0-9]{64}', value.get('hash', ''))}
 policy_fields = ['id', 'status', 'remaining', 'paid', 'starts_at', 'ends_at']
 claim_fields = ['id', 'policy_id', 'status', 'findings', 'verified_loss', 'payout', 'settled_payout', 'challenge_until', 'review_deadline', 'outcome']
 report = {
@@ -64,6 +71,7 @@ report = {
     'originalClaim': {key: original.get(key) for key in claim_fields},
     'additionalClaim': {key: additional.get(key) for key in claim_fields},
     'additionalSettlement': snapshot['additionalSettlement'],
+    'claimantPayment': {**{key: payment[key] for key in ['beforeWei', 'payoutWei', 'bondWei', 'afterWei', 'exactNativeIncrease']}, 'transactions': claimant_receipts},
     'judgmentReview': {'initialFindings': initial['findings'], 'initialPayoutReason': initial['reasons'].get('payout'), 'currentFindings': additional['findings'], 'payoutAppeals': [{key: appeal.get(key) for key in ['field', 'by', 'before', 'after', 'changed', 'evidence_urls']} for appeal in additional['appeals'] if appeal['field'] == 'payout']},
     'lossRecord': snapshot['lossRecord'],
     'nativeAccounting': {'poolNativeWei': snapshot['poolNativeWei'], 'courtNativeWei': snapshot['courtNativeWei'], 'failedPayableTestValueWei': '12000000000000000', 'note': 'Studio retained 0.002 GEN from a failed repeated bind and 0.01 GEN from an operator self claim refusal. The application now refuses these known invalid paid requests before signing. These amounts are separate from tranche NAV and credited bonds.'},
@@ -88,7 +96,9 @@ for area in areas:
 lines += ['',
     f"The original claim `{original['id']}` is `{original['status']}`. Its actual findings are `{json.dumps(original['findings'], sort_keys=True)}`. Its first controlled claimant key was lost during the runner cleanup, so that case retains its normal contract deadlines. Nobody supplied consent on its behalf.", '',
     f"The additional case `{additional['id']}` is `{additional['status']}` and its recorded paid amount is {gen(additional.get('settled_payout', '0'))} GEN. Its earlier withdrawn case settled for zero before the uncompensated event was filed again. The report links actual receipts for the independent appeals, settlement and compensation replay refusal.", '',
+    f"The controlled claimant withdrew {gen(payment['payoutWei'])} GEN of payout and {gen(payment['bondWei'])} GEN of bonds. Their native balance increased by exactly that sum. A subsequent replay against a different active policy, using a capitalized transaction hash, was refused because the loss was already compensated. That direct refusal retained another 0.01 GEN of the controlled claimant's test funds on Studio. It did not debit the registered account.", '',
     f"Its initial payout finding was {initial['findings'].get('payout')} percent. The reason treated spending outside the agent mandate as outside policy cover, despite the other three findings establishing the covered peril. The ledger preserves that initial reason and the actual outcomes of any payout appeals, including the accepted evidence URLs.", '',
+    'Quotes, findings and appeals use the equivalence principle through custom validator comparison. Each validator fetches the sources and assesses independently. Quotes compare the risk band; claims compare one finding at a time, with exact loss and event time for positive harm. Explanations may differ. Deterministic capital and payment operations do not invoke model comparison.', '',
     f"The account holds {gen(snapshot['nativeWei'])} native GEN. Its earlier senior position remains {gen(snapshot['earlierPool']['senior_value'])} GEN. Current reserved cover is {gen(snapshot['dashboard']['reserved'])} GEN; allocated backing and premiums remain locked under the contract rules.", '',
     'Two initial payable refusal tests left 0.012 GEN in the Studio contracts. The new server preflight rejects known invalid premium and bond submissions before signing. Live checks verified unchanged account balances for stale quotes, repeated binding and operator self claims.', '',
     f"{report['recoveredObservationCount']} earlier observed passes were reconstructed after the runner removed the original private journals. Those rows are labelled individually. Two successful earlier pool actions were performed by the account owner and explicitly confirmed during testing. The remaining checks record their own live observations.", '',
