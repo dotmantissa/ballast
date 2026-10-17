@@ -32,4 +32,7 @@ if not state().get('incidentCommit'):
     run('scripts/publish-review-evidence.py', 'incident')
 if state().get('result') != 'passed' or not Path('docs/review-integration-result.json').exists():
     run('scripts/review-lifecycle.ts', 'claim')
+proof_path = Path('docs/review-finality-result.json')
+if not proof_path.exists() or json.loads(proof_path.read_text()).get('court') != state()['court']:
+    run('scripts/verify-finality-messages.ts')
 print('Actual Studio lifecycle and public verification evidence complete.')
