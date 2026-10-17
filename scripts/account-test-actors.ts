@@ -46,9 +46,14 @@ async function write(name:string,actor:string,address:`0x${string}`,method:strin
  assert.equal(receipt.status,'FINALIZED');assert.equal(receipt.execution,expectedExecution);state.checks[name]={hash,done:true,expectedExecution,receipt};await save();console.log(name+' finalized with expected '+expectedExecution);
 }
 const stage=process.env.BALLAST_ACCOUNT_STAGE??'history';
+const caseId=process.env.BALLAST_ACCOUNT_CASE??'registered-account-20261017';
+assert.match(caseId,/^[a-z0-9-]+$/);
 if(stage==='history'){
+ const executors=(process.env.BALLAST_ACCOUNT_EXECUTORS??'first,second,third').split(',');
+ assert.ok(executors.length>0&&executors.every(name=>['first','second','third'].includes(name)));
  const code=await readFile('tests/integration/contracts/incident_vault.py','utf8');
  for(const[name,a]of Object.entries(actors)){
+  if(name!=='claimant'&&!executors.includes(name))continue;
   if(!state.funded[name]){
    const balance=await a.client.getBalance({address:a.account.address});
    assert.equal(balance,0n,'Only a newly generated zero balance actor may use setup funding');
@@ -56,7 +61,7 @@ if(stage==='history'){
    state.funded[name]=true;await save();
   }
  }
- for(const name of ['first','second','third']){
+ for(const name of executors){
   const a=actors[name];
   await write(name+'_authorize',name,deployment.registry as `0x${string}`,'authorize_operator',[operator!]);
   if(!state.vaults[name]){
@@ -75,7 +80,7 @@ if(stage==='history'){
   state.history??={};state.history[name]=evidence;await save();
  }
  state.historyReady=true;await save();
- console.log('Three actual executor histories prepared; no registered account funds or existing capital were touched.');
+ console.log(executors.length+' actual executor histories prepared; no registered account funds or existing capital were touched.');
 }else{
  const name=process.env.BALLAST_ACCOUNT_EXECUTOR??'first';
  const round=process.env.BALLAST_ACCOUNT_CLAIM_ROUND??'1';
@@ -98,13 +103,14 @@ if(stage==='history'){
   const incident=state.incidents?.[name] as {loss:{occurred_at:number;amount_wei:string}};
   assert.ok(incident?.loss);
   const incidentRef=state.checks[name+'_incident'].hash;
-  const evidenceUrls=['https://explorer-studio.genlayer.com/api/transactions/'+incidentRef,'https://raw.githubusercontent.com/dotmantissa/ballast/'+evidence.incidentCommit+'/docs/live-cases/registered-account-20261017/'+name+'-incident.json'];
+  const evidenceUrls=['https://explorer-studio.genlayer.com/api/transactions/'+incidentRef,'https://raw.githubusercontent.com/dotmantissa/ballast/'+evidence.incidentCommit+'/docs/live-cases/'+caseId+'/'+name+'-incident.json'];
   const statement='Controlled Studio test: this claimant deposited their own native GEN in vault '+state.vaults[name]+'. The insured executor made the referenced unapproved debit of 0.2 GEN to itself after coverage began. This is an actual deliberate test of the insecure vault, not a customer allegation. No repayment has occurred. Request 0.1 GEN within the shared policy limit, supported by the exact finalized root transaction and signed incident record.';
   await write(caseKey+'_file','claimant',court,'file_claim',[policy.id,incidentRef,incident.loss.occurred_at,10n**17n,statement,evidenceUrls],10n**16n);
   const page=await read(court,'list_account_claims',[actors.claimant.account.address,false,-1,50]) as {items:{id:string;incident_ref:string;policy_id:string}[]};
   const claim=page.items.find(c=>c.incident_ref===incidentRef&&c.policy_id===policy.id);assert.ok(claim);
   state.claims??={};state.claims[caseKey]={id:claim.id,policyId:policy.id,incidentRef,incidentAt:incident.loss.occurred_at,amount:'100000000000000000',statement,evidenceUrls};await save();
   await writeFile(folder+'/claim-'+caseKey+'.json',JSON.stringify(state.claims[caseKey],null,2)+'\n',{mode:0o600});
+  await writeFile(folder+'/active-claim.json',JSON.stringify(state.claims[caseKey],null,2)+'\n',{mode:0o600});
  }else{
   const claim=state.claims?.[caseKey];assert.ok(claim,'File the real case first');
   if(stage==='audit'){
@@ -117,10 +123,14 @@ if(stage==='history'){
    await write(caseKey+'_claimant_appeal','claimant',court,'appeal_finding',[claim.id,'scope',reason,claim.evidenceUrls],10n**16n);
   }else if(stage==='claimant_accept')await write(caseKey+'_claimant_accept','claimant',court,'accept_decision',[claim.id]);
   else if(stage==='claimant_withdraw'){
+   const before=(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString();
    const account=await read(deployment.underwriting as `0x${string}`,'get_account',[actors.claimant.account.address]) as {credit:string};
    if(BigInt(account.credit)>0n)await write(caseKey+'_claimant_payout','claimant',deployment.underwriting as `0x${string}`,'withdraw');
    const cases=await read(court,'get_account_cases',[actors.claimant.account.address]) as {bond_credit:string};
    if(BigInt(cases.bond_credit)>0n)await write(caseKey+'_claimant_bonds','claimant',court,'withdraw_bonds');
+   const after=(await actors.claimant.client.getBalance({address:actors.claimant.account.address})).toString();
+   assert.equal(BigInt(after)-BigInt(before),BigInt(account.credit)+BigInt(cases.bond_credit));
+   await writeFile(folder+'/withdrawal-'+caseKey+'.json',JSON.stringify({beforeWei:before,afterWei:after,payoutWei:account.credit,bondWei:cases.bond_credit,exactNativeIncrease:true},null,2)+'\n',{mode:0o600});
   }else throw Error('Unknown account testing stage');
  }
 }

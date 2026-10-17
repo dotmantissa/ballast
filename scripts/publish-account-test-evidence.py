@@ -6,13 +6,17 @@ import subprocess
 import urllib.request
 
 root = Path.cwd()
-folder = root / '.ballast-private/account-tests'
+folder = root / os.environ.get('BALLAST_ACCOUNT_TEST_DIR', '.ballast-private/account-tests')
+assert folder.resolve().is_relative_to((root / '.ballast-private').resolve()), 'Use the private project state directory'
 state_path = folder / 'evidence.json'
 state = json.loads(state_path.read_text()) if state_path.exists() else {}
 phase = os.environ.get('BALLAST_ACCOUNT_EVIDENCE_PHASE', 'history')
 if phase not in ['history', 'incident']:
     raise SystemExit('Choose history or incident evidence')
-files = sorted(Path('docs/live-cases/registered-account-20261017').glob('*-' + phase + '.json'))
+case_id = os.environ.get('BALLAST_ACCOUNT_CASE', 'registered-account-20261017')
+import re
+assert re.fullmatch('[a-z0-9-]+', case_id), 'Use a plain case directory name'
+files = sorted((Path('docs/live-cases') / case_id).glob('*-' + phase + '.json'))
 if not files:
     raise SystemExit('No signed real evidence is ready')
 files.append(Path('tests/integration/contracts/incident_vault.py'))

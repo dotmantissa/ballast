@@ -53,7 +53,13 @@ export async function staleQuote(page,expect){
  const row=await page.qa.test('coverage binding',3,async()=>{
   const manifest=JSON.parse(agent.manifest);manifest.scope+=' The operator reviews execution receipts daily.';
   await page.qa.execute('third-next-revision',{kind:'revise',agentId:agent.id,manifest:JSON.stringify(manifest),historyUrls:agent.history_urls,publicConsent:true});
-  const op=await page.qa.execute('stale-third-bind',{kind:'bind',quoteId:quote.id},'error');expect(op.error).not.toContain('did not agree');
-  return {transaction:op.tx_hash,staleManifestQuoteRejected:true};
+  const before=await page.qa.account();const r=await page.qa.submit('stale-third-bind',{kind:'bind',quoteId:quote.id});expect(r.status).toBe(409);
+  const after=await page.qa.account();expect(after.balance).toBe(before.balance);
+  const first=JSON.parse(await readFile('.ballast-private/account-tests/claim-first_1.json','utf8'));
+  const repeat=await page.qa.submit('preflight-repeat-first-bind',{kind:'bind',quoteId:first.policyId});expect(repeat.status).toBe(409);
+  const self=await page.qa.submit('preflight-own-first-claim',{kind:'claim',policyId:first.policyId,incidentRef:first.incidentRef,incidentAt:first.incidentAt,amount:'0.1',statement:first.statement,evidenceUrls:first.evidenceUrls,publicConsent:true});expect(self.status).toBe(403);
+  const protectedAccount=await page.qa.account();expect(protectedAccount.balance).toBe(before.balance);
+  await page.qa.save('paid-preflight-proof.json',{beforeWei:before.balance,afterWei:protectedAccount.balance,staleQuoteStatus:r.status,duplicateBindStatus:repeat.status,operatorSelfClaimStatus:self.status,noPremiumOrBondSent:true});
+  return {httpStatus:409,staleManifestQuoteRejected:true,noPremiumSent:true,balanceUnchanged:true};
  });return {status:row.status,error:row.error,evidence:row.evidence};
 }

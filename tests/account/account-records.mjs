@@ -1,4 +1,4 @@
-import {readFile} from 'node:fs/promises';
+import {readFile,rm} from 'node:fs/promises';
 export async function funding(page,expect){
  const row=await page.qa.test('account and funds',2,async()=>{
   let before;try{before=JSON.parse(await readFile('.ballast-private/account-tests/before-daily-funding.json','utf8'));}catch(error){if(error.code!=='ENOENT')throw error;before=await page.qa.account('before-daily-funding');}
@@ -59,4 +59,14 @@ export async function activity(page,expect){
   const r=await page.qa.api('/actions',{method:'POST',data:{kind:'withdraw'},headers:{'Idempotency-Key':successful.key}});expect(r.status).toBe(409);
   return {changedBodyRejected:true,httpStatus:409};
  }));await page.qa.close();return rows.map(({case:n,status,error})=>({case:n,status,error}));
+}
+export async function logout(page,context,expect){
+ const row=await page.qa.test('email sign in',3,async()=>{
+  await page.qa.close();await page.getByRole('button',{name:'Sign out',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Sign in with email',exact:true})).toBeVisible();await expect(page.locator('.account-button')).toHaveCount(0);
+  const r=await context.request.get('https://ballast-cover.vercel.app/api/account');expect(r.status()).toBe(401);
+  page.qaAuthorization=undefined;
+  await rm('.ballast-private/account-tests/session.json',{force:true});await rm('.git/ballast-account-tests-backup/session.json',{force:true});
+  return {signedOut:true,privateRouteStatus:401,temporarySessionRemoved:true};
+ });return {status:row.status,error:row.error,evidence:row.evidence};
 }

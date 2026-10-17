@@ -66,6 +66,7 @@ try{
     case 'funding':result=await(await import('../tests/account/account-records.mjs')).funding(page,expect);break;
     case 'records':result=await(await import('../tests/account/account-records.mjs')).records(page,expect);break;
     case 'activity':result=await(await import('../tests/account/account-records.mjs')).activity(page,expect);break;
+    case 'logout':result=await(await import('../tests/account/account-records.mjs')).logout(page,context,expect);break;
     case 'caseEvidence':{const court=await import('../tests/account/court.mjs');result={filed:await court.filed(page,expect),evidence:await court.evidence(page,expect),selfClaim:await court.operatorRefusal(page,expect)};break;}
     case 'findings':result=await(await import('../tests/account/court.mjs')).findings(page,expect);break;
     case 'earlyRecovery':result=await(await import('../tests/account/court.mjs')).earlyGuards(page,expect);break;
@@ -76,6 +77,11 @@ try{
     case 'settle':result=await(await import('../tests/account/court.mjs')).settle(page,expect);break;
     case 'closure':result=await(await import('../tests/account/court.mjs')).closure(page,expect);break;
     case 'history':result=await(await import('../tests/account/court.mjs')).history(page,expect);break;
+    case 'continuation':{
+     const suite=await import('../tests/account/continuation.mjs');
+     if(!['setup','waitFindings','appeal','rights','acceptAndFinalize','settle','finish','recovery','earlyRecovery','duplicate','history','expiry'].includes(command.step))throw Error('Choose a named continuation step');
+     result=await suite[command.step](page,expect);break;
+    }
     default:throw Error('Choose a named account test action');
    }
    await checkpoint();

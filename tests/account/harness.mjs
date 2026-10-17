@@ -1,14 +1,15 @@
 import {readFile,writeFile,rename,mkdir} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
+import {dirname} from 'node:path';
 const root='.ballast-private/account-tests/';
 export async function install(page,context,expect){
  const matrix=JSON.parse(await readFile(root+'matrix.json','utf8'));
  let journal={};try{journal=JSON.parse(await readFile(root+'actions.json','utf8'));}catch{}
  async function save(file,data){
-  await mkdir(root,{recursive:true,mode:0o700});
+  await mkdir(dirname(root+file),{recursive:true,mode:0o700});
   const content=JSON.stringify(data,null,2)+'\n';
   await writeFile(root+file+'.tmp',content,{mode:0o600});await rename(root+file+'.tmp',root+file);
-  const backup='.git/ballast-account-tests-backup/';await mkdir(backup,{recursive:true,mode:0o700});
+  const backup='.git/ballast-account-tests-backup/';await mkdir(dirname(backup+file),{recursive:true,mode:0o700});
   await writeFile(backup+file+'.tmp',content,{mode:0o600});await rename(backup+file+'.tmp',backup+file);
  }
  async function api(path,options={}){
