@@ -11,7 +11,7 @@ export async function GET(
     const { id } = await params;
     if (!z.uuid().safeParse(id).success)
       throw new HttpError(400, "Invalid activity reference.");
-    return Response.json(await syncOperation(user.id, id), {
+    return Response.json(await syncOperation(user.id, id, new URL(request.url).searchParams.get("verify") === "true"), {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {

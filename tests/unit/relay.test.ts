@@ -385,3 +385,24 @@ it.each([
   expect(retried.attempt).toBe(2);
   expect(model.write).toHaveBeenCalledTimes(1);
 });
+
+it('can recheck a historical finalized projection against final consensus',async()=>{
+  const first=await submitAction(user,action,key);advance(10);
+  model.getTransaction.mockResolvedValueOnce({statusName:'FINALIZED',txExecutionResultName:'SUCCESS'});
+  await syncOperation(user.id,first.id);advance(10);
+  model.getTransaction.mockResolvedValueOnce({statusName:'FINALIZED',result_name:'MAJORITY_DISAGREE',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'},{execution_result:'ERROR'}]}});
+  const checked=await syncOperation(user.id,first.id,true);
+  expect(checked.execution).toBe('error');expect(checked.retryable).toBe(true);
+  expect(model.write).toHaveBeenCalledTimes(1);
+});
+it('does not repeatedly fetch a terminal receipt during ordinary polling',async()=>{
+  const first=await submitAction(user,action,key);advance(10);
+  model.getTransaction.mockResolvedValueOnce({statusName:'FINALIZED',txExecutionResultName:'SUCCESS'});
+  await syncOperation(user.id,first.id);advance(10);await syncOperation(user.id,first.id);
+  expect(model.getTransaction).toHaveBeenCalledTimes(1);
+});
+it('does not recheck another account operation or broadcast while verifying',async()=>{
+  const first=await submitAction(user,action,key);advance(10);
+  await expect(syncOperation('another-user',first.id,true)).rejects.toThrow('Activity not found');
+  expect(model.getTransaction).not.toHaveBeenCalled();expect(model.write).toHaveBeenCalledTimes(1);
+});

@@ -352,12 +352,12 @@ export async function getOperations(userId: string): Promise<Operation[]> {
     await sql`SELECT id,kind,status,tx_hash,evm_hash,(signed_payload IS NOT NULL) AS has_signed_payload,execution,error,created_at,updated_at,votes,attempt,next_retry_at FROM ballast_operations WHERE user_id=${userId} AND (status NOT IN ('FINALIZED','CANCELED','error','UNDETERMINED','LEADER_TIMEOUT','VALIDATORS_TIMEOUT') OR id IN (SELECT id FROM ballast_operations WHERE user_id=${userId} ORDER BY created_at DESC LIMIT 25)) ORDER BY created_at DESC`;
   return rows.map((row) => publicOperation(row));
 }
-export async function syncOperation(userId: string, id: string) {
+export async function syncOperation(userId: string, id: string, verifyFinal = false) {
   const sql = db();
   const [row] =
     await sql`SELECT * FROM ballast_operations WHERE user_id=${userId} AND id=${id}`;
   if (!row) throw new HttpError(404, "Activity not found.");
-  if (TERMINAL_STATUSES.includes(row.status) || row.status === "error")
+  if ((TERMINAL_STATUSES.includes(row.status) && !verifyFinal) || row.status === "error")
     return publicOperation(row);
   if (Date.now() - new Date(row.updated_at).getTime() < 8000)
     return publicOperation(row);

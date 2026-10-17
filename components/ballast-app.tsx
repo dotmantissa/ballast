@@ -1571,7 +1571,11 @@ export function BallastApp() {
         </main>
       </div>
       {authenticated && account && account.operations.length > 0 && (
-        <ActivityTray operations={account.operations} />
+        <ActivityTray operations={account.operations} onVerify={async (id) => {
+          const checked = await authFetch("/api/operations/" + id + "?verify=true");
+          setAccount(current => current ? {...current, operations: current.operations.map(op => op.id === id ? checked : op)} : current);
+          setNotice(checked.execution === "error" ? checked.error ?? "The network could not complete this action." : "The receipt has been checked against the network.");
+        }} />
       )}
       {form && (
         <ActionForm
@@ -2135,8 +2139,10 @@ function ClaimDetail({
     </section>
   );
 }
-function ActivityTray({ operations }: { operations: Operation[] }) {
+function ActivityTray({ operations, onVerify }: { operations: Operation[]; onVerify: (id: string) => Promise<void> }) {
   const [open, setOpen] = useState(false);
+  const [checking, setChecking] = useState<string | null>(null);
+  const [checkError, setCheckError] = useState("");
   const pending = operations.filter(
     (o) => o.execution === "pending" && o.status !== "uncertain",
   );
@@ -2159,6 +2165,7 @@ function ActivityTray({ operations }: { operations: Operation[] }) {
       </button>
       {open && (
         <div className="activity-items">
+          {checkError && <p role="alert">{checkError}</p>}
           {operations.map((o) => (
             <div className="activity-item" key={o.id}>
               <span className={"activity-status " + o.execution}>
@@ -2175,12 +2182,20 @@ function ActivityTray({ operations }: { operations: Operation[] }) {
                 <p>
                   {o.status === "FINALIZED" && o.execution === "success"
                     ? "Finalized successfully"
+                    : o.status === "FINALIZED" && o.execution === "error"
+                      ? "Finalized without applying the action"
                     : o.status === "ACCEPTED" && o.execution === "error"
                       ? "Accepted with an execution error"
                       : o.status.replaceAll("_", " ").toLowerCase()}{" "}
                   <span>{relative(o.created_at)}</span>
                 </p>
                 {o.error && <p className="activity-error">{o.error}</p>}
+                {o.tx_hash && <button className="text-button" aria-label={"Recheck receipt for " + (operationNames[o.kind] ?? o.kind)} disabled={checking !== null} onClick={async () => {
+                  setChecking(o.id); setCheckError("");
+                  try { await onVerify(o.id); }
+                  catch { setCheckError("The receipt could not be checked right now. Your activity is saved."); }
+                  finally { setChecking(null); }
+                }}>{checking === o.id ? "Checking receipt" : "Recheck receipt"}</button>}
                 {o.votes.length > 0 && (
                   <div className="validator-votes">
                     {o.votes.map((v) => (

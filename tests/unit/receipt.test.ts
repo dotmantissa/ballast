@@ -45,3 +45,24 @@ describe("execution and consensus are distinct", () => {
       amount: "100000000000000000001",
     }));
 });
+
+it.each([
+  {result_name:'MAJORITY_DISAGREE'},
+  {resultName:'MAJORITY_DISAGREE'},
+  {result:7},
+])('does not report a successful proposal as committed after rejection %j', outcome=>{
+  const result=inspectReceipt({statusName:'FINALIZED',...outcome,txExecutionResultName:'FINISHED_WITH_RETURN',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'},{execution_result:'ERROR'}]}});
+  expect(result.execution).toBe('error');expect(result.error).toContain('did not agree');
+});
+it('uses the last Studio leader receipt after a rotation',()=>{
+  expect(inspectReceipt({status:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'ERROR'},{execution_result:'SUCCESS'}]}}).execution).toBe('success');
+  expect(inspectReceipt({status:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'},{execution_result:'ERROR'}]}}).execution).toBe('error');
+});
+it('accepts an agreed SDK return and rejects a numeric execution error',()=>{
+  expect(inspectReceipt({statusName:'FINALIZED',result:6,txExecutionResult:1}).execution).toBe('success');
+  expect(inspectReceipt({statusName:'FINALIZED',result:6,txExecutionResult:2}).execution).toBe('error');
+});
+
+it.each(['PENDING','COMMITTING','REVEALING'])('keeps the %s proposal pending until a decision',status=>{
+ expect(inspectReceipt({status,result:0,consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}}).execution).toBe('pending');
+});
