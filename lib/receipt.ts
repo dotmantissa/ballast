@@ -11,7 +11,8 @@ export function inspectReceipt(raw: unknown): ReceiptView {
   const tx = raw as Record<string, unknown>;
   const consensus = tx.consensus_data as Record<string, unknown> | undefined;
   const receipts = consensus?.leader_receipt;
-  const leader = (Array.isArray(receipts) ? receipts.at(-1) : receipts) as
+  // Studio puts the proposed receipt first; extra entries can be idle attempts.
+  const leader = (Array.isArray(receipts) ? receipts[0] : receipts) as
     Record<string, unknown> | undefined;
   const status = String(tx.statusName ?? tx.status ?? "PENDING");
   // A leader proposal can succeed and still be rejected by final consensus.

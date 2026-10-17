@@ -54,9 +54,9 @@ it.each([
   const result=inspectReceipt({statusName:'FINALIZED',...outcome,txExecutionResultName:'FINISHED_WITH_RETURN',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'},{execution_result:'ERROR'}]}});
   expect(result.execution).toBe('error');expect(result.error).toContain('did not agree');
 });
-it('uses the last Studio leader receipt after a rotation',()=>{
-  expect(inspectReceipt({status:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'ERROR'},{execution_result:'SUCCESS'}]}}).execution).toBe('success');
-  expect(inspectReceipt({status:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'},{execution_result:'ERROR'}]}}).execution).toBe('error');
+it('uses the primary Studio receipt instead of unrelated idle attempts',()=>{
+  expect(inspectReceipt({status:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'ERROR'},{execution_result:'SUCCESS'}]}}).execution).toBe('error');
+  expect(inspectReceipt({status:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'},{execution_result:'ERROR'}]}}).execution).toBe('success');
 });
 it('accepts an agreed SDK return and rejects a numeric execution error',()=>{
   expect(inspectReceipt({statusName:'FINALIZED',result:6,txExecutionResult:1}).execution).toBe('success');
