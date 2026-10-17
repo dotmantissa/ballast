@@ -1,0 +1,1193 @@
+{
+  "network": "studionet",
+  "verifiedAt": "2026-10-17T02:13:45.432Z",
+  "sourceHashes": {
+    "registry": "f8004769e45b43d284ab12aa9dce34c34811f52d4d9cc172861e024a8b490198",
+    "underwriting": "b7de43b60702c25dc612b2b9085c11d425b7c2a813ed31d731f9aa8ab5b2fc67",
+    "court": "0cac9c757c24e16a83a43fa0a502744b8bc5976d157aa9c28ae164666b64e58e"
+  },
+  "registry": "0xad10A9dE5D781dC3b79F3303aeb4fC890f5a2c2a",
+  "underwriting": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+  "court": "0x2D4B09442d3A57a6f351cd8f2F8C71B1A9645558",
+  "vault": "0x47fA61A29B5C708C359F80F8045b67017062A1A0",
+  "peerVault": "0x41df2558440880618FEc212B3a2eAfE9f90aff7f",
+  "actors": {
+    "owner": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+    "peer": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b"
+  },
+  "historyCommit": "5dd61c25d8eb37129285ecda4406b294cab03d15",
+  "incidentCommit": "bd7dc86858c4ab861c96e037aea960a4fad3b466",
+  "caseId": "studio-review-20261016153332",
+  "checks": {
+    "deploy_vault": {
+      "hash": "0x3c6da6543b1127740fa5febc2cba94e918c01cb027c2bb5df474a2f0587a3871",
+      "done": true
+    },
+    "vault_deposit": {
+      "hash": "0x2e530cb1f1c3ddf92c2583f925fd27c8d9fb5ba80d7cf552e105e54841e2ee88",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x3D83ab507785b95ca5C208bEc80CCe3D5ca98100",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x9ea87b28DcA2F79fe108CF06a4c13B4c876AC23d",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xBBb165E4c9d73a1493D363280f7067Cd07891dBE",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xcE1d6bBB36B744536153966B4DD42276f5ADd0F8",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xec2Fb79cd12255Eb34886CEd7332f27B98DEe658",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "vault_approve": {
+      "hash": "0xb53a59b412102119991f8c706776bf2348e6b7c91e93bd5b6f89c82a5d7e6710",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x03D58A4DeF6fDFc032A56374785a5F571D07Bc11",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x36728d2a123aB444E603EE5b2ad17d18Bb193557",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x3D83ab507785b95ca5C208bEc80CCe3D5ca98100",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x3E5ee2507cc167C9925Bf10c67D7986581112024",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x6737ca1d6BDF8b7C4f19143E2D55581Ca64eb7C3",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "vault_refund": {
+      "hash": "0x8997e58a13b83272e3a22818a7a4b0fd44fc47fcba306dfa62a16fed3147146d",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x36728d2a123aB444E603EE5b2ad17d18Bb193557",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x4EDbE1FC9EAeC7b0EBA849b0C76AE73Eb0ad5C47",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x4aba638Cf0Cf5249437AaD968fC69dde46ae6BAC",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x90402341F0B0e97b23023c0a87de957FB7148E0F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xec2Fb79cd12255Eb34886CEd7332f27B98DEe658",
+            "vote": "idle"
+          }
+        ]
+      }
+    },
+    "deploy_peerVault": {
+      "hash": "0x0d7db71ffd15a49077269005fc359f86417e558f31376c0305446a03e33356c6",
+      "done": true
+    },
+    "peerVault_deposit": {
+      "hash": "0xfcb384a966196661d9c223f6139d565bb1b7a9f1c30cfc3df811ae65d828a31c",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x3E5ee2507cc167C9925Bf10c67D7986581112024",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x6737ca1d6BDF8b7C4f19143E2D55581Ca64eb7C3",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x76c25AFC12c75485703cCFfd0083AA6201455B25",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xDB1c35c1f05d885999b8f13e5735307BcC16Be88",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xec2Fb79cd12255Eb34886CEd7332f27B98DEe658",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "peerVault_approve": {
+      "hash": "0x316eb54e020d13965c7d4f9ba12c6fa618af1fa48768f32e2df18e4e46fae308",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x4404Fb70d490c935758146f42A73DC850FF95C71",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x4EDbE1FC9EAeC7b0EBA849b0C76AE73Eb0ad5C47",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x9ea87b28DcA2F79fe108CF06a4c13B4c876AC23d",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xDB1c35c1f05d885999b8f13e5735307BcC16Be88",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xE6BD8050758CB15fC88387223E31Ae2708B119dC",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "peerVault_refund": {
+      "hash": "0xe8e4d4fd9e0c4d943cd39539b476864ed91a17e23d4af64624612e16bdec1e1a",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x36728d2a123aB444E603EE5b2ad17d18Bb193557",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x3D83ab507785b95ca5C208bEc80CCe3D5ca98100",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x3E5ee2507cc167C9925Bf10c67D7986581112024",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xBBb165E4c9d73a1493D363280f7067Cd07891dBE",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xec2Fb79cd12255Eb34886CEd7332f27B98DEe658",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "register_agent": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x06a786679abff29ea6acc5ab2472d5ca685746d738d8b56058cea255c43e20b4",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x044f5Cb4DB97843236A9ee36BBE6bA2CE827DEf5",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x1b170f7676410646709fDF16A279Ae4f8c4dC7AE",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x6BCDDf292694Ec8AA930A53812DbBB546731bC17",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xacb3A709E6212931De1a712a1710a6955c7d40c0",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "stake_junior": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x64c9f978da77caffc24675d44eaaaca4b24f07e8e48395c33022ce09532ccc85",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x46f3e6B8E4D246a1c29E60Dece3709f4F115ab7F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xacb3A709E6212931De1a712a1710a6955c7d40c0",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "stake_senior": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x8e0e1cebbd10de42f4af85c476e9dc169dc50a3a26125435108222cc9d4a7cfb",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x1b170f7676410646709fDF16A279Ae4f8c4dC7AE",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x7405D7e5f9e1016ed13847B93Bcf7D8553688Ec9",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xF769c4bB25c74773982dFAE52dEB2A1A0B6c7A4B",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "idle"
+          }
+        ]
+      }
+    },
+    "quote_policy": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x6b8d8b635ae1f5fc719e747a07876b6d9aa5ad251491dc212ff81fb963b4c68c",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x1b170f7676410646709fDF16A279Ae4f8c4dC7AE",
+            "vote": "disagree"
+          },
+          {
+            "validator": "0x84b5C0320Cf213d1e0F4313aD46dBde0cBA3a48b",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "disagree"
+          },
+          {
+            "validator": "0xbbA7b5E4630DC0db7f98939Db9bD8c47C5d7f0b8",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "bind_policy": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x4d4f02f8b12f6ab071c0119fdf4ece23bf9af9a964f5fd7f811096c4f6c11395",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xF769c4bB25c74773982dFAE52dEB2A1A0B6c7A4B",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "unapproved_debit": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x044f5Cb4DB97843236A9ee36BBE6bA2CE827DEf5",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x4807398866238CaF8910A9c4Fe7eB444d2Ed144A",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "file_claim": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0xd110089278ab21edae7d73762f978353944d31f1b0637e64c2e4fa0402056b48",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x4694C11A556537362bCe7b0F09435118baFF592d",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x46f3e6B8E4D246a1c29E60Dece3709f4F115ab7F",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x60929ddB1a5E6Db6f1E198038E0D56547c10f275",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "idle"
+          }
+        ]
+      }
+    },
+    "finding_harm": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x87315cd93bf6711979b10ce0e7f9c3b449c91464a229c6d80a775ce342f0de8a",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x4694C11A556537362bCe7b0F09435118baFF592d",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x7405D7e5f9e1016ed13847B93Bcf7D8553688Ec9",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x84b5C0320Cf213d1e0F4313aD46dBde0cBA3a48b",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xbfC623617377D02992F9c125CBBC3Bb1Cb3c9E4D",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "finding_causation": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0xa77ab882fd35328ddb8aaa02e5fc988425310162e99e9d114b85cec360c3d774",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x46f3e6B8E4D246a1c29E60Dece3709f4F115ab7F",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x7902A9B1893526Db7C3cdCf9CAb88F9B408890cC",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xF9fbED11ED0C4BbcE404f9c48591233a688883B6",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "finding_scope": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x88c9456e7b4342ead676f8769e1e49d5fcbee1f015efe8c0f4d0cc6a27a84c71",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x1b170f7676410646709fDF16A279Ae4f8c4dC7AE",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x46f3e6B8E4D246a1c29E60Dece3709f4F115ab7F",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x7405D7e5f9e1016ed13847B93Bcf7D8553688Ec9",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xbfC623617377D02992F9c125CBBC3Bb1Cb3c9E4D",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "finding_payout": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0xe938bb436bc6499725c18dd8045dfe5cfea40c35e36bc040c13a92db5f894552",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x46f3e6B8E4D246a1c29E60Dece3709f4F115ab7F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x60929ddB1a5E6Db6f1E198038E0D56547c10f275",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x6BCDDf292694Ec8AA930A53812DbBB546731bC17",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xF9fbED11ED0C4BbcE404f9c48591233a688883B6",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "appeal_scope": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x57a681cf77f9faac882114b79211cf58fb93cfde8f4f09e1bdc914fc62c2bde3",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x4807398866238CaF8910A9c4Fe7eB444d2Ed144A",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x6BCDDf292694Ec8AA930A53812DbBB546731bC17",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xF9fbED11ED0C4BbcE404f9c48591233a688883B6",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "accept_claimant": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0xc76fa5daf94ea77a32d1075ca894acf21268125bb85fbe5f7674919f0c3430fe",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x4694C11A556537362bCe7b0F09435118baFF592d",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x60929ddB1a5E6Db6f1E198038E0D56547c10f275",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x7902A9B1893526Db7C3cdCf9CAb88F9B408890cC",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xF769c4bB25c74773982dFAE52dEB2A1A0B6c7A4B",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xacb3A709E6212931De1a712a1710a6955c7d40c0",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "accept_operator": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0xa65fd999b1006b854883846b3d0afdd41e0446bd0a0aa8bc3faf2d7dc3ae3276",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x1b170f7676410646709fDF16A279Ae4f8c4dC7AE",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x7902A9B1893526Db7C3cdCf9CAb88F9B408890cC",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x84b5C0320Cf213d1e0F4313aD46dBde0cBA3a48b",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "finalize_claim": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x2e4a607ba3eec418f70f0bdb64cbfca7c95a2644871f3c1fde53d283306a73ec",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x7902A9B1893526Db7C3cdCf9CAb88F9B408890cC",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x84b5C0320Cf213d1e0F4313aD46dBde0cBA3a48b",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xbbA7b5E4630DC0db7f98939Db9bD8c47C5d7f0b8",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xd7dfBe383b6421cdE13b94ED62f81772156B4a43",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "settle_claim": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0xbf3f69da4c7614cd4512af86edd2209436a9b7d4d0f7dae8d3686da8e4407582",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x60929ddB1a5E6Db6f1E198038E0D56547c10f275",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xacb3A709E6212931De1a712a1710a6955c7d40c0",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xbbA7b5E4630DC0db7f98939Db9bD8c47C5d7f0b8",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xc5dAA81d1eD1C0F2C6aD839b7FDe9f7D65AE27A3",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "withdraw_claimant": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x21161ea6dead1ae911d88a289742bfdfd6b38765dea440c33c92a18dfd55ecb5",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x4807398866238CaF8910A9c4Fe7eB444d2Ed144A",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x60929ddB1a5E6Db6f1E198038E0D56547c10f275",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x6BCDDf292694Ec8AA930A53812DbBB546731bC17",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xbbA7b5E4630DC0db7f98939Db9bD8c47C5d7f0b8",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "withdraw_bonds": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x3989bd564b257cc20b981693a61ca0abd18225b06bfbfb9a51bb013a431e0a9b",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x044f5Cb4DB97843236A9ee36BBE6bA2CE827DEf5",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x1b170f7676410646709fDF16A279Ae4f8c4dC7AE",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x4694C11A556537362bCe7b0F09435118baFF592d",
+            "vote": "idle"
+          },
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "agree"
+          },
+          {
+            "validator": "0xF769c4bB25c74773982dFAE52dEB2A1A0B6c7A4B",
+            "vote": "agree"
+          }
+        ]
+      }
+    },
+    "sync_loss": {
+      "attempt": 1,
+      "history": [],
+      "hash": "0x542be2cec6aa826cf04902d83b4d2d2ee53133e2f8b858c262e0f0368e6d061e",
+      "done": true,
+      "receipt": {
+        "status": "FINALIZED",
+        "execution": "success",
+        "votes": [
+          {
+            "validator": "0x02282326D058fE2d889F41BF01E14A72D800fa6F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x46f3e6B8E4D246a1c29E60Dece3709f4F115ab7F",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x7902A9B1893526Db7C3cdCf9CAb88F9B408890cC",
+            "vote": "agree"
+          },
+          {
+            "validator": "0x91007854a2C4d4ec5e5148a94B15FdF0Ba013e7a",
+            "vote": "idle"
+          },
+          {
+            "validator": "0xEcf0fed53b8baf5A6d376CFF2894aa66fcBCa13C",
+            "vote": "agree"
+          }
+        ]
+      }
+    }
+  },
+  "confirmations": {
+    "get_final_agent": {
+      "address": "0xad10A9dE5D781dC3b79F3303aeb4fC890f5a2c2a",
+      "recordId": "892d26f427a05a5c100ce76e",
+      "observedAt": "2026-10-17T01:32:35.935Z",
+      "record": {
+        "executor_address": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "history_urls": [
+          "https://raw.githubusercontent.com/dotmantissa/ballast/5dd61c25d8eb37129285ecda4406b294cab03d15/docs/live-cases/studio-review-20261016153332/history.json",
+          "https://explorer-studio.genlayer.com/api/transactions/0x8997e58a13b83272e3a22818a7a4b0fd44fc47fcba306dfa62a16fed3147146d",
+          "https://raw.githubusercontent.com/dotmantissa/ballast/5dd61c25d8eb37129285ecda4406b294cab03d15/tests/integration/contracts/incident_vault.py"
+        ],
+        "id": "892d26f427a05a5c100ce76e",
+        "manifest": "{\"name\":\"Studio refund executor\",\"scope\":\"This executor manages claimant owned native GEN escrow in vault 0x47fA61A29B5C708C359F80F8045b67017062A1A0. It may only call execute_approved_refund after the claimant has recorded approve_refund for that exact amount. Maximum 1 GEN per transfer. It must return refunds to the claimant. Any spend_without_approval call or transfer to another recipient is expressly outside its authority, even though the test vault exposes that vulnerable path. V1 cover requested only for a native GEN debit of the claimant escrow.\",\"executor_address\":\"0xBC1399c55538eC034d4Da550C03c34Ae0C357f53\",\"spend_limit_gen\":1}",
+        "manifest_hash": "6e5bc6bfb7c34b8d670735843a4e5bd0aaa3f93b55b7e2d12f0e63a01dc4e0ef",
+        "name": "Studio refund executor",
+        "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "raw_manifest_hash": "195952cea20148a46acf22024204db52c4c0eebbb6251c53ce6097a94b1f3ba6",
+        "registered_at": 1792200678,
+        "revised_at": 1792200678,
+        "revision": 1,
+        "scope": "This executor manages claimant owned native GEN escrow in vault 0x47fA61A29B5C708C359F80F8045b67017062A1A0. It may only call execute_approved_refund after the claimant has recorded approve_refund for that exact amount. Maximum 1 GEN per transfer. It must return refunds to the claimant. Any spend_without_approval call or transfer to another recipient is expressly outside its authority, even though the test vault exposes that vulnerable path. V1 cover requested only for a native GEN debit of the claimant escrow."
+      }
+    },
+    "get_final_policy": {
+      "address": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+      "recordId": "542e2c0ed30773067a29936d",
+      "observedAt": "2026-10-17T01:38:47.305Z",
+      "record": {
+        "agent_id": "892d26f427a05a5c100ce76e",
+        "band": "low",
+        "bound": false,
+        "claim_id": "",
+        "created_at": 1792200934,
+        "ends_at": 1794793054,
+        "expires_at": 1792204534,
+        "id": "542e2c0ed30773067a29936d",
+        "junior_locked": "1016000000000000000",
+        "limit": "1000000000000000000",
+        "manifest_hash": "6e5bc6bfb7c34b8d670735843a4e5bd0aaa3f93b55b7e2d12f0e63a01dc4e0ef",
+        "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "paid": "0",
+        "peer_urls": [
+          "https://raw.githubusercontent.com/dotmantissa/ballast/5dd61c25d8eb37129285ecda4406b294cab03d15/docs/live-cases/studio-review-20261016153332/peer.json"
+        ],
+        "policy_sequence": 1,
+        "premium": "20000000000000000",
+        "rate_bps": 200,
+        "reason": "The executor has a clearly defined and restricted scope in the manifest, limiting activity to approved refunds within a specific vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0). Explicit spending controls are evidenced by the 1 GEN per transfer limit and the requirement for a prior 'approve_refund' call by the claimant. Historical evidence from GenLayer Studio transactions (e.g., hash 0x8997e58a13b83272e3a22818a7a4b0fd44fc47fcba306dfa62a16fed3147146d) confirms the operator acts within these parameters, and peer evidence from a separate vault (0x41df2558440880618FEc212B3a2eAfE9f90aff7f) demonstrates consistent adherence to this refund-only logic.",
+        "remaining": "1000000000000000000",
+        "senior_locked": "4000000000000000",
+        "starts_at": 1792201054,
+        "state_revision": 1,
+        "status": "active"
+      }
+    },
+    "get_final_claim": {
+      "address": "0x2D4B09442d3A57a6f351cd8f2F8C71B1A9645558",
+      "recordId": "3b9f77669befee427ada232e",
+      "observedAt": "2026-10-17T01:54:52.516Z",
+      "record": {
+        "agent_id": "892d26f427a05a5c100ce76e",
+        "amount": "200000000000000000",
+        "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+        "event_key": "41082c5b167a24df5a67fac094464e2373e00cdad1db2267be0c9df4a8ed127c",
+        "finalized_at": 1792202006,
+        "findings": {
+          "causation": true,
+          "harm": true,
+          "payout": 100,
+          "scope": false
+        },
+        "id": "3b9f77669befee427ada232e",
+        "incident_at": 1792201182,
+        "incident_ref": "0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+        "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "outcome": "adjudicated",
+        "payout": "200000000000000000",
+        "policy_id": "542e2c0ed30773067a29936d",
+        "status": "final",
+        "verified_incident_at": 1792201182,
+        "verified_loss": "200000000000000000"
+      }
+    },
+    "get_final_settlement": {
+      "address": "0x232A7456987f3d5a36Dee6AdDb7F181716D04Ed7",
+      "recordId": "3b9f77669befee427ada232e",
+      "observedAt": "2026-10-17T01:56:36.656Z",
+      "record": {
+        "awarded": "200000000000000000",
+        "id": "3b9f77669befee427ada232e",
+        "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "paid": "200000000000000000",
+        "policy_id": "542e2c0ed30773067a29936d",
+        "reason": "Within the remaining shared policy limit"
+      }
+    }
+  },
+  "policy": {
+    "agent_id": "892d26f427a05a5c100ce76e",
+    "band": "low",
+    "bound": false,
+    "claim_id": "",
+    "created_at": 1792200934,
+    "ends_at": 1794793054,
+    "expires_at": 1792204534,
+    "id": "542e2c0ed30773067a29936d",
+    "junior_locked": "1016000000000000000",
+    "limit": "1000000000000000000",
+    "manifest_hash": "6e5bc6bfb7c34b8d670735843a4e5bd0aaa3f93b55b7e2d12f0e63a01dc4e0ef",
+    "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "paid": "0",
+    "peer_urls": [
+      "https://raw.githubusercontent.com/dotmantissa/ballast/5dd61c25d8eb37129285ecda4406b294cab03d15/docs/live-cases/studio-review-20261016153332/peer.json"
+    ],
+    "policy_sequence": 1,
+    "premium": "20000000000000000",
+    "rate_bps": 200,
+    "reason": "The executor has a clearly defined and restricted scope in the manifest, limiting activity to approved refunds within a specific vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0). Explicit spending controls are evidenced by the 1 GEN per transfer limit and the requirement for a prior 'approve_refund' call by the claimant. Historical evidence from GenLayer Studio transactions (e.g., hash 0x8997e58a13b83272e3a22818a7a4b0fd44fc47fcba306dfa62a16fed3147146d) confirms the operator acts within these parameters, and peer evidence from a separate vault (0x41df2558440880618FEc212B3a2eAfE9f90aff7f) demonstrates consistent adherence to this refund-only logic.",
+    "remaining": "1000000000000000000",
+    "senior_locked": "4000000000000000",
+    "starts_at": 1792201054,
+    "state_revision": 1,
+    "status": "active"
+  },
+  "initialClaim": {
+    "acceptances": [],
+    "agent_id": "892d26f427a05a5c100ce76e",
+    "amount": "200000000000000000",
+    "appeals": [],
+    "challenge_until": 1792288043,
+    "claim_bond": "10000000000000000",
+    "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+    "created_at": 1792201291,
+    "effective_evidence_urls": [
+      "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+      "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+    ],
+    "eligibility_revision": 0,
+    "event_key": "41082c5b167a24df5a67fac094464e2373e00cdad1db2267be0c9df4a8ed127c",
+    "evidence_urls": [
+      "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+      "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+    ],
+    "findings": {
+      "causation": true,
+      "harm": true,
+      "payout": 100,
+      "scope": false
+    },
+    "id": "3b9f77669befee427ada232e",
+    "incident_at": 1792201182,
+    "incident_ref": "0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+    "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "payout": "0",
+    "policy_id": "542e2c0ed30773067a29936d",
+    "reasons": {
+      "causation": "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae shows the registered executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) initiated transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae calling 'spend_without_approval' on vault 0x47fA61A29B5C708C359F80F8045b67017062A1A0, resulting in a 200000000000000000 wei transfer to itself. This matches the incident description and is corroborated by https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json which confirms the unapproved native debit loss of exactly 200000000000000000 wei from claimant 0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E.",
+      "harm": "GenLayer Studio transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae, finalized at 1792201182, establishes a native GEN debit of 200000000000000000 wei from the claimant vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0). The transaction was initiated by the registered executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) using the 'spend_without_approval' method, which is explicitly outside the manifest scope requiring claimant 'approve_refund' calls. The event occurred within the policy period (1792201054 to 1794793054) and resulted in a realized loss of the claimant's native GEN escrow.",
+      "payout": "The claim is fully supported by concrete evidence from incident.json and the vault contract code. Transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae (finalized at 1792201182) shows the executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) utilized the 'spend_without_approval' method to transfer 200000000000000000 wei (0.2 GEN) from the claimant's vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0) to itself. The manifest expressly restricts the executor to 'execute_approved_refund' only after claimant approval, and explicitly states that any 'spend_without_approval' call is outside its authority. The verified loss of 200,000,000,000,000,000 wei is confirmed by the vault's state change (escrow reduced from 0.9 to 0.7 GEN) and is within the policy limit of 1 GEN.",
+      "scope": "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae shows finalized transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae from executor 0xBC1399c55538eC034d4Da550C03c34Ae0C357f53 to vault 0x47fA61A29B5C708C359F80F8045b67017062A1A0 with calldata indicating method spend_without_approval, and pending_transactions sending 200000000000000000 wei to 0xBC1399c55538eC034d4Da550C03c34Ae0C357f53. The insured manifest scope states the executor may only call execute_approved_refund after claimant approve_refund for that exact amount, max 1 GEN per transfer, must return refunds to the claimant, and that any spend_without_approval call or transfer to another recipient is expressly outside authority. https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json corroborates approved_wei was 0 before and after, claimant_approval was false, recipient was the executor not the claimant, loss amount was 200000000000000000 wei, and occurred_at 1792201182. The amount 0.2 GEN was within the 1 GEN cap, but the exact transaction still required prior approval and claimant recipient, which it did not have. Policy dates 1792201054 to 1794793054 include occurred_at 1792201182, so the transaction was within policy period but not permitted by manifest scope."
+    },
+    "review_deadline": 1792806091,
+    "statement": "My own native GEN escrow was debited by the registered executor without approval in this exact Studio transaction. I authorized refunds only to myself after an explicit approve_refund entry. No approval was pending. The executor instead used spend_without_approval to misroute 0.2 GEN to its own address. The vault lost exactly 200000000000000000 wei of my funds and no repayment has occurred. This is a controlled live exercise using test GEN.",
+    "status": "challenge",
+    "supplemental_urls": {},
+    "verified_incident_at": 1792201182,
+    "verified_loss": "200000000000000000"
+  },
+  "appealedClaim": {
+    "acceptances": [],
+    "agent_id": "892d26f427a05a5c100ce76e",
+    "amount": "200000000000000000",
+    "appeals": [
+      {
+        "after": false,
+        "after_loss": "200000000000000000",
+        "at": 1792201737,
+        "before": false,
+        "before_loss": "200000000000000000",
+        "bond": "10000000000000000",
+        "by": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "changed": false,
+        "evidence_urls": [
+          "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+          "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+        ],
+        "field": "scope",
+        "reason": "Please independently review the scope conclusion against the registered mandate and this actual debit. The test vault exposed this callable path, but the executor was expressly forbidden from using it without claimant approval. I ask for a precise scope review; I do not assert that technical access granted permission.",
+        "revision": 0
+      }
+    ],
+    "challenge_until": 1792288137,
+    "claim_bond": "10000000000000000",
+    "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+    "created_at": 1792201291,
+    "effective_evidence_urls": [
+      "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+      "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+    ],
+    "eligibility_revision": 0,
+    "event_key": "41082c5b167a24df5a67fac094464e2373e00cdad1db2267be0c9df4a8ed127c",
+    "evidence_urls": [
+      "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+      "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+    ],
+    "findings": {
+      "causation": true,
+      "harm": true,
+      "payout": 100,
+      "scope": false
+    },
+    "id": "3b9f77669befee427ada232e",
+    "incident_at": 1792201182,
+    "incident_ref": "0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+    "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "payout": "0",
+    "policy_id": "542e2c0ed30773067a29936d",
+    "reasons": {
+      "causation": "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae shows the registered executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) initiated transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae calling 'spend_without_approval' on vault 0x47fA61A29B5C708C359F80F8045b67017062A1A0, resulting in a 200000000000000000 wei transfer to itself. This matches the incident description and is corroborated by https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json which confirms the unapproved native debit loss of exactly 200000000000000000 wei from claimant 0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E.",
+      "harm": "GenLayer Studio transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae, finalized at 1792201182, establishes a native GEN debit of 200000000000000000 wei from the claimant vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0). The transaction was initiated by the registered executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) using the 'spend_without_approval' method, which is explicitly outside the manifest scope requiring claimant 'approve_refund' calls. The event occurred within the policy period (1792201054 to 1794793054) and resulted in a realized loss of the claimant's native GEN escrow.",
+      "payout": "The claim is fully supported by concrete evidence from incident.json and the vault contract code. Transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae (finalized at 1792201182) shows the executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) utilized the 'spend_without_approval' method to transfer 200000000000000000 wei (0.2 GEN) from the claimant's vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0) to itself. The manifest expressly restricts the executor to 'execute_approved_refund' only after claimant approval, and explicitly states that any 'spend_without_approval' call is outside its authority. The verified loss of 200,000,000,000,000,000 wei is confirmed by the vault's state change (escrow reduced from 0.9 to 0.7 GEN) and is within the policy limit of 1 GEN.",
+      "scope": "Transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae called 'spend_without_approval' and transferred 200000000000000000 wei to the executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53). The immutable manifest scope explicitly states: 'Any spend_without_approval call or transfer to another recipient is expressly outside its authority'. Furthermore, the mandate requires a prior 'approve_refund' record for the exact amount, which incident.json confirms was '0' at the time of the debit."
+    },
+    "review_deadline": 1792806091,
+    "statement": "My own native GEN escrow was debited by the registered executor without approval in this exact Studio transaction. I authorized refunds only to myself after an explicit approve_refund entry. No approval was pending. The executor instead used spend_without_approval to misroute 0.2 GEN to its own address. The vault lost exactly 200000000000000000 wei of my funds and no repayment has occurred. This is a controlled live exercise using test GEN.",
+    "status": "challenge",
+    "supplemental_urls": {
+      "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53": []
+    },
+    "verified_incident_at": 1792201182,
+    "verified_loss": "200000000000000000"
+  },
+  "finalClaim": {
+    "acceptances": [
+      "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+      "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53"
+    ],
+    "agent_id": "892d26f427a05a5c100ce76e",
+    "amount": "200000000000000000",
+    "appeals": [
+      {
+        "after": false,
+        "after_loss": "200000000000000000",
+        "at": 1792201737,
+        "before": false,
+        "before_loss": "200000000000000000",
+        "bond": "10000000000000000",
+        "by": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+        "changed": false,
+        "evidence_urls": [
+          "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+          "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+        ],
+        "field": "scope",
+        "reason": "Please independently review the scope conclusion against the registered mandate and this actual debit. The test vault exposed this callable path, but the executor was expressly forbidden from using it without claimant approval. I ask for a precise scope review; I do not assert that technical access granted permission.",
+        "revision": 0
+      }
+    ],
+    "challenge_until": 1792201931,
+    "claim_bond": "10000000000000000",
+    "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+    "created_at": 1792201291,
+    "effective_evidence_urls": [
+      "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+      "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+    ],
+    "eligibility_revision": 0,
+    "event_key": "41082c5b167a24df5a67fac094464e2373e00cdad1db2267be0c9df4a8ed127c",
+    "evidence_urls": [
+      "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+      "https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json"
+    ],
+    "finalized_at": 1792202006,
+    "findings": {
+      "causation": true,
+      "harm": true,
+      "payout": 100,
+      "scope": false
+    },
+    "id": "3b9f77669befee427ada232e",
+    "incident_at": 1792201182,
+    "incident_ref": "0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae",
+    "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "outcome": "adjudicated",
+    "payout": "200000000000000000",
+    "policy_id": "542e2c0ed30773067a29936d",
+    "reasons": {
+      "causation": "https://explorer-studio.genlayer.com/api/transactions/0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae shows the registered executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) initiated transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae calling 'spend_without_approval' on vault 0x47fA61A29B5C708C359F80F8045b67017062A1A0, resulting in a 200000000000000000 wei transfer to itself. This matches the incident description and is corroborated by https://raw.githubusercontent.com/dotmantissa/ballast/bd7dc86858c4ab861c96e037aea960a4fad3b466/docs/live-cases/studio-review-20261016153332/incident.json which confirms the unapproved native debit loss of exactly 200000000000000000 wei from claimant 0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E.",
+      "harm": "GenLayer Studio transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae, finalized at 1792201182, establishes a native GEN debit of 200000000000000000 wei from the claimant vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0). The transaction was initiated by the registered executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) using the 'spend_without_approval' method, which is explicitly outside the manifest scope requiring claimant 'approve_refund' calls. The event occurred within the policy period (1792201054 to 1794793054) and resulted in a realized loss of the claimant's native GEN escrow.",
+      "payout": "The claim is fully supported by concrete evidence from incident.json and the vault contract code. Transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae (finalized at 1792201182) shows the executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53) utilized the 'spend_without_approval' method to transfer 200000000000000000 wei (0.2 GEN) from the claimant's vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0) to itself. The manifest expressly restricts the executor to 'execute_approved_refund' only after claimant approval, and explicitly states that any 'spend_without_approval' call is outside its authority. The verified loss of 200,000,000,000,000,000 wei is confirmed by the vault's state change (escrow reduced from 0.9 to 0.7 GEN) and is within the policy limit of 1 GEN.",
+      "scope": "Transaction 0x368c7c13824cfaa58330c90a1f67c86e9c977abfee886d5d80913bfff50195ae called 'spend_without_approval' and transferred 200000000000000000 wei to the executor (0xBC1399c55538eC034d4Da550C03c34Ae0C357f53). The immutable manifest scope explicitly states: 'Any spend_without_approval call or transfer to another recipient is expressly outside its authority'. Furthermore, the mandate requires a prior 'approve_refund' record for the exact amount, which incident.json confirms was '0' at the time of the debit."
+    },
+    "review_deadline": 1792806091,
+    "settled_payout": "200000000000000000",
+    "statement": "My own native GEN escrow was debited by the registered executor without approval in this exact Studio transaction. I authorized refunds only to myself after an explicit approve_refund entry. No approval was pending. The executor instead used spend_without_approval to misroute 0.2 GEN to its own address. The vault lost exactly 200000000000000000 wei of my funds and no repayment has occurred. This is a controlled live exercise using test GEN.",
+    "status": "settled",
+    "supplemental_urls": {
+      "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53": []
+    },
+    "verified_incident_at": 1792201182,
+    "verified_loss": "200000000000000000"
+  },
+  "settlement": {
+    "awarded": "200000000000000000",
+    "id": "3b9f77669befee427ada232e",
+    "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "paid": "200000000000000000",
+    "policy_id": "542e2c0ed30773067a29936d",
+    "reason": "Within the remaining shared policy limit"
+  },
+  "lossRecord": {
+    "claims": 1,
+    "paid": "200000000000000000",
+    "settled_claims": 1
+  },
+  "finalPolicy": {
+    "agent_id": "892d26f427a05a5c100ce76e",
+    "band": "low",
+    "bound": false,
+    "claim_id": "3b9f77669befee427ada232e",
+    "created_at": 1792200934,
+    "ends_at": 1794793054,
+    "expires_at": 1792204534,
+    "id": "542e2c0ed30773067a29936d",
+    "junior_locked": "816000000000000000",
+    "limit": "1000000000000000000",
+    "manifest_hash": "6e5bc6bfb7c34b8d670735843a4e5bd0aaa3f93b55b7e2d12f0e63a01dc4e0ef",
+    "operator": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "paid": "200000000000000000",
+    "peer_urls": [
+      "https://raw.githubusercontent.com/dotmantissa/ballast/5dd61c25d8eb37129285ecda4406b294cab03d15/docs/live-cases/studio-review-20261016153332/peer.json"
+    ],
+    "policy_sequence": 1,
+    "premium": "20000000000000000",
+    "rate_bps": 200,
+    "reason": "The executor has a clearly defined and restricted scope in the manifest, limiting activity to approved refunds within a specific vault (0x47fA61A29B5C708C359F80F8045b67017062A1A0). Explicit spending controls are evidenced by the 1 GEN per transfer limit and the requirement for a prior 'approve_refund' call by the claimant. Historical evidence from GenLayer Studio transactions (e.g., hash 0x8997e58a13b83272e3a22818a7a4b0fd44fc47fcba306dfa62a16fed3147146d) confirms the operator acts within these parameters, and peer evidence from a separate vault (0x41df2558440880618FEc212B3a2eAfE9f90aff7f) demonstrates consistent adherence to this refund-only logic.",
+    "remaining": "800000000000000000",
+    "senior_locked": "4000000000000000",
+    "starts_at": 1792201054,
+    "state_revision": 2,
+    "status": "active"
+  },
+  "finalDashboard": {
+    "available": "3000000000000000000",
+    "court": "0x2D4B09442d3A57a6f351cd8f2F8C71B1A9645558",
+    "credits": "0",
+    "junior": "1816000000000000000",
+    "junior_generation": 0,
+    "junior_locked": "816000000000000000",
+    "junior_supply": "2000000000000000000",
+    "paid": "200000000000000000",
+    "policy_count": 1,
+    "premiums": "20000000000000000",
+    "quote_count": 1,
+    "registry": "0xad10A9dE5D781dC3b79F3303aeb4fC890f5a2c2a",
+    "reserved": "800000000000000000",
+    "senior": "2004000000000000000",
+    "senior_generation": 0,
+    "senior_locked": "4000000000000000",
+    "senior_supply": "2000000000000000000",
+    "tvg": "3820000000000000000"
+  },
+  "poolBalanceWei": "3820000000000000000",
+  "withdrawal": {
+    "before": "23190000000000000000",
+    "after": "23390000000000000000",
+    "paid": "200000000000000000",
+    "bond_before": "23390000000000000000",
+    "bond_after": "23410000000000000000"
+  },
+  "result": "passed",
+  "scope": "Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, four findings, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/bond withdrawals. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."
+}

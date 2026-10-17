@@ -1,0 +1,75 @@
+{
+  "message": {
+    "description": "Controlled live Studio native refund history. These are actual finalized transactions and balances, not fabricated loss records. The test vault deliberately exposes an unapproved spend path for a later controlled incident. The executor mandate permits only claimant approved refunds, with a maximum 1 GEN per transfer.",
+    "network": "GenLayer Studio",
+    "vault": "0x41df2558440880618FEc212B3a2eAfE9f90aff7f",
+    "vault_source_sha256": "f39c6cf40c107c9fca3af7b88e7e1b91a9a9b1ae2332c4d33e3efa1fbf90e4c8",
+    "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+    "operator": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b",
+    "executor": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b",
+    "transactions": {
+      "deposit": {
+        "hash": "0xfcb384a966196661d9c223f6139d565bb1b7a9f1c30cfc3df811ae65d828a31c",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0xfcb384a966196661d9c223f6139d565bb1b7a9f1c30cfc3df811ae65d828a31c"
+      },
+      "approve": {
+        "hash": "0x316eb54e020d13965c7d4f9ba12c6fa618af1fa48768f32e2df18e4e46fae308",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0x316eb54e020d13965c7d4f9ba12c6fa618af1fa48768f32e2df18e4e46fae308"
+      },
+      "refund": {
+        "hash": "0xe8e4d4fd9e0c4d943cd39539b476864ed91a17e23d4af64624612e16bdec1e1a",
+        "url": "https://explorer-studio.genlayer.com/api/transactions/0xe8e4d4fd9e0c4d943cd39539b476864ed91a17e23d4af64624612e16bdec1e1a"
+      }
+    },
+    "finalized_vault_state": {
+      "approved_wei": "0",
+      "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+      "escrow_wei": "900000000000000000",
+      "executor": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b",
+      "history": [
+        {
+          "amount_wei": "1000000000000000000",
+          "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+          "executor": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b",
+          "kind": "deposit",
+          "occurred_at": 1792166131,
+          "recipient": "0x41df2558440880618FEc212B3a2eAfE9f90aff7f"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+          "executor": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b",
+          "kind": "approval",
+          "occurred_at": 1792166204,
+          "recipient": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E"
+        },
+        {
+          "amount_wei": "100000000000000000",
+          "claimant": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+          "executor": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b",
+          "kind": "approved_refund",
+          "occurred_at": 1792166277,
+          "recipient": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E"
+        }
+      ],
+      "loss": null
+    },
+    "claimant_balances": {
+      "before": "24100000000000000000",
+      "after": "23200000000000000000"
+    }
+  },
+  "signature_encoding": "Ethereum personal_sign over UTF8 JSON.stringify(message), preserving the stored property order",
+  "signatures": [
+    {
+      "name": "peer",
+      "address": "0x7DeDA641687A5939315Af766Cbb6CF1D5991355b",
+      "signature": "0x0288ce4c566200ef263bbad7f80c9c7d88536c4cfc79a217221cb4aadf7a33493821441f21873b5f5114071fb11634f40168d2a083217f98a1752ba1a093c35e1c"
+    },
+    {
+      "name": "claimant",
+      "address": "0x82a1B2Fc1d5fa4156d5DC9eF43211aAe731FDa2E",
+      "signature": "0xebb2f7c85fffa4d689356187767349fb6abcc12eab5751a36d9926c783b9415b6d31dec54cb31f085514803e6a6aaa134eddb68b4b7da952bcec8a268105adcb1b"
+    }
+  ]
+}
