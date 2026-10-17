@@ -1,6 +1,13 @@
 import type { Claim, Finding } from "./types";
+export function hasMutualAcceptance(claim: Pick<Claim, "claimant" | "operator" | "acceptances">) {
+  const accepted = new Set((claim.acceptances ?? []).map(address => address.toLowerCase()));
+  return accepted.has(claim.claimant.toLowerCase()) && accepted.has(claim.operator.toLowerCase());
+}
+export function challengeWindowOpen(claim: Pick<Claim, "status" | "challenge_until" | "claimant" | "operator" | "acceptances">, nowSeconds: number) {
+  return claim.status === "challenge" && !hasMutualAcceptance(claim) && nowSeconds < claim.challenge_until;
+}
 export function canAppeal(claim: Claim, field: Finding, account?: string) {
-  if (!account) return false;
+  if (!account || hasMutualAcceptance(claim)) return false;
   const address = account.toLowerCase();
   if (
     ![claim.claimant.toLowerCase(), claim.operator.toLowerCase()].includes(

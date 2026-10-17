@@ -46,7 +46,7 @@ import {
   type RecordMap,
   type RecordPage,
 } from "@/lib/records";
-import { canAppeal } from "@/lib/claims";
+import { canAppeal, hasMutualAcceptance, challengeWindowOpen } from "@/lib/claims";
 import { TERMINAL_STATUSES } from "@/lib/operation-recovery";
 import { ActionForm, type FormTarget } from "./action-forms";
 import type {
@@ -1215,7 +1215,7 @@ export function BallastApp() {
                       >
                         <div>
                           <span className="mono">{short(c.id)}</span>
-                          <Status status={c.status} />
+                          <Status status={c.status} label={c.status === "challenge" && hasMutualAcceptance(c) ? "Ready to finalize" : undefined} />
                         </div>
                         <h3>
                           {overview.agents.find((a) => a.id === c.agent_id)
@@ -1774,16 +1774,16 @@ function Loading({ text }: { text: string }) {
     </div>
   );
 }
-function Status({ status }: { status: string }) {
+function Status({ status, label }: { status: string; label?: string }) {
   return (
     <span className={"badge status-" + status.toLowerCase()}>
-      {status === "challenge"
+      {label ?? (status === "challenge"
         ? "Open to appeal"
         : status === "final"
           ? "Final decision"
           : status === "reviewing"
             ? "In review"
-            : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+            : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase())}
     </span>
   );
 }
@@ -1858,8 +1858,8 @@ function ClaimDetail({
   const overdue =
     ["filed", "reviewing"].includes(claim.status) &&
     now / 1000 >= claim.review_deadline;
-  const appealOpen =
-    claim.status === "challenge" && now / 1000 < claim.challenge_until;
+  const mutuallyAccepted = hasMutualAcceptance(claim);
+  const appealOpen = challengeWindowOpen(claim, now / 1000);
   return (
     <section className="claim-detail">
       <div className="section-heading">
@@ -1867,7 +1867,7 @@ function ClaimDetail({
           <span className="mono muted">Case {short(claim.id, 10)}</span>
           <h2>Four questions. A fair decision.</h2>
         </div>
-        <Status status={claim.status} />
+        <Status status={claim.status} label={claim.status === "challenge" && mutuallyAccepted ? "Ready to finalize" : undefined} />
       </div>
       <p className="claim-statement">{claim.statement}</p>
       <dl className="detail-list">
@@ -2010,8 +2010,7 @@ function ClaimDetail({
                 : "Ready for a final decision."}
             </strong>
             <p>
-              Challenge window closes{" "}
-              {new Date(claim.challenge_until * 1000).toLocaleString()}.
+              {mutuallyAccepted ? "Both parties accepted. The remaining challenge time is waived." : <>Challenge window closes{" "}{new Date(claim.challenge_until * 1000).toLocaleString()}.</>}
             </p>
             {appealOpen && mine && (
               <>

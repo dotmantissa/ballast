@@ -44,10 +44,10 @@ export async function rights(page,expect){
 export async function acceptAndFinalize(page,expect){
  const file=await load('active-claim');const rows=[];
  rows.push(await page.qa.test('decision and settlement',1,async()=>{
-  const op=await page.qa.execute('continuation-operator-accept',{kind:'accept_decision',claimId:file.id});const c=await claim(page,expect);expect(c.acceptances).toHaveLength(2);expect(c.challenge_until).toBeLessThanOrEqual(Math.floor(Date.now()/1000));return {claimId:c.id,transaction:op.tx_hash,bothPartiesAccepted:true};
+  const op=await page.qa.execute('continuation-operator-accept',{kind:'accept_decision',claimId:file.id});const c=await claim(page,expect);expect(new Set(c.acceptances.map(a=>a.toLowerCase()))).toEqual(new Set([c.claimant.toLowerCase(),c.operator.toLowerCase()]));return {claimId:c.id,transaction:op.tx_hash,bothPartiesAccepted:true};
  }));
  rows.push(await page.qa.test('decision and settlement',2,async()=>{
-  const op=await page.qa.execute('continuation-finalize',{kind:'finalize',claimId:file.id});const c=await claim(page,expect);expect(c.status).toBe('final');expect(c.outcome).toBe('adjudicated');await persist(page,'final-decision',c);return {claimId:c.id,transaction:op.tx_hash,actualPayoutWei:c.payout};
+  const op=await page.qa.execute('continuation-finalize',{kind:'finalize',claimId:file.id});const c=await claim(page,expect);expect(c.status).toBe('final');expect(c.outcome).toBe('adjudicated');expect(c.finalized_at).toBeGreaterThanOrEqual(c.challenge_until);await persist(page,'final-decision',c);return {claimId:c.id,transaction:op.tx_hash,actualPayoutWei:c.payout};
  }));return rows.map(({case:n,status,error})=>({case:n,status,error}));
 }
 export async function settle(page,expect){

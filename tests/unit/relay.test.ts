@@ -428,8 +428,8 @@ describe('paid actions refuse known invalid requests before signing',()=>{
   await expect(submitAction(user,{kind:'claim',policyId:id,incidentRef:'0x'+'a'.repeat(64),incidentAt:1,amount:'1',statement:'This test supplies actual evidence of a native debit.',evidenceUrls:['https://one.example.org/a','https://two.example.net/b'],publicConsent:true},key)).rejects.toMatchObject({status:condition==='self'?403:409});
   expect(model.write).not.toHaveBeenCalled();
  });
- it.each(['consumed','closed','missing finding'])('does not send an appeal bond when the right is %s',async(condition)=>{
-  vi.mocked(read).mockResolvedValueOnce({id,claimant:other,operator,status:condition==='closed'?'final':'challenge',challenge_until:Math.floor(Date.now()/1000)+100,eligibility_revision:0,findings:condition==='missing finding'?{}:{scope:false},appeals:condition==='consumed'?[{field:'scope',by:operator,revision:0}]:[],amount:'100000000000000000'});
+ it.each(['consumed','closed','missing finding','mutually accepted'])('does not send an appeal bond when the right is %s',async(condition)=>{
+  vi.mocked(read).mockResolvedValueOnce({id,claimant:other,operator,status:condition==='closed'?'final':'challenge',challenge_until:Math.floor(Date.now()/1000)+100,eligibility_revision:0,findings:condition==='missing finding'?{}:{scope:false},appeals:condition==='consumed'?[{field:'scope',by:operator,revision:0}]:[],acceptances:condition==='mutually accepted'?[operator,other]:[],amount:'100000000000000000'});
   await expect(submitAction(user,{kind:'appeal',claimId:id,finding:'scope',reason:'Please check the real scope and the evidence of approval.',evidenceUrls:['https://one.example.org/a','https://two.example.net/b'],publicConsent:true},key)).rejects.toMatchObject({status:409});
   expect(model.write).not.toHaveBeenCalled();
  });

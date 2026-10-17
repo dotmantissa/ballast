@@ -167,3 +167,13 @@ test("final cases expose confirmation recovery without losing mobile layout",asy
   await expect(page.getByRole("button",{name:"Refresh the pool settlement",exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+test('mutual acceptance opens finalization even with a future device deadline',async({page})=>{
+ const base=claim(latest,'Both parties accepted this decision before the ordinary challenge deadline.');
+ const accepted={...base,status:'challenge',challenge_until:Math.floor(Date.now()/1000)+3600,acceptances:[base.claimant,base.operator],findings:{harm:true,causation:true,scope:false,payout:100}};
+ await page.route('**/api/overview',r=>r.fulfill({json:{...overview,claims:[accepted]}}));
+ await page.goto('/');await page.getByRole('button',{name:/^Claims court/}).click();
+ await expect(page.getByRole('button',{name:'Finalize decision',exact:true})).toBeVisible();
+ await expect(page.getByText('Both parties accepted. The remaining challenge time is waived.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Appeal this finding',exact:true})).toHaveCount(0);
+});

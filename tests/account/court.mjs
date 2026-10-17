@@ -100,7 +100,7 @@ export async function earlyGuards(page,expect){
 export async function accept(page,expect){
  const file=await fixture();const row=await page.qa.test('decision and settlement',1,async()=>{
   await page.qa.execute('first-operator-accept',{kind:'accept_decision',claimId:file.id});const c=await record(page,expect);
-  expect(c.acceptances).toHaveLength(2);expect(c.challenge_until).toBeLessThanOrEqual(Math.floor(Date.now()/1000));
+  expect(new Set(c.acceptances.map(a=>a.toLowerCase()))).toEqual(new Set([c.claimant.toLowerCase(),c.operator.toLowerCase()]));
   return {claimId:c.id,bothPartiesAccepted:true,acceptances:c.acceptances};
  });return {status:row.status,error:row.error,evidence:row.evidence};
 }
