@@ -1,0 +1,225 @@
+import "./rpc-transport";
+import "./studio-lock";
+import assert from "node:assert/strict";
+import { readFile, writeFile, rename, chmod, mkdir } from "node:fs/promises";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { verifyMessage } from "viem";
+import { createHash } from "node:crypto";
+import { TransactionHashVariant, type CalldataEncodable, type TransactionHash } from "genlayer-js/types";
+import { transactionJournal } from "./tx-journal";
+import { inspectReceipt, jsonSafe } from "../lib/receipt";
+
+const statePath = process.env.BALLAST_DEPLOYMENT_FILE ?? ".ballast-private/v2/integration.json";
+const state = JSON.parse(await readFile(statePath, "utf8"));
+const phase=process.env.BALLAST_V2_PHASE??"history";
+if(phase!=="history")assert.ok(state.wired?.wire_pool, "Deploy and wire the isolated contracts first");
+const keyPath = ".ballast-private/v2/keys.json";
+let keys: Record<string, `0x${string}`>;
+try { keys = JSON.parse(await readFile(keyPath, "utf8")); }
+catch (error) {
+  if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  keys = { owner: generatePrivateKey(), claimant: generatePrivateKey(), peer: generatePrivateKey(), sponsor:generatePrivateKey() };
+  await writeFile(keyPath, JSON.stringify(keys), {mode:0o600});
+  await chmod(keyPath,0o600);
+}
+const ownerKey = keys.owner;
+const journalPrefix = statePath+(state.deploymentGeneration?"."+state.deploymentGeneration:"");
+const owner = await transactionJournal(journalPrefix+".owner.journal",ownerKey);
+const claimant = await transactionJournal(journalPrefix+".claimant.journal",keys.claimant);
+const peer = await transactionJournal(journalPrefix+".peer.journal",keys.peer);
+const sponsor = await transactionJournal(journalPrefix+".sponsor.journal",keys.sponsor);
+const actors = {owner,claimant,peer,sponsor};
+state.checks ??= {};
+state.caseId ??= "studio-v2-"+new Date().toISOString().replace(/[^0-9]/g,"").slice(0,14);
+state.actors = Object.fromEntries(Object.entries(actors).map(([name,a])=>[name,a.account.address]));
+const dir = "docs/live-cases/"+state.caseId;
+await mkdir(dir,{recursive:true});
+async function save() {
+  await writeFile(statePath+".tmp",JSON.stringify(jsonSafe(state),null,2)+"\n");
+  await rename(statePath+".tmp",statePath);
+}
+async function read(address: `0x${string}`, method: string, args: CalldataEncodable[] = []) {
+  return await owner.client.readContract({address,functionName:method,args,transactionHashVariant:TransactionHashVariant.LATEST_FINAL}) as Record<string, unknown>;
+}
+async function write(name: string, actor: keyof typeof actors, address: `0x${string}`, method: string, args: CalldataEncodable[] = [], value = 0n) {
+  if(state.checks[name]?.done)return;
+  const a=actors[actor];
+  let prior=state.checks[name]??{attempt:1,history:[]};
+  if(prior.finalFailure){
+    const failed=inspectReceipt(await a.client.getTransaction({hash:prior.hash}));
+    assert.ok(failed.status==="CANCELED"||(failed.status==="FINALIZED"&&failed.execution==="error"),"A fresh attempt requires a confirmed terminal execution failure");
+    prior={attempt:(prior.attempt??1)+1,history:[...(prior.history??[]),{hash:prior.hash,receipt:failed}]};
+    state.checks[name]=prior;await save();
+  }
+  const attempt=prior.attempt??1;
+  const hash=prior.hash ?? await a.submit(name+":attempt:"+attempt,{address,method,args,value},()=>a.client.writeContract({address,functionName:method,args,value,leaderOnly:false}));
+  state.checks[name]={...prior,hash};await save();console.log(name+" submitted "+hash);
+  try {
+    const receipt=await a.wait(hash as TransactionHash);
+    state.checks[name]={...state.checks[name],done:true,receipt:inspectReceipt(receipt)};await save();console.log(name+" execution succeeded");
+  } catch(error) {
+    if((error as {finalFailure?:boolean}).finalFailure){state.checks[name].finalFailure=true;await save();}
+    throw error;
+  }
+}
+async function balance(address:`0x${string}`) {return await owner.client.getBalance({address});}
+async function eventually(check:()=>Promise<boolean>,message:string) {
+  for(let i=0;i<30;i++){if(await check())return;await new Promise(r=>setTimeout(r,12000));}
+  throw Error(message);
+}
+async function confirmed(address: `0x${string}`, method: string, args: CalldataEncodable[], field?: string) {
+  let value: Record<string,unknown> | undefined;
+  await eventually(async()=>{
+    try { value=await read(address,method,args);return field?!!value[field]:!!value.id; }
+    catch { return false; }
+  },"Finalized confirmation did not arrive for "+method+"; inspect emitted receipts and use the ID only publish method to repair.");
+  state.confirmations??={};
+  state.confirmations[method]={address,recordId:String(args[0]),observedAt:new Date().toISOString(),record:value};
+  await save();
+  return value!;
+}
+async function signed(file:string,payload:unknown,signers:(keyof typeof actors)[]) {
+  const message=JSON.stringify(jsonSafe(payload));
+  const signatures=[];
+  for(const name of signers){
+    const key=name==="owner"?ownerKey:keys[name];const signer=privateKeyToAccount(key);
+    const signature=await signer.signMessage({message});
+    assert.ok(await verifyMessage({address:signer.address,message,signature}));
+    signatures.push({name,address:signer.address,signature});
+  }
+  await writeFile(dir+"/"+file,JSON.stringify({message:JSON.parse(message),signature_encoding:"Ethereum personal_sign over UTF8 JSON.stringify(message), preserving the stored property order",signatures},null,2)+"\n");
+}
+if(phase==="history"){
+  for(const [name,a] of Object.entries(actors)){
+    if(!state.funded?.[name]){
+      // Studio faucet sets a balance. This controlled isolated exercise uses test GEN only.
+      await a.client.request({method:"sim_fundAccount",params:[a.account.address,25*10**18]});
+      state.funded={...state.funded,[name]:true};await save();
+    }
+  }
+  const code=await readFile("tests/integration/contracts/incident_vault.py","utf8");
+  state.vaultSourceHash=createHash("sha256").update(code).digest("hex");
+  for(const name of ["owner","peer"] as const){
+    const vaultKey=name==="owner"?"vault":"peerVault";
+    if(!state[vaultKey]){
+      const a=actors[name];
+      const hash=await a.submit("deploy_"+vaultKey+"_header2",{code,args:[claimant.account.address,a.account.address]},()=>a.client.deployContract({code:new TextEncoder().encode(code),args:[claimant.account.address,a.account.address],leaderOnly:false}));
+      state.checks["deploy_"+vaultKey]={hash};await save();console.log(vaultKey+" submitted "+hash);
+      const receipt=await a.wait(hash as TransactionHash);
+      state[vaultKey]=receipt.txDataDecoded&&"contractAddress" in receipt.txDataDecoded?receipt.txDataDecoded.contractAddress:(receipt.to_address??receipt.recipient);
+      assert.ok(state[vaultKey]);state.checks["deploy_"+vaultKey].done=true;await save();
+    }
+    state.historyBalances ??= {};
+    if(!state.historyBalances[name]){state.historyBalances[name]={before:String(await balance(claimant.account.address))};await save();}
+    await write(vaultKey+"_deposit","claimant",state[vaultKey],"deposit",[],10n**18n);
+    await write(vaultKey+"_approve","claimant",state[vaultKey],"approve_refund",[10n**17n]);
+    await write(vaultKey+"_refund",name,state[vaultKey],"execute_approved_refund");
+    const evidence=await read(state[vaultKey],"get_evidence");
+    assert.equal(evidence.escrow_wei,"900000000000000000");assert.equal(evidence.approved_wei,"0");assert.equal(evidence.loss,null);
+    await eventually(async()=>await balance(claimant.account.address)>=BigInt(state.historyBalances[name].before)-9n*10n**17n,"Approved refund did not return native funds to claimant");
+    assert.equal(await balance(state[vaultKey]),9n*10n**17n);
+    state.historyBalances[name].after=String(await balance(claimant.account.address));await save();
+    await signed(name==="owner"?"history.json":"peer.json",{
+      description:"Controlled live Studio native refund history. These are actual finalized transactions and balances, not fabricated loss records. The test vault deliberately exposes an unapproved spend path for a later controlled incident. The executor mandate permits only claimant approved refunds, with a maximum 1 GEN per transfer.",
+      network:"GenLayer Studio",vault:state[vaultKey],vault_source_sha256:state.vaultSourceHash,
+      claimant:claimant.account.address,operator:actors[name].account.address,executor:actors[name].account.address,
+      transactions:Object.fromEntries(["deposit","approve","refund"].map(k=>[k,{hash:state.checks[vaultKey+"_"+k].hash,url:"https://explorer-studio.genlayer.com/api/transactions/"+state.checks[vaultKey+"_"+k].hash}])),
+      finalized_vault_state:evidence,claimant_balances:state.historyBalances[name],
+    },[name,"claimant"]);
+  }
+  state.historyReady=true;await save();console.log("History snapshots ready in "+dir+". Publish immutable evidence and save historyCommit before the incident phase.");
+}else if(phase==="incident"){
+  assert.match(state.historyCommit??"",/^[a-f0-9]{40}$/);
+  const raw="https://raw.githubusercontent.com/dotmantissa/ballast/"+state.historyCommit+"/"+dir;
+  const manifest=JSON.stringify({name:"Studio refund executor",scope:"This executor manages claimant owned native GEN escrow in vault "+state.vault+". It may only call execute_approved_refund after the claimant has recorded approve_refund for that exact amount. Maximum 1 GEN per transfer. It must return refunds to the claimant. Any spend_without_approval call or transfer to another recipient is expressly outside its authority, even though the test vault exposes that vulnerable path. V2 cover requested only for a native GEN debit of the claimant escrow.",executor_address:owner.account.address,spend_limit_gen:1});
+  await write("register_agent","owner",state.registry,"register_agent",[manifest,[raw+"/history.json","https://explorer-studio.genlayer.com/api/transactions/"+state.checks.vault_refund.hash,"https://raw.githubusercontent.com/dotmantissa/ballast/"+state.historyCommit+"/tests/integration/contracts/incident_vault.py"]]);
+  state.agentId=createHash("sha256").update("genlayer-studio:"+owner.account.address.toLowerCase()).digest("hex").slice(0,24);await save();
+  await confirmed(state.registry,"get_final_agent",[state.agentId]);
+  const assuranceUrls=[raw+"/history.json","https://explorer-studio.genlayer.com/api/transactions/"+state.checks.vault_refund.hash];
+  await write('enable_monitoring','owner',state.assurance,'set_monitoring',[state.agentId,true]);
+  await write('request_assessment','sponsor',state.assurance,'request_assessment',[state.agentId,assuranceUrls]);
+  const initialPassport=await read(state.assurance,'get_passport',[state.agentId]);
+  state.assessmentId=(initialPassport.assessment as Record<string,unknown>).id;await save();
+  for(const field of ['scope_clarity','spending_controls','behavior'])await write('assurance_'+field,'sponsor',state.assurance,'resolve_assessment_finding',[state.assessmentId,field]);
+  await write('public_challenge','claimant',state.assurance,'challenge_finding',[state.assessmentId,'spending_controls','The callable spend_without_approval method permits the executor to debit without an on-chain approval gate. Review the source and live refund receipts independently. A declared mandate limits authority but does not enforce the limit in code.',assuranceUrls],10n**16n);
+  await write('resolve_public_challenge','sponsor',state.assurance,'resolve_challenge',[state.assessmentId,0]);
+  await eventually(async()=>Number((await read(state.assurance,'get_assessment',[state.assessmentId])).challenge_until)<=Date.now()/1000,'Isolated 300 second public challenge window has not closed. Resume saved state.');
+  await write('finalize_assessment','sponsor',state.assurance,'finalize_assessment',[state.assessmentId]);
+  state.finalAssessment=await confirmed(state.assurance,'get_final_assessment',[state.assessmentId]);
+  state.passport=await read(state.assurance,'get_passport',[state.agentId]);assert.equal(state.passport.ready,true);await save();
+  await write("stake_junior","owner",state.underwriting,"stake",["junior"],2n*10n**18n);
+  await write("stake_senior","owner",state.underwriting,"stake",["senior"],2n*10n**18n);
+  await write("quote_policy","owner",state.underwriting,"quote_policy",[state.agentId,10n**18n,[raw+"/peer.json"]]);
+  const quotes=await owner.client.readContract({address:state.underwriting,functionName:"list_quotes",args:[0,50],transactionHashVariant:TransactionHashVariant.LATEST_FINAL}) as Record<string,unknown>[];
+  const quote=quotes.find(q=>q.agent_id===state.agentId);assert.ok(quote);state.quote=quote;await save();
+  assert.notEqual(quote.band,"declined","Inspect the real validator reason; do not replace it with an approved fixture");
+  await write("bind_policy","owner",state.underwriting,"bind_policy",[String(quote.id)],BigInt(String(quote.premium)));
+  state.policy=await read(state.underwriting,"get_policy",[String(quote.id)]);await save();
+  await confirmed(state.underwriting,"get_final_policy",[String(quote.id)]);
+  assert.equal(state.policy.status,"active");assert.equal(state.policy.remaining,"1000000000000000000");
+  if(!state.preIncident){state.preIncident={recipientBalance:String(await balance(owner.account.address)),claimantBalance:String(await balance(claimant.account.address)),vault:await read(state.vault,"get_evidence")};await save();}
+  await write("unapproved_debit","owner",state.vault,"spend_without_approval",[2n*10n**17n,owner.account.address]);
+  const evidence=await read(state.vault,"get_evidence");
+  const loss=evidence.loss as Record<string,unknown>;assert.equal(loss.amount_wei,"200000000000000000");assert.equal(loss.claimant_approval,false);assert.equal(evidence.escrow_wei,"700000000000000000");
+  await eventually(async()=>await balance(owner.account.address)>=BigInt(state.preIncident.recipientBalance)+2n*10n**17n,"Misrouted native funds did not reach the recipient");
+  assert.equal(await balance(state.vault),7n*10n**17n);
+  state.loss=loss;state.incidentHash=state.checks.unapproved_debit.hash;await save();
+  await signed("incident.json",{
+    description:"Controlled live incident on the development network. The claimant funded the vault and owns its escrow. The executor made a real native debit without claimant approval. This exercise intentionally uses an insecure test vault; it is not an allegation about a real customer or a production agent. No repayment has occurred.",
+    network:"GenLayer Studio",incident_ref:state.incidentHash,claimant:claimant.account.address,operator:owner.account.address,executor:owner.account.address,
+    policy:state.policy,incident_at:loss.occurred_at,loss_wei:loss.amount_wei,
+    transaction_url:"https://explorer-studio.genlayer.com/api/transactions/"+state.incidentHash,
+    before:state.preIncident,after:{recipient_balance_wei:String(await balance(owner.account.address)),vault:evidence},
+    mandate:JSON.parse(manifest),
+  },["owner","claimant"]);
+  state.incidentReady=true;await save();console.log("Incident snapshot ready. Publish it and save incidentCommit before the claim phase.");
+}else if(phase==="claim"){
+  assert.match(state.incidentCommit??"",/^[a-f0-9]{40}$/);
+  const urls=["https://explorer-studio.genlayer.com/api/transactions/"+state.incidentHash,"https://raw.githubusercontent.com/dotmantissa/ballast/"+state.incidentCommit+"/"+dir+"/incident.json"];
+  await write("file_claim","claimant",state.court,"file_claim",[state.policy.id,state.incidentHash,Number(state.loss.occurred_at),BigInt(state.loss.amount_wei),"My own native GEN escrow was debited by the registered executor without approval in this exact Studio transaction. I authorized refunds only to myself after an explicit approve_refund entry. No approval was pending. The executor instead used spend_without_approval to misroute 0.2 GEN to its own address. The vault lost exactly 200000000000000000 wei of my funds and no repayment has occurred. This is a controlled live exercise using test GEN.",urls],10n**16n);
+  state.claimId=await owner.client.readContract({address:state.court,functionName:"get_policy_claim",args:[state.policy.id],transactionHashVariant:TransactionHashVariant.LATEST_FINAL});await save();
+  for(const field of ["harm","causation","scope"])await write("finding_"+field,"claimant",state.court,"resolve_finding",[state.claimId,field]);
+  state.initialClaim ??= await read(state.court,"get_claim",[state.claimId]);await save();
+  assert.equal(state.initialClaim.status,"challenge");
+  assert.deepEqual(state.initialClaim.findings,{harm:true,causation:true,scope:false});
+  await write("appeal_scope","owner",state.court,"appeal_finding",[state.claimId,"scope","Please independently review the scope conclusion against the registered mandate and this actual debit. The test vault exposed this callable path, but the executor was expressly forbidden from using it without claimant approval. I ask for a precise scope review; I do not assert that technical access granted permission.",urls],10n**16n);
+  state.appealedClaim ??= await read(state.court,"get_claim",[state.claimId]);await save();
+  assert.equal((state.appealedClaim.findings as Record<string,unknown>).scope,false);
+  await write("accept_claimant","claimant",state.court,"accept_decision",[state.claimId]);
+  await write("accept_operator","owner",state.court,"accept_decision",[state.claimId]);
+  await write("finalize_claim","claimant",state.court,"finalize_claim",[state.claimId]);
+  state.finalClaim ??= await read(state.court,"get_claim",[state.claimId]);await save();assert.equal(state.finalClaim.payout,state.loss.amount_wei);
+  await confirmed(state.court,"get_final_claim",[state.claimId]);
+  await write("settle_claim","claimant",state.underwriting,"settle_claim",[state.claimId]);
+  state.settlement=await read(state.underwriting,"get_settlement",[state.claimId]);await save();assert.equal(state.settlement.paid,state.loss.amount_wei);
+  await confirmed(state.underwriting,"get_final_settlement",[state.claimId]);
+  // Let the finalized child acknowledgment finish before choosing a manual recovery.
+  await eventually(async()=>(await read(state.court,"get_claim",[state.claimId])).status==="settled","Finalized settlement acknowledgment needs permissionless recovery; inspect the emitted child receipt before resuming.");
+  if(!state.beforeWithdraw){state.beforeWithdraw=String(await balance(claimant.account.address));await save();}
+  await write("withdraw_claimant","claimant",state.underwriting,"withdraw");
+  await eventually(async()=>await balance(claimant.account.address)>=BigInt(state.beforeWithdraw)+BigInt(state.loss.amount_wei),"Claim payment did not reach claimant balance");
+  state.afterWithdraw ??= String(await balance(claimant.account.address));await save();
+  const account=await read(state.underwriting,"get_account",[claimant.account.address]);assert.equal(account.credit,"0");
+  if(!state.beforeBondWithdraw){state.beforeBondWithdraw=String(await balance(claimant.account.address));await save();}
+  await write("withdraw_bonds","claimant",state.court,"withdraw_bonds");
+  await eventually(async()=>await balance(claimant.account.address)>=BigInt(state.beforeBondWithdraw)+2n*10n**16n,"Filing and upheld operator appeal bonds did not reach claimant");
+  await write("sync_loss","owner",state.registry,"sync_loss",[state.claimId]);
+  state.lossRecord=await read(state.registry,"get_loss_record",[owner.account.address]);assert.equal(state.lossRecord.paid,state.loss.amount_wei);
+  for(const name of ["quote_policy","finding_harm","finding_causation","finding_scope","appeal_scope"]){
+    const votes=state.checks[name].receipt?.votes??[];
+    assert.ok(votes.filter((v:{vote:string})=>v.vote.toLowerCase()==="agree").length>=2,"Independent validator agreement missing for "+name);
+  }
+  state.finalPolicy=await read(state.underwriting,"get_policy",[state.policy.id]);
+  state.finalDashboard=await read(state.underwriting,"get_dashboard");
+  assert.equal(BigInt(state.finalPolicy.paid),BigInt(state.loss.amount_wei));
+  assert.equal(BigInt(state.finalPolicy.remaining)+BigInt(state.finalPolicy.paid),10n**18n);
+  assert.ok(BigInt(state.finalDashboard.junior_locked)<=BigInt(state.finalDashboard.junior));
+  assert.ok(BigInt(state.finalDashboard.senior_locked)<=BigInt(state.finalDashboard.senior));
+  assert.ok(BigInt(state.finalDashboard.junior_locked)+BigInt(state.finalDashboard.senior_locked)>=BigInt(state.finalDashboard.reserved));
+  state.finalPoolBalance=String(await balance(state.underwriting));
+  assert.ok(BigInt(state.finalPoolBalance)>=BigInt(state.finalDashboard.tvg));
+  state.completedAt=new Date().toISOString();
+  await writeFile("docs/v2-integration-result.json",JSON.stringify(jsonSafe({network:"studionet",verifiedAt:state.completedAt,sourceHashes:state.sourceHashes,isolatedTimers:{passportChallengeSeconds:300,sponsorCooldownSeconds:60,productionChallengeSeconds:86400},assurance:state.assurance,finalAssessment:state.finalAssessment,passport:state.passport,registry:state.registry,underwriting:state.underwriting,court:state.court,vault:state.vault,peerVault:state.peerVault,actors:state.actors,historyCommit:state.historyCommit,incidentCommit:state.incidentCommit,caseId:state.caseId,checks:state.checks,confirmations:state.confirmations,policy:state.policy,initialClaim:state.initialClaim,appealedClaim:state.appealedClaim,finalClaim:await read(state.court,"get_claim",[state.claimId]),settlement:state.settlement,lossRecord:state.lossRecord,finalPolicy:state.finalPolicy,finalDashboard:state.finalDashboard,poolBalanceWei:state.finalPoolBalance,withdrawal:{before:state.beforeWithdraw,after:state.afterWithdraw,paid:state.loss.amount_wei,bond_before:state.beforeBondWithdraw,bond_after:String(await balance(claimant.account.address))},result:"passed",scope:"Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, three findings and quantified loss, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/bond withdrawals. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."}),null,2)+"\n");
+  state.result="passed";await save();
+  console.log("Full real v2 Studio lifecycle passed, including claimant receipt of native funds.");
+}else throw Error("Unknown review phase");

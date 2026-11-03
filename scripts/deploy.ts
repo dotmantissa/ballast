@@ -9,7 +9,8 @@ import { transactionJournal } from "./tx-journal";
 
 const path = process.env.BALLAST_DEPLOYMENT_FILE ?? "deployments/studio.json";
 const state = JSON.parse(await readFile(path, "utf8"));
-const key = process.env.GENLAYER_DEPLOYER_KEY as `0x${string}`;
+const isolatedKeys = state.isolatedTest ? JSON.parse(await readFile(".ballast-private/v2/keys.json", "utf8")) : null;
+const key = (isolatedKeys?.owner ?? process.env.GENLAYER_DEPLOYER_KEY) as `0x${string}`;
 if (!/^0x[0-9a-f]{64}$/i.test(key ?? ""))
   throw Error("Deployment key is missing");
 const {client, submit, wait} = await transactionJournal(path + "." + (state.deploymentGeneration ?? "initial") + ".journal", key);
@@ -19,10 +20,15 @@ async function save() {
 }
 for (const [name, file, args] of [
   ["registry", "agent_registry", []],
+  ...(state.version === 2 ? [["assurance", "assurance", null] as const] : []),
   ["underwriting", "underwriting", null],
   ["court", "claims_court", null],
 ] as const) {
-  const code = await readFile("contracts/" + file + ".py", "utf8");
+  let code = await readFile("contracts/" + (state.version === 2 ? "v2/" : "") + file + ".py", "utf8");
+  if(state.isolatedTest && name === "assurance") {
+    // Explicitly isolated test-only timings; production source bytes stay unchanged.
+    code=code.replace("previous['created_at'] + 86400", "previous['created_at'] + 60").replace("min(_now() + 86400, a['review_deadline'])", "min(_now() + 300, a['review_deadline'])");
+  }
   const digest = createHash("sha256").update(code).digest("hex");
   if (state[name] && state.sourceHashes?.[name] !== digest)
     throw Error(
@@ -34,8 +40,10 @@ for (const [name, file, args] of [
       const parameters: CalldataEncodable[] = args
         ? [...args]
         : name === "underwriting"
-          ? [state.registry]
-          : [state.registry, state.underwriting];
+          ? state.version === 2 ? [state.registry, state.assurance, state.legacyPools ?? []] : [state.registry]
+          : name === "assurance"
+            ? [state.registry, state.sponsor, state.treasury]
+            : [state.registry, state.underwriting];
       hash = await submit(name, {digest, parameters}, () => client.deployContract({
         code: new TextEncoder().encode(code),
         args: parameters,
