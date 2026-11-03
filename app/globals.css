@@ -3326,3 +3326,25 @@ td strong {
 .legacy-positions strong { font-size: 1.35rem; }
 .legacy-positions .button { white-space: normal; text-align: left; }
 @media (max-width: 700px) { .legacy-positions { grid-template-columns: 1fr; } }
+
+/* Agent assurance and retained deployment recovery. */
+.passport-page { max-width: 1160px; margin: auto; padding: 28px 24px 80px; }
+.passport-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 64px; }
+.passport-summary { display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; }
+.passport-summary dl, .passport-timeline { display: grid; grid-template-columns: minmax(120px, .7fr) 1.3fr; gap: 12px 20px; }
+.passport-page dd { margin: 0; overflow-wrap: anywhere; }
+.passport-page dt { color: var(--muted); }
+.passport-findings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 24px 0; }
+.passport-page .reserve-panel, .generation-recovery { margin-bottom: 24px; }
+.passport-page h1 { font-size: clamp(32px, 5vw, 56px); line-height: 1.1; }
+.passport-page h2 { margin: 14px 0; }
+.passport-page pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.passport-page a { overflow-wrap: anywhere; }
+.passport-page form { display: grid; gap: 12px; margin: 24px 0; }
+.passport-page textarea, .passport-page select { width: 100%; padding: 12px; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+.passport-page textarea { min-height: 110px; resize: vertical; }
+.passport-challenge { border-top: 1px solid var(--line); padding: 20px 0; }
+.passport-history { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+.passport-monitor { margin: 24px 0; }
+.inline-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+@media (max-width: 760px) { .passport-findings, .passport-summary { grid-template-columns: 1fr; } .passport-header { margin-bottom: 36px; } .passport-history { flex-direction: column; gap: 4px; } .passport-summary dl, .passport-timeline { grid-template-columns: 1fr; gap: 8px; } }

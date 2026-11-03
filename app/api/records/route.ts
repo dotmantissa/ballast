@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       );
     const value =
       id !== null
-        ? { record: await lookupRecord(kind.data, id) }
+        ? { record: await lookupRecord(kind.data, id, query.get("deployment")??undefined) }
         : query.get("mine") === "true"
           ? await accountRecordPage(
               (await getAccount(await authenticate(request))).address,

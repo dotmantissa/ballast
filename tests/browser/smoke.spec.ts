@@ -42,7 +42,7 @@ test("desktop navigation, live data and persisted theme", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("button", { name: "Field guide", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Four findings, not a shrug." }),
+    page.getByRole("heading", { name: "Three facts. A calculated award." }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

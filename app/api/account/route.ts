@@ -6,12 +6,14 @@ import type { RecordPage } from "@/lib/records";
 import type { Policy, Quote } from "@/lib/types";
 import { legacyCapital } from "@/lib/server/legacy-capital";
 import { getOperations } from "@/lib/server/operations";
+import { earlierAccounts } from "@/lib/server/earlier-accounts";
+import { activeDeployment } from "@/lib/deployments";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const user = await authenticate(request);
     const account = await getAccount(user);
-    const [funds, cases, agents, balance, operations, legacy] = await Promise.all([
+    const [funds, cases, agents, balance, operations, legacy, earlier, assuranceBonds] = await Promise.all([
       read<
         Record<string, string> & {
           policies: RecordPage<Policy>;
@@ -23,12 +25,18 @@ export async function GET(request: Request) {
       chainClient().getBalance({ address: account.address }),
       getOperations(user.id),
       legacyCapital(account.address),
+      earlierAccounts(account.address),
+      activeDeployment.assurance ? read<string>("assurance","get_bond_credit",[account.address]) : Promise.resolve("0"),
     ]);
     return Response.json(
       {
         ...funds,
         legacyCapital: legacy,
+        earlierAccounts:earlier,
+        backgroundEnabled:!!process.env.BALLAST_SPONSOR_KEY&&!!activeDeployment.assurance,
+        assuranceBondCredit:assuranceBonds,
         deployment: {
+          id:activeDeployment.id, version:activeDeployment.version,
           court: addresses.court,
           underwriting: addresses.underwriting,
         },

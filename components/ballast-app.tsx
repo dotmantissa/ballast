@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Logo } from "./logo";
+import { GenerationRecovery } from "./generation-recovery";
 import { LegacyCapitalPanel } from "./legacy-capital-panel";
 import { EvidenceLink } from "./evidence-link";
 import { RecordDesk, type AnyRecord } from "./record-desk";
@@ -58,7 +59,7 @@ import type {
   Overview,
   Policy,
 } from "@/lib/types";
-import { FINDINGS, FINDING_LABELS } from "@/lib/types";
+import { FINDINGS, FINDING_LABELS, claimFindings } from "@/lib/types";
 import type { Action } from "@/lib/validation";
 import { findingRequestKey } from "@/lib/idempotency";
 import { gen, short, date, relative, explorer } from "@/lib/format";
@@ -400,7 +401,7 @@ export function BallastApp() {
     }
   }
   useEffect(() => {
-    if (!authenticated || !account) return;
+    if (!authenticated || !account || account.backgroundEnabled) return;
     const claim = account.unresolvedClaims.find(
       (c) =>
         ["filed", "reviewing"].includes(c.status) &&
@@ -415,7 +416,7 @@ export function BallastApp() {
       )
     )
       return;
-    const finding = FINDINGS.find((f) => claim.findings[f] === undefined);
+    const finding = claimFindings(claim).find((f) => claim.findings[f] === undefined);
     if (!finding) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
@@ -867,7 +868,7 @@ export function BallastApp() {
                     <Scale size={25} strokeWidth={1.5} />
                   </div>
                   <div className="finding-mini">
-                    {FINDINGS.map((f, i) => (
+                    {FINDINGS.slice(0,3).map((f, i) => (
                       <div key={f}>
                         <span className="finding-node">
                           {i === 3 ? <Coins size={13} /> : <Check size={13} />}
@@ -952,6 +953,7 @@ export function BallastApp() {
                         onClick={() => open({ type: "agent", agent })}
                       />
                       <p className="agent-scope">{agent.scope}</p>
+                      <Link className="text-button" href={`/agents/${agent.id}`}>View GenLayer trust passport <ArrowUpRight size={14}/></Link>
                       <div className="agent-block-foot">
                         <span className="mono">
                           Scope {short(agent.manifest_hash, 12)}
@@ -1356,7 +1358,7 @@ export function BallastApp() {
                 }
               />
               {!account && <p className="field-note">Have capital in the earlier pool? Sign in to access its redemption and withdrawal controls.</p>}
-              <LegacyCapitalPanel capital={account?.legacyCapital} busy={busy !== null || !!account?.operations.some(o => ["redeem_legacy", "withdraw_legacy"].includes(o.kind) && ![...TERMINAL_STATUSES, "error"].includes(o.status))} onAction={(action) => quick(action, "legacy")} />
+              {account?.earlierAccounts ? <GenerationRecovery accounts={account.earlierAccounts} accountAddress={account.address} busy={busy!==null} now={now/1000} onAction={action=>void quick(action,"earlier")} onAppeal={(claim,finding)=>open({type:"appeal",claim,finding})} onEvidence={claim=>open({type:"evidence",claim})} onClaim={policy=>open({type:"claim",policy})}/> : <LegacyCapitalPanel capital={account?.legacyCapital} busy={busy !== null || !!account?.operations.some(o => ["redeem_legacy", "withdraw_legacy"].includes(o.kind) && ![...TERMINAL_STATUSES, "error"].includes(o.status))} onAction={(action) => quick(action, "legacy")} />}
               <div className="capital-summary">
                 <div>
                   <span>Total value governed</span>
@@ -1865,7 +1867,7 @@ function ClaimDetail({
       <div className="section-heading">
         <div>
           <span className="mono muted">Case {short(claim.id, 10)}</span>
-          <h2>Four questions. A fair decision.</h2>
+          <h2>{claimFindings(claim).length===3?"Three facts. A calculated award.":"Four questions. A fair decision."}</h2>
         </div>
         <Status status={claim.status} label={claim.status === "challenge" && mutuallyAccepted ? "Ready to finalize" : undefined} />
       </div>
@@ -1889,7 +1891,7 @@ function ClaimDetail({
         </div>
       </dl>
       <div className="finding-ledger">
-        {FINDINGS.map((f) => {
+        {claimFindings(claim).map((f) => {
           const done = claim.findings[f] !== undefined;
           const ready =
             ["filed", "reviewing"].includes(claim.status) &&
@@ -2264,7 +2266,7 @@ function Guide({ onRegister }: { onRegister: () => void }) {
           happen while the policy is active.
         </p>
         <p>
-          V1 does not cover market movement, missed profits, operator losses or
+          This peril does not cover market movement, missed profits, operator losses or
           an action that the declared scope permits. Future perils need their
           own terms and evidence standards. We start with a promise we can
           actually examine.
@@ -2289,9 +2291,15 @@ function Guide({ onRegister }: { onRegister: () => void }) {
         </p>
       </section>
       <section>
+        <h2>Public assurance before cover.</h2>
+        <p>Each v2 executor has a GenLayer trust passport. Validators independently assess scope clarity, spending controls and observed behavior as supported, contradicted or insufficient. Reasons, evidence, source digests and assessment history are public. A complete finalized passport lasts seven days; changed, disputed or stale assessments stop new cover.</p>
+        <p>Each finding permits one public challenge and one operator appeal, each bonded with 0.01 GEN. The 24 hour challenge window and seven day review deadline stay fixed. Changed findings return the challenge bond; upheld findings award it to the operator or treasury. Overdue pending challenges refund their bonds.</p>
+        <p>Operators can opt in to sponsored monitoring. Daily evidence checks request weekly or event-driven GenLayer reviews. Unreachable evidence pauses monitoring without producing a negative finding. The pilot accepts ten agents and twenty sponsored submission attempts daily. Monitoring affects future quotes; existing policy terms stay fixed.</p>
+      </section>
+      <section>
         <h2>A quote with a reason.</h2>
         <p>
-          GenLayer validators read your manifest, public action history, peer
+          GenLayer validators read your fresh finalized passport, manifest, public action history, peer
           evidence and prior Ballast losses. They independently choose a risk
           band. Base premiums are 2% for low risk, 5% for medium risk and 10%
           for high risk. Each recorded claim adds one percentage point, up to
@@ -2309,12 +2317,11 @@ function Guide({ onRegister }: { onRegister: () => void }) {
         </p>
       </section>
       <section>
-        <h2>Four findings, not a shrug.</h2>
+        <h2>Three facts. A calculated award.</h2>
         <p>
-          A single question like “should we pay?” leaves too much room for
-          validators to talk past one another. Ballast asks four smaller
-          questions. Each validator fetches the evidence independently and
-          compares the answer for that finding alone.
+          V2 separates evidence judgment from compensation. Validators answer
+          three factual questions, fetching sources independently and comparing
+          each finding separately. They also establish the exact loss and time.
         </p>
         <dl className="guide-findings">
           <div>
@@ -2339,21 +2346,17 @@ function Guide({ onRegister }: { onRegister: () => void }) {
               peril. A no establishes the scope breach.
             </dd>
           </div>
-          <div>
-            <dt>What payout is supported?</dt>
-            <dd>
-              A discrete band of 0, 25, 50, 75 or 100 percent of the claimed
-              loss, bounded by evidenced harm and remaining cover.
-            </dd>
-          </div>
+
         </dl>
         <p>
-          The three booleans must match exactly. The payout band must match
-          exactly. Positive harm also requires agreement on the independently
-          evidenced amount and event time. Reasons remain public but their
-          wording can differ. A missing URL does not veto otherwise sufficient
-          evidence. If fewer than two public hosts can be reached, either party
-          can add corroboration before the fixed review deadline.
+          The three booleans, independently evidenced amount and event time
+          must match exactly. Reasons remain public and can use different wording.
+          With harm, causation and a scope breach established, compensation is
+          the lesser of the requested amount and verified uncompensated loss,
+          then bounded by remaining policy cover at settlement. Earlier v1 cases
+          retain their original fourth payout finding and appeal rights.
+          If fewer than two public hosts can be reached, either party can add
+          corroboration before the fixed review deadline.
         </p>
       </section>
       <section>
@@ -2363,9 +2366,8 @@ function Guide({ onRegister }: { onRegister: () => void }) {
           challenge period. The bond is 1% of the claimed amount, with a minimum
           of 0.01 GEN. A changed result returns the appeal bond; an unchanged
           result awards it to the other party. Each party has its own appeal for
-          each boolean and for each version of the payout decision. Nobody can
-          use the other side’s turn. If eligibility changes, payout is assessed
-          again using all accepted appeal evidence. The challenge clock restarts
+          each boolean. Earlier v1 cases also allow payout appeals. Nobody can
+          use the other side’s turn. Changed facts update the deterministic award using accepted appeal evidence. The challenge clock restarts
           after the updated findings are complete. Both parties can explicitly
           accept the current decision to waive the rest of the window; an appeal
           clears those acceptances.
@@ -2379,8 +2381,7 @@ function Guide({ onRegister }: { onRegister: () => void }) {
         </p>
         <p>
           Incomplete review has a seven day deadline. Evidence edits and partial
-          findings do not move it. A changed boolean gives the dependent payout
-          review its own seven day window, within a finite appeal allowance.
+          findings do not move it. The earlier v1 dependent payout review retains its original deadline and appeal allowance.
           Anyone can close an overdue review, returning its filing bond without
           a payout. The claimant can also withdraw an unfinished case. After the
           policy filing window, excess reserves can be released while the open

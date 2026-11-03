@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import {
   AlertCircle,
@@ -110,7 +111,7 @@ export function ActionForm({
     setBusy(true);
     try {
       const response = await fetch(
-        "/api/records?kind=policies&id=" + encodeURIComponent(policyId),
+        "/api/records?kind=policies&id=" + encodeURIComponent(policyId) + (target.type === "claim" && target.policy?.deployment_id ? "&deployment="+encodeURIComponent(target.policy.deployment_id) : ""),
       );
       const data = await response.json();
       if (!response.ok) throw Error(data.error);
@@ -229,6 +230,8 @@ export function ActionForm({
       default:
         return;
     }
+    const deployment = "claim" in target ? target.claim.deployment_id : target.type === "claim" ? policyPreview?.deployment_id : "agent" in target ? target.agent.deployment_id : "quote" in target ? target.quote.deployment_id : undefined;
+    action = {...(action as Record<string,unknown>), ...(deployment ? {deployment} : {})};
     const parsed = actionSchema.safeParse(action);
     if (!parsed.success) {
       setError(parsed.error.issues[0].message);
@@ -293,6 +296,7 @@ export function ActionForm({
           <pre className="manifest-preview">
             {JSON.stringify(JSON.parse(target.agent.manifest), null, 2)}
           </pre>
+          <Link className="button secondary full" href={`/agents/${target.agent.id}${target.agent.deployment_id?`?deployment=${encodeURIComponent(target.agent.deployment_id)}`:""}`}>Open GenLayer trust passport</Link>
           <h3>Public operating history</h3>
           {target.agent.history_urls.map((url) => (
             <EvidenceLink key={url} url={url} compact />

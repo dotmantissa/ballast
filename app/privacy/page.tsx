@@ -20,7 +20,7 @@ export default function Privacy() {
         The application stores your Privy user ID, email, public Studio account
         address, encrypted signing key, submission timestamps, transaction
         references, encrypted signed transaction payloads, attempt history and
-        operation outcomes in a Neon database. Keys are encrypted with AES 256
+        operation outcomes, submitted action payloads, monitoring subscriptions, evidence digests and workflow recovery state in a Neon database and Vercel Workflow. Keys are encrypted with AES 256
         GCM using a server secret kept separately from the database. The server
         can decrypt keys to submit your requested actions. This is a custodial
         account.
@@ -28,7 +28,7 @@ export default function Privacy() {
       <h2>What becomes public</h2>
       <p>
         Registered manifests, executor and operator addresses, evidence URLs,
-        claim statements, findings, appeal records, coverage and capital
+        passport assessments, public challenges, claim statements, findings, appeal records, coverage and capital
         activity are published to GenLayer Studio. Public blockchain records
         cannot be deleted by this application. Evidence URLs may expose
         information to validators and anyone reading the record. Remove personal

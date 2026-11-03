@@ -16,13 +16,13 @@ export default function Terms() {
         financial recommendation or a guarantee of compensation. Studio GEN is
         test currency with no monetary value. Studio state can reset.
       </p>
-      <h2>The v1 peril</h2>
+      <h2>The unauthorized debit peril</h2>
       <p>
         Cover applies to an unauthorized debit of a third party’s own native GEN
         funds, caused by the registered executor in a uniquely identified
         top level GenLayer Studio transaction by the insured executor. Child transfer
         receipts cannot identify a second loss. Validators independently establish the
-        actual event time, claimant and loss against the policy dates. V1 does
+        actual event time, claimant and loss against the policy dates. Cover does
         not cover invoices, missing payments, fiat balances or API credit
         estimates. Maximum cover is 100 test GEN for a 30 day term. Claims must
         be filed within 7 days after that term. Market movement, opportunity
@@ -37,6 +37,9 @@ export default function Terms() {
         must close first. A policy binds its exact manifest revision. One active
         or runoff policy is allowed per executor.
       </p>
+      <h2>V2 passports and monitoring</h2>
+      <p>New v2 cover requires a fresh finalized GenLayer assessment of scope clarity, spending controls and observed behavior. Findings are supported, contradicted or insufficient. Each finding allows one public challenge and one operator appeal with a 0.01 GEN bond, within a fixed 24 hour window. Changed findings return the bond; upheld findings award it to the operator or treasury. Pending challenges can be closed and refunded after the fixed seven day review deadline.</p>
+      <p>Operators may opt in to sponsored daily evidence checks and weekly or event-driven assessments. The pilot admits ten agents and twenty sponsored submission attempts per day, with one service transaction in flight. Unavailable sources pause monitoring. Monitoring affects future underwriting only. Premium payments, filings and bonded challenges require the account holder’s own action.</p>
       <h2>Quotes and capital</h2>
       <p>
         Quotes expire after one hour. Premiums use a validator agreed risk band
@@ -76,7 +79,7 @@ export default function Terms() {
       </p>
       <h2>Compensation and bonds</h2>
       <p>
-        Validators assess harm, causation, scope and a payout band. No payout is
+        V2 validators assess harm, causation, scope and the quantified loss. Compensation is calculated as the lesser of requested amount and independently evidenced uncompensated loss, bounded by remaining cover at settlement. Earlier v1 cases retain their payout bands and original terms. No payout is
         eligible without harm, causation and an established scope breach. One
         claimant may receive one award for the same transaction debit across all
         agents and policies. The pool records cumulative compensation and
@@ -92,29 +95,24 @@ export default function Terms() {
       </p>
       <h2>Appeals and settlement</h2>
       <p>
-        Each party has one bonded appeal for each boolean finding, plus one
-        payout appeal per eligibility revision. One party cannot consume the
+        Each party has one bonded appeal for each boolean finding, with earlier v1 cases also retaining one payout appeal per eligibility revision. One party cannot consume the
         other’s right. The challenge period is 24 hours. The appeal bond is 1%
         of the requested amount, with a minimum of 0.01 GEN. A changed finding
-        returns that bond; an upheld finding awards it to the other party. A
-        changed boolean or evidenced loss invalidates payout, which must be
-        assessed again. Updated findings start a fresh challenge window.
+        returns that bond; an upheld finding awards it to the other party. Changed v2 facts update the calculated award; earlier v1 changes retain their dependent payout review. Updated findings start a fresh challenge window.
       </p>
       <p>
         Both parties may explicitly accept a complete decision to waive its
         remaining challenge time. Every appeal clears both acceptances. Anyone
         can finalize after the challenge period or mutual acceptance, then
-        settle with the pool. Authoritative accounting reads use finalized
-        contract storage. A case remains in account recovery records until its
+        settle with the pool. Authoritative accounting uses authenticated confirmations emitted after transaction finalization. A case remains in account recovery records until its
         pool settlement is finalized. Payments and redemptions create credits
         that recipients withdraw.
       </p>
       <h2>Your account and public records</h2>
       <p>
         Email authentication creates a custodial Studio account. The server
-        stores its signing key in encrypted form. Ballast submits actions that
-        you request. Do not transfer real assets to this experimental account.
-        Manifests, claims, evidence URLs and contract records are public and
+        stores its signing key in encrypted form. Ballast submits actions that you request. A separate sponsor signer can progress permissionless claim reviews and opted-in passport monitoring after you leave. Do not transfer real assets to this experimental account.
+        Manifests, passports, challenges, claims, evidence URLs and contract records are public and
         permanent for the lifetime of the network. Do not submit credentials or
         private information. The contracts determine the executable rules. The
         code has automated tests but has not received an independent security
