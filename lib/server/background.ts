@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import { encryptKey } from "../custody";
-import { SERVICE_ID, PILOT_AGENT_LIMIT, SPONSORED_DAILY_LIMIT } from "../background";
+import { SERVICE_ID, PILOT_AGENT_LIMIT, SPONSORED_DAILY_LIMIT, SPONSORED_ACTIONS } from "../background";
 import { activeDeployment, deploymentById } from "../deployments";
 import { env } from "./env";
 import { db } from "./db";
@@ -32,6 +32,7 @@ export async function ensureSponsor() {
   if(row.address.toLowerCase()!==address.toLowerCase())throw new Error("Existing sponsor custody must not be overwritten");
 }
 export async function sponsoredAction(identity:string,action:Action):Promise<Operation|null> {
+  if(!SPONSORED_ACTIONS.includes(action.kind))throw new Error('This action requires an account holder submission.');
   await ensureSponsor();
   const sql=db();
   const request=stableRequestId(identity);
@@ -45,7 +46,7 @@ export async function sponsoredAction(identity:string,action:Action):Promise<Ope
   }
   // Assessments and monitoring yield whenever a claim has executable work.
   if(!['resolve','close_unresolved','finalize','settle','acknowledge','publish_confirmation'].includes(action.kind)) {
-    const [readyCase]=await sql`SELECT id FROM ballast_jobs WHERE kind='case' AND status IN ('queued','running') AND payload->>'ready'='true' LIMIT 1`;
+    const [readyCase]=await sql`SELECT id FROM ballast_jobs WHERE kind='case' AND status IN ('queued','running') AND payload->>'ready' IS DISTINCT FROM 'false' LIMIT 1`;
     if(readyCase)return null;
   }
   const lease=randomUUID();

@@ -39,3 +39,8 @@ it('preserves pending job payload when a daily dispatch repeats',async()=>{
   m.sql.mockResolvedValueOnce([]);await saveJob('monitor','v2','agent');
   const query=m.sql.mock.calls[0][0].join('?');expect(query).toContain('ELSE ballast_jobs.payload');expect(query).toContain('ballast_jobs.epoch+1');
 });
+
+it('refuses premiums, bonds, consent and capital before opening sponsor custody',async()=>{
+  for(const action of [{kind:'bind',quoteId:'a'.repeat(24)},{kind:'monitor',agentId:'a'.repeat(24),enabled:true},{kind:'withdraw'},{kind:'stake',tranche:'junior',amount:'1'}] as const)await expect(sponsoredAction('unsafe',action)).rejects.toThrow('account holder submission');
+  expect(m.sql).not.toHaveBeenCalled();expect(m.submit).not.toHaveBeenCalled();
+});

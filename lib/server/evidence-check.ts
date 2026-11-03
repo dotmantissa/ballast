@@ -12,14 +12,19 @@ export function publicAddress(address:string) {
 }
 export async function evidenceDigest(urls:string[]) {
   const digests:Record<string,string>={};
+  const deadline=Date.now()+60000;
   for(const raw of urls.slice(0,24)) {
+    if(Date.now()>=deadline)break;
     const url=normalizePublicUrl(raw);
     if(!url)continue;
     try {
-      const addresses=await lookup(new URL(url).hostname,{all:true});
+      const addresses=await new Promise<{address:string;family:number}[]>((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error('DNS timeout')),Math.min(5000,Math.max(1,deadline-Date.now())));
+        lookup(new URL(url).hostname,{all:true,family:4}).then(resolve,reject).finally(()=>clearTimeout(timer));
+      });
       if(!addresses.length||addresses.some(a=>!publicAddress(a.address)))continue;
       const body=await new Promise<string>((resolve,reject)=>{
-        const request=get(url,{family:4,lookup:(_hostname,_options,callback)=>callback(null,addresses[0].address,4)},response=>{
+        const request=get(url,{family:4,signal:AbortSignal.timeout(Math.min(10000,Math.max(1,deadline-Date.now()))),lookup:(_hostname,_options,callback)=>callback(null,addresses[0].address,4)},response=>{
           if(response.statusCode!==200){response.resume();reject(new Error('Unavailable evidence'));return;}
           const chunks:Buffer[]=[];let length=0;
           response.on('data',(chunk:Buffer)=>{length+=chunk.length;if(length>512*1024){request.destroy(new Error('Evidence too large'));return;}chunks.push(chunk);});

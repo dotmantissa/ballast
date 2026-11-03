@@ -6,6 +6,7 @@ import type { Assessment } from "./assurance";
 import { ASSURANCE_FIELDS } from "./assurance";
 export const PILOT_AGENT_LIMIT = 10;
 export const SPONSORED_DAILY_LIMIT = 20;
+export const SPONSORED_ACTIONS: Action['kind'][] = ['assess','resolve_assessment','resolve_assessment_challenge','finalize_assessment','close_assessment','publish_assessment','resolve','close_unresolved','finalize','settle','acknowledge','publish_confirmation'];
 export const SERVICE_ID = "service:ballast:v2";
 export function nextCaseAction(claim:Claim,now:number):Action|null {
   if(["filed","reviewing"].includes(claim.status)) {
