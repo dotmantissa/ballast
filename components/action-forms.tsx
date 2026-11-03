@@ -230,7 +230,7 @@ export function ActionForm({
       default:
         return;
     }
-    const deployment = "claim" in target ? target.claim.deployment_id : target.type === "claim" ? policyPreview?.deployment_id : "agent" in target ? target.agent.deployment_id : "quote" in target ? target.quote.deployment_id : undefined;
+    const deployment = "claim" in target ? target.claim.deployment_id : target.type === "claim" ? (policyPreview?.deployment_id??target.policy?.deployment_id) : "agent" in target ? target.agent.deployment_id : "quote" in target ? target.quote.deployment_id : undefined;
     action = {...(action as Record<string,unknown>), ...(deployment ? {deployment} : {})};
     const parsed = actionSchema.safeParse(action);
     if (!parsed.success) {

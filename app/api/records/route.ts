@@ -1,3 +1,4 @@
+import { deploymentById } from "@/lib/deployments";
 import { z } from "zod";
 import { RECORD_KINDS } from "@/lib/records";
 import {
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
         400,
         "Choose a valid record type, record ID and page.",
       );
+    if(query.has('deployment'))try{deploymentById(query.get('deployment')!);}catch{throw new HttpError(400,'Unknown deployment generation.');}
     const value =
       id !== null
         ? { record: await lookupRecord(kind.data, id, query.get("deployment")??undefined) }

@@ -6,7 +6,7 @@ import {
   type RecordMap,
   type RecordPage,
 } from "../records";
-import { deploymentById } from "../deployments";
+import { activeDeployment, deploymentById } from "../deployments";
 import type { Agent, Claim } from "../types";
 const methods = {
   agents: ["registry", "list_agents", "get_agent"],
@@ -20,7 +20,9 @@ export async function lookupRecord<K extends RecordKind>(
   deploymentId?: string,
 ): Promise<RecordMap[K]> {
   const [contract, , method] = methods[kind];
-  return deploymentId ? readAt<RecordMap[K]>(deploymentById(deploymentId),contract,method,[id]) : read<RecordMap[K]>(contract, method, [id]);
+  const generation=deploymentById(deploymentId);
+  const record=await readAt<RecordMap[K]>(generation,contract,method,[id]);
+  return {...record,deployment_id:generation.id};
 }
 export async function publicRecordPage<K extends RecordKind>(
   kind: K,
@@ -42,7 +44,7 @@ export async function publicRecordPage<K extends RecordKind>(
       ? []
       : await read<RecordMap[K][]>(contract, method, [start, end - start]);
   return {
-    items: records.reverse(),
+    items: records.reverse().map(record=>({...record,deployment_id:activeDeployment.id})),
     total,
     next_cursor: start > 0 ? start : null,
   };
