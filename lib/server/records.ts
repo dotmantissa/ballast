@@ -27,24 +27,27 @@ export async function lookupRecord<K extends RecordKind>(
 export async function publicRecordPage<K extends RecordKind>(
   kind: K,
   before?: number,
+  deploymentId?: string,
 ): Promise<RecordPage<RecordMap[K]>> {
-  const overview = await getOverview();
-  const counts = {
-    agents: overview.agentCount,
-    claims: overview.claimCount,
-    policies: overview.dashboard.policy_count,
-    quotes: overview.dashboard.quote_count,
-  };
-  const total = counts[kind];
+  const generation=deploymentById(deploymentId);
+  let total:number;
+  if(generation.id===activeDeployment.id){
+    const overview=await getOverview();
+    total={agents:overview.agentCount,claims:overview.claimCount,policies:overview.dashboard.policy_count,quotes:overview.dashboard.quote_count}[kind];
+  }else{
+    const contract=kind==='agents'?'registry':kind==='claims'?'court':'underwriting';
+    const config=await readAt<Record<string,number>>(generation,contract,contract==='underwriting'?'get_dashboard':'get_config');
+    total=Number(config[{agents:'agent_count',claims:'claim_count',policies:'policy_count',quotes:'quote_count'}[kind]]);
+  }
   const end = before === undefined ? total : Math.min(before, total);
   const start = Math.max(0, end - 50);
   const [contract, method] = methods[kind];
   const records =
     end === 0
       ? []
-      : await read<RecordMap[K][]>(contract, method, [start, end - start]);
+      : await readAt<RecordMap[K][]>(generation,contract, method, [start, end - start]);
   return {
-    items: records.reverse().map(record=>({...record,deployment_id:activeDeployment.id})),
+    items: records.reverse().map(record=>({...record,deployment_id:generation.id})),
     total,
     next_cursor: start > 0 ? start : null,
   };
@@ -53,12 +56,15 @@ export async function accountRecordPage<K extends RecordKind>(
   account: string,
   kind: K,
   before = -1,
+  deploymentId?:string,
 ): Promise<RecordPage<RecordMap[K]>> {
+  const generation=deploymentById(deploymentId);
+  const at=<T>(contract:'registry'|'court'|'underwriting',method:string,args:import('genlayer-js/types').CalldataEncodable[])=>readAt<T>(generation,contract,method,args);
   if (kind === "agents")
-    return read("registry", "list_operator_agents", [account, before, 50]);
+    return at("registry", "list_operator_agents", [account, before, 50]);
   if (kind === "claims")
-    return read("court", "list_account_claims", [account, false, before, 50]);
-  return read("underwriting", "list_account_records", [
+    return at("court", "list_account_claims", [account, false, before, 50]);
+  return at("underwriting", "list_account_records", [
     account,
     kind,
     before,

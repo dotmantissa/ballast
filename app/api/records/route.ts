@@ -33,10 +33,12 @@ export async function GET(request: Request) {
               (await getAccount(await authenticate(request))).address,
               kind.data,
               cursor === null ? -1 : Number(cursor),
+              query.get("deployment")??undefined,
             )
           : await publicRecordPage(
               kind.data,
               cursor === null ? undefined : Number(cursor),
+              query.get("deployment")??undefined,
             );
     return Response.json(value, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
