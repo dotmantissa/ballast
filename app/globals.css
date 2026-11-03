@@ -3328,13 +3328,13 @@ td strong {
 @media (max-width: 700px) { .legacy-positions { grid-template-columns: 1fr; } }
 
 /* Agent assurance and retained deployment recovery. */
-.passport-page { max-width: 1160px; margin: auto; padding: 28px 24px 80px; }
+.passport-page { max-width: 1160px; margin: auto; padding: 28px 24px 80px; overflow-wrap: anywhere; }
 .passport-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 64px; }
-.passport-summary { display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; }
+.passport-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 32px; }
 .passport-summary dl, .passport-timeline { display: grid; grid-template-columns: minmax(120px, .7fr) 1.3fr; gap: 12px 20px; }
 .passport-page dd { margin: 0; overflow-wrap: anywhere; }
 .passport-page dt { color: var(--muted); }
-.passport-findings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 24px 0; }
+.passport-findings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 24px 0; }
 .passport-page .reserve-panel, .generation-recovery { margin-bottom: 24px; }
 .passport-page h1 { font-size: clamp(32px, 5vw, 56px); line-height: 1.1; }
 .passport-page h2 { margin: 14px 0; }
@@ -3347,4 +3347,4 @@ td strong {
 .passport-history { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
 .passport-monitor { margin: 24px 0; }
 .inline-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-@media (max-width: 760px) { .passport-findings, .passport-summary { grid-template-columns: 1fr; } .passport-header { margin-bottom: 36px; } .passport-history { flex-direction: column; gap: 4px; } .passport-summary dl, .passport-timeline { grid-template-columns: 1fr; gap: 8px; } }
+@media (max-width: 760px) { .passport-findings, .passport-summary { grid-template-columns: minmax(0, 1fr); } .passport-header { margin-bottom: 36px; } .passport-history { flex-direction: column; gap: 4px; } .passport-summary dl, .passport-timeline { grid-template-columns: 1fr; gap: 8px; } }

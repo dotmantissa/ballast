@@ -14,8 +14,10 @@ test('public passport uses real chain records and fits a mobile viewport',async(
   expect(response.status()).toBe(200);
   const bundle=await response.json();
   expect(bundle.agent.id).toBe(id);expect(bundle.agent.executor_address).toMatch(/^0x[a-f0-9]{40}$/i);
-  await page.setViewportSize({width:390,height:844});
   await page.goto(`/agents/${id}${suffix}`);
+  await expect(page.getByRole('region',{name:'GenLayer assessment findings'})).toBeVisible({timeout:60000});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.setViewportSize({width:390,height:844});
   await expect(page.locator('h1')).toHaveText(bundle.agent.name,{timeout:60000});
   await expect(page.getByRole('region',{name:'GenLayer assessment findings'})).toBeVisible();
   await expect(page.getByText('Scope clarity',{exact:true})).toBeVisible();
