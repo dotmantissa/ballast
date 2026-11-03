@@ -792,7 +792,7 @@ export function BallastApp() {
                     icon={Scale}
                     label="Claims on the record"
                     value={overview ? String(overview.claimCount) : "…"}
-                    note="Four findings. An open process."
+                    note="Three facts. A calculated award."
                   />
                 </aside>
               </div>
@@ -895,7 +895,7 @@ export function BallastApp() {
               <div className="quiet-note">
                 <LifeBuoy size={16} />
                 <p>
-                  Small enough to prove. Meaningful enough to matter. V1 covers
+                  Small enough to prove. Meaningful enough to matter. Ballast covers
                   unauthorized agent spend, capped at 100 test GEN.
                 </p>
               </div>
@@ -1147,7 +1147,7 @@ export function BallastApp() {
             <>
               <PageTitle
                 title="Evidence gets a fair hearing."
-                text="Independent validators. Four clear findings. Nobody decides their own claim."
+                text="Independent validators. Three clear facts. Nobody decides their own claim."
                 action={
                   <button
                     className="button primary"

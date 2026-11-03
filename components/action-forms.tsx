@@ -466,7 +466,7 @@ export function ActionForm({
             <p className="field-note">
               You may add up to twelve supplemental URLs in total. Both parties
               have their own allowance. Existing findings can be challenged
-              through an appeal once the four findings are complete.
+              through an appeal once the findings are complete.
             </p>
             <Consent />
           </>
@@ -627,8 +627,7 @@ export function ActionForm({
         {target.type === "claim" && (
           <>
             <p className="field-note">
-              Filing starts the four finding review while this workspace is
-              open. Come back at any time to resume it.
+              Filing starts independent review. Sponsored progression can continue after this workspace closes. Come back at any time to resume it.
             </p>
             <label htmlFor="policy">Policy</label>
             <input
