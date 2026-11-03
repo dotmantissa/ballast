@@ -207,7 +207,7 @@ class ClaimsCourt(gl.Contract):
             'id':claim_id, 'policy_id':policy_id, 'agent_id':policy['agent_id'],
             'operator':policy['operator'], 'claimant':claimant, 'event_key':event_key,
             'incident_ref':incident_ref, 'incident_at':incident_at, 'amount':str(amount),
-            'statement':statement, 'evidence_urls':evidence_urls,
+            'statement':statement, 'evidence_urls':evidence_urls, 'peril_version':'unauthorized-debit-v2',
             'effective_evidence_urls':evidence_urls, 'supplemental_urls':{},
             'created_at':_now(), 'peril_version':'unauthorized-debit-v2', 'review_deadline':_now()+7*86400,
             'status':'filed', 'findings':{}, 'reasons':{}, 'eligibility_revision':0,
