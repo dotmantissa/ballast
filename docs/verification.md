@@ -8,6 +8,8 @@ The additive database migration ran twice in the isolated `ballast_test_v2_20261
 
 Eleven hosted browser checks passed on staged deployment `dpl_GchxNR8cy2ra862bm1sjEMRt1nut`. They cover actual public passport records, mobile bounds, email authentication, API guards and earlier-generation recovery views. The [hosted Workflow result](v2-workflow-result.json) verifies a real authenticated dispatch and completed Vercel Workflow run without submitting a transaction. Production source and hosted rollout verification are recorded separately from this staged checkpoint.
 
+The [completed v2 Studio lifecycle](v2-integration-result.json) passed 35 real controlled transaction checks. It verifies the challenged passport, high-risk quote, three actual claim facts, upheld scope appeal, deterministic 0.2 GEN award, authenticated settlement and exact native payout and bond withdrawals. The pool holds 3.9 GEN, exactly matching its accounting value, and the policy retains 0.8 GEN of cover.
+
 The isolated v2 lifecycle uses fresh controlled actors and actual Studio transactions. Only its assurance challenge window and sponsor cooldown are shortened to 300 and 60 seconds. Canonical production source retains 24 hours and one day. The court uses its normal deadline and supports mutual acceptance by the actual controlled parties. No closed customer-account tests were resumed.
 
 ## Earlier v1 verification

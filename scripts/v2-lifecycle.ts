@@ -203,6 +203,20 @@ if(phase==="history"){
   if(!state.beforeBondWithdraw){state.beforeBondWithdraw=String(await balance(claimant.account.address));await save();}
   await write("withdraw_bonds","claimant",state.court,"withdraw_bonds");
   await eventually(async()=>await balance(claimant.account.address)>=BigInt(state.beforeBondWithdraw)+2n*10n**16n,"Filing and upheld operator appeal bonds did not reach claimant");
+  state.afterBondWithdraw ??= String(await balance(claimant.account.address));await save();
+  const challenge=state.finalAssessment.challenges[0];
+  const bondActor=challenge.changed?'claimant':'owner';
+  const bondAccount=actors[bondActor].account.address;
+  if(!state.assuranceBondWithdrawal){
+    const credit=String(await owner.client.readContract({address:state.assurance,functionName:'get_bond_credit',args:[bondAccount],transactionHashVariant:TransactionHashVariant.LATEST_FINAL}));
+    assert.equal(credit,'10000000000000000','Public challenge bond must reach the actual entitled party');
+    state.assuranceBondWithdrawal={account:bondAccount,amount:credit,before:String(await balance(bondAccount)),returnedToChallenger:challenge.changed};await save();
+  }
+  await write('withdraw_assurance_bond',bondActor,state.assurance,'withdraw_bonds');
+  await eventually(async()=>await balance(bondAccount)>=BigInt(state.assuranceBondWithdrawal.before)+BigInt(state.assuranceBondWithdrawal.amount),'Public challenge bond did not reach its recipient');
+  state.assuranceBondWithdrawal.after ??= String(await balance(bondAccount));await save();
+  assert.equal(BigInt(state.assuranceBondWithdrawal.after)-BigInt(state.assuranceBondWithdrawal.before),BigInt(state.assuranceBondWithdrawal.amount));
+  assert.equal(String(await owner.client.readContract({address:state.assurance,functionName:'get_bond_credit',args:[bondAccount],transactionHashVariant:TransactionHashVariant.LATEST_FINAL})),'0');
   await write("sync_loss","owner",state.registry,"sync_loss",[state.claimId]);
   state.lossRecord=await read(state.registry,"get_loss_record",[owner.account.address]);assert.equal(state.lossRecord.paid,state.loss.amount_wei);
   for(const name of ["quote_policy","finding_harm","finding_causation","finding_scope","appeal_scope"]){
@@ -219,7 +233,7 @@ if(phase==="history"){
   state.finalPoolBalance=String(await balance(state.underwriting));
   assert.ok(BigInt(state.finalPoolBalance)>=BigInt(state.finalDashboard.tvg));
   state.completedAt=new Date().toISOString();
-  await writeFile("docs/v2-integration-result.json",JSON.stringify(jsonSafe({network:"studionet",verifiedAt:state.completedAt,sourceHashes:state.sourceHashes,isolatedTimers:{passportChallengeSeconds:300,sponsorCooldownSeconds:60,productionChallengeSeconds:86400},assurance:state.assurance,finalAssessment:state.finalAssessment,passport:state.passport,registry:state.registry,underwriting:state.underwriting,court:state.court,vault:state.vault,peerVault:state.peerVault,actors:state.actors,historyCommit:state.historyCommit,incidentCommit:state.incidentCommit,caseId:state.caseId,checks:state.checks,confirmations:state.confirmations,policy:state.policy,initialClaim:state.initialClaim,appealedClaim:state.appealedClaim,finalClaim:await read(state.court,"get_claim",[state.claimId]),settlement:state.settlement,lossRecord:state.lossRecord,finalPolicy:state.finalPolicy,finalDashboard:state.finalDashboard,poolBalanceWei:state.finalPoolBalance,withdrawal:{before:state.beforeWithdraw,after:state.afterWithdraw,paid:state.loss.amount_wei,bond_before:state.beforeBondWithdraw,bond_after:String(await balance(claimant.account.address))},result:"passed",scope:"Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, three findings and quantified loss, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/bond withdrawals. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."}),null,2)+"\n");
+  await writeFile("docs/v2-integration-result.json",JSON.stringify(jsonSafe({network:"studionet",verifiedAt:state.completedAt,sourceHashes:state.sourceHashes,isolatedTimers:{passportChallengeSeconds:300,sponsorCooldownSeconds:60,productionChallengeSeconds:86400},assurance:state.assurance,finalAssessment:state.finalAssessment,passport:state.passport,registry:state.registry,underwriting:state.underwriting,court:state.court,vault:state.vault,peerVault:state.peerVault,actors:state.actors,historyCommit:state.historyCommit,incidentCommit:state.incidentCommit,caseId:state.caseId,checks:state.checks,confirmations:state.confirmations,policy:state.policy,initialClaim:state.initialClaim,appealedClaim:state.appealedClaim,finalClaim:await read(state.court,"get_claim",[state.claimId]),settlement:state.settlement,lossRecord:state.lossRecord,finalPolicy:state.finalPolicy,finalDashboard:state.finalDashboard,poolBalanceWei:state.finalPoolBalance,withdrawal:{before:state.beforeWithdraw,after:state.afterWithdraw,paid:state.loss.amount_wei,bond_before:state.beforeBondWithdraw,bond_after:state.afterBondWithdraw},assuranceBondWithdrawal:state.assuranceBondWithdrawal,result:"passed",scope:"Real controlled Studio native debit, actual public source retrieval and independent validator judgments, successful quote/bind, three findings and quantified loss, an upheld operator scope appeal, mutual acceptance, finalization, finalized pool settlement and claimant payout/court-bond withdrawals and exact native public-challenge bond withdrawal. Test vault is intentionally insecure. No production customer harm or mainnet value is asserted."}),null,2)+"\n");
   state.result="passed";await save();
   console.log("Full real v2 Studio lifecycle passed, including claimant receipt of native funds.");
 }else throw Error("Unknown review phase");
