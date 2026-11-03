@@ -32,7 +32,8 @@ if (process.env.BALLAST_CURL_RPC === "1") {
         try { response = JSON.parse(output); } catch { /* Let the SDK report malformed RPC. */ }
         if (response?.error?.code === -32029 || response?.error?.code === -32429) {
           // An explicit capacity rejection was not executed. Retry the identical request only.
-          const seconds = Math.min(60, Math.max(8, Number(response.error.data?.retry_after_seconds ?? 30)+2));
+          const retryAfter = Number(response.error.data?.retry_after_seconds ?? 30);
+          const seconds = Number.isFinite(retryAfter) ? Math.min(86402, Math.max(8, retryAfter + 2)) : 32;
           console.log("Studio capacity pause: "+seconds+" seconds.");
           nextRequest = Date.now()+seconds*1000;
           continue;
