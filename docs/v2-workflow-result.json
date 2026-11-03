@@ -1,0 +1,12 @@
+{
+  "verifiedAt": "2026-11-03T08:34:12.708Z",
+  "deploymentId": "dpl_GchxNR8cy2ra862bm1sjEMRt1nut",
+  "dispatchStatus": 200,
+  "job": {
+    "status": "complete",
+    "run_id": "wrun_41M6G8PP730GHC5V45XJBD50K2",
+    "pause_reason": null
+  },
+  "result": "passed",
+  "scope": "Authenticated daily dispatch, atomic start hook admission, actual Vercel Workflow execution and durable completion. Verification job submits no transaction and changes no capital or customer record."
+}

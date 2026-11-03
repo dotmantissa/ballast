@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 // Deliberately hostile public record fixtures exercise rendering only, not validator judgments.
 const latest = "a".repeat(24),
   older = "b".repeat(24),
