@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextAssessmentAction, nextCaseAction } from "../../lib/background";
+import { nextAssessmentAction, nextCaseAction, monitoringSources } from "../../lib/background";
 import { passportStatus, type Assessment, type Passport } from "../../lib/assurance";
 import { claimFindings, type Claim } from "../../lib/types";
 import { deploymentById, activeDeployment, deployments } from "../../lib/deployments";
@@ -43,4 +43,13 @@ describe('deployment allowlist',()=>{
     expect(()=>deploymentById('0x'+'1'.repeat(40))).toThrow('Unknown deployment');
     expect(()=>deploymentById('unlisted')).toThrow('Unknown deployment');
   });
+});
+
+it('uses incident evidence from paid finalized losses in event-triggered monitoring',()=>{
+  const sources=monitoringSources('agent',['https://history.example/a','https://explorer.example/old'],[
+    claim({agent_id:'agent',status:'settled',settled_payout:'10',created_at:20,effective_evidence_urls:['https://explorer.example/loss','https://case.example/loss']}),
+    claim({agent_id:'other',status:'settled',settled_payout:'10',created_at:30,effective_evidence_urls:['https://other.example/loss']}),
+    claim({agent_id:'agent',status:'final',settled_payout:'10',created_at:40,effective_evidence_urls:['https://pending.example/loss']}),
+    claim({agent_id:'agent',status:'settled',settled_payout:'0',created_at:50,effective_evidence_urls:['https://zero.example/case']})]);
+  expect(sources).toEqual(['https://explorer.example/loss','https://case.example/loss','https://history.example/a','https://explorer.example/old']);
 });

@@ -1,10 +1,10 @@
 import "server-only";
 import { db } from "./db";
-import { deploymentById } from "../deployments";
+import { deploymentById, deployments } from "../deployments";
 import { readAt } from "./chain";
 import { syncOperation } from "./operations";
 import { sponsoredAction } from "./background";
-import { nextCaseAction, nextAssessmentAction } from "../background";
+import { nextCaseAction, nextAssessmentAction, monitoringSources } from "../background";
 import { queueDomainJob } from "./job-queue";
 import { evidenceDigest } from "./evidence-check";
 import type { Action } from "../validation";
@@ -18,6 +18,7 @@ export async function runJobTick(jobId:string,epoch?:number,segment?:number):Pro
   const [job]=await sql`SELECT * FROM ballast_jobs WHERE id=${jobId}`;
   if(!job||job.status==='complete'||job.status==='failed'||(epoch!==undefined&&job.epoch!==epoch)||(segment!==undefined&&job.segment!==segment))return {done:true,delaySeconds:0};
   const generation=deploymentById(job.deployment_id);
+  if(generation.testOnly&&job.kind!=='operation'){await sql`UPDATE ballast_jobs SET status='complete',pause_reason='Isolated validation uses its own test signer.' WHERE id=${jobId}`;return {done:true,delaySeconds:0};}
   const now=Math.floor(Date.now()/1000);
   const done=async()=>{await sql`UPDATE ballast_jobs SET status='complete',pause_reason=NULL,updated_at=now() WHERE id=${jobId}`;return {done:true,delaySeconds:0};};
   const wait=async(reason:string,delaySeconds=300)=>{await sql`UPDATE ballast_jobs SET pause_reason=${reason},updated_at=now() WHERE id=${jobId}`;return {done:false,delaySeconds};};
@@ -103,9 +104,13 @@ export async function runJobTick(jobId:string,epoch?:number,segment?:number):Pro
       const passport=await readAt<Passport>(generation,'assurance','get_passport',[job.target_id]);
       if(!passport.monitoring){await sql`UPDATE ballast_monitoring SET status='disabled' WHERE deployment_id=${generation.id} AND agent_id=${job.target_id}`;return done();}
       const agent=await readAt<{history_urls:string[];operator:string;manifest_hash:string}>(generation,'registry','get_final_agent',[job.target_id]);
-      const urls=passport.assessment?.effective_evidence_urls??agent.history_urls;
-      const evidence=await evidenceDigest(urls);
+      let urls=passport.assessment?.effective_evidence_urls??agent.history_urls;
       const losses=await readAt<{claims:number}>(generation,'underwriting','get_risk_record',[agent.operator]);
+      if(losses.claims>0&&(subscription.loss_count===null||subscription.loss_count!==losses.claims)) {
+        const pages=await Promise.all(deployments.filter(d=>d.indexed&&!d.testOnly).map(d=>readAt<{items:Claim[]}>(d,'court','list_account_claims',[agent.operator,false,-1,50])));
+        urls=monitoringSources(job.target_id,urls,pages.flatMap(page=>page.items));
+      }
+      const evidence=await evidenceDigest(urls);
       const due=!subscription.next_review_at||Date.parse(subscription.next_review_at)<=Date.now();
       const changed=!!subscription.evidence_digest&&subscription.evidence_digest!==evidence.digest;
       const lossChanged=subscription.loss_count!==null&&subscription.loss_count!==losses.claims;

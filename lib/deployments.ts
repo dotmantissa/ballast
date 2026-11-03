@@ -10,6 +10,8 @@ export type Deployment = {
   underwriting: string;
   court: string;
   assurance?: string;
+  testOnly?: boolean;
+  exampleAgent?: string;
   chainId: number;
   network: string;
 };

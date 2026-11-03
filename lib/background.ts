@@ -32,3 +32,8 @@ export function nextAssessmentAction(assessment:Assessment,now:number):Action|nu
   }
   return null;
 }
+
+export function monitoringSources(agentId:string,base:string[],cases:Claim[]):string[] {
+  const paid=cases.filter(c=>c.agent_id===agentId&&c.status==='settled'&&BigInt(c.settled_payout??'0')>0n).sort((a,b)=>b.created_at-a.created_at);
+  return [...new Set([...paid.flatMap(c=>c.effective_evidence_urls),...base])].slice(0,6);
+}
