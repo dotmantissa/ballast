@@ -1,5 +1,6 @@
 import type { AccountRecords, RecordKind } from "./records";
 export type Agent = {
+  deployment_id?: string;
   id: string;
   name: string;
   operator: string;
@@ -11,6 +12,10 @@ export type Agent = {
   registered_at: number;
 };
 export type Quote = {
+  deployment_id?: string;
+  assessment_id?: string;
+  assessment_revision?: number;
+  peril_version?: string;
   id: string;
   agent_id: string;
   operator: string;
@@ -35,6 +40,8 @@ export type Policy = Quote & {
 };
 export type Finding = "harm" | "causation" | "scope" | "payout";
 export type Claim = {
+  deployment_id?: string;
+  peril_version?: string;
   id: string;
   policy_id: string;
   agent_id: string;
@@ -127,6 +134,7 @@ export type Operation = {
 };
 export type LegacyCapital = {
   address: string;
+  deployment_id?: string;
   available: boolean;
   junior_shares?: string;
   senior_shares?: string;
@@ -134,9 +142,13 @@ export type LegacyCapital = {
   senior_value?: string;
   credit?: string;
 };
+export type EarlierAccount = {deployment: import("./deployments").Deployment; capital: LegacyCapital; claims: Claim[]; policies: Policy[]; bondCredit: string; available: boolean};
 export type Account = {
+  backgroundEnabled?: boolean;
+  earlierAccounts?: EarlierAccount[];
+  assuranceBondCredit?: string;
   legacyCapital?: LegacyCapital | null;
-  deployment: { court: string; underwriting: string };
+  deployment: { court: string; underwriting: string; id?: string; version?: number };
   records: AccountRecords;
   unresolvedClaims: Claim[];
   junior_available: string;
@@ -161,3 +173,7 @@ export const FINDING_LABELS: Record<Finding, string> = {
   scope: "Was it within scope?",
   payout: "What payout is supported?",
 };
+
+export function claimFindings(claim: Pick<Claim, "peril_version">): Finding[] {
+  return claim.peril_version === "unauthorized-debit-v2" ? ["harm", "causation", "scope"] : FINDINGS;
+}

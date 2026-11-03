@@ -7,6 +7,9 @@ import {
 import { submitAction } from "@/lib/server/operations";
 import { actionSchema } from "@/lib/validation";
 import { z } from "zod";
+import { queueOperation } from "@/lib/server/job-queue";
+import { prepareMonitoring, releaseMonitoringReservation } from "@/lib/server/background";
+import { activeDeployment } from "@/lib/deployments";
 export const maxDuration = 60;
 export async function POST(request: Request) {
   try {
@@ -29,7 +32,18 @@ export async function POST(request: Request) {
     const parsed = actionSchema.safeParse(input);
     if (!parsed.success)
       throw new HttpError(400, parsed.error.issues[0].message);
-    return Response.json(await submitAction(user, parsed.data, key.data), {
+    if(parsed.data.kind==="monitor")await prepareMonitoring(user.id,parsed.data.agentId,parsed.data.deployment??activeDeployment.id,parsed.data.enabled);
+    let operation;
+    try {operation=await submitAction(user, parsed.data, key.data);}
+    catch(error){
+      if(parsed.data.kind==='monitor'&&parsed.data.enabled)await releaseMonitoringReservation(user.id,parsed.data.agentId,parsed.data.deployment??activeDeployment.id);
+      throw error;
+    }
+    if(process.env.BALLAST_SPONSOR_KEY) {
+      try {await queueOperation(user.id,operation.id,parsed.data);}
+      catch {console.error("ballast.background.start-pending",{operationId:operation.id});}
+    }
+    return Response.json(operation, {
       status: 202,
       headers: { "Cache-Control": "no-store" },
     });

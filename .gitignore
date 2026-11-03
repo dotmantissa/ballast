@@ -21,3 +21,4 @@ deployments/integration.json
 next-env.d.ts
 
 .ballast-private/
+/.swc

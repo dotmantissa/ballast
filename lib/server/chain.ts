@@ -17,7 +17,8 @@ import type {
 } from "../types";
 import { jsonSafe } from "../receipt";
 export const addresses = deployment;
-export type ContractName = "registry" | "underwriting" | "court";
+export type ContractName = "registry" | "underwriting" | "court" | "assurance";
+import type { Deployment } from "../deployments";
 export function chainClient(
   key?: `0x${string}`,
   onSigned?: (raw: `0x${string}`) => Promise<void>,
@@ -42,8 +43,11 @@ export async function read<T>(
   method: string,
   args: CalldataEncodable[] = [],
 ): Promise<T> {
-  const address = deployment[contract];
-  if (!/^0x[0-9a-f]{40}$/i.test(address))
+  return readAt<T>(deployment, contract, method, args);
+}
+export async function readAt<T>(target: Pick<Deployment, "registry" | "court" | "underwriting" | "assurance">, contract: ContractName, method: string, args: CalldataEncodable[] = []): Promise<T> {
+  const address = target[contract];
+  if (!/^0x[0-9a-f]{40}$/i.test(address ?? ""))
     throw Error("Contracts are not deployed");
   return jsonSafe(
     await chainClient().readContract({

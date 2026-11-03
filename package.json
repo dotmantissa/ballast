@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:contracts": "python3 -m pytest tests/direct -v",
-    "lint:contracts": "genvm-lint check contracts/agent_registry.py && genvm-lint check contracts/underwriting.py && genvm-lint check contracts/claims_court.py",
+    "lint:contracts": "python3 scripts/lint-contracts.py",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate.ts",
     "deploy:contracts": "node --env-file=.env.local --import tsx scripts/deploy.ts",
     "test:integration": "python3 scripts/review-workflow.py",
@@ -20,30 +20,31 @@
     "test:account": "node scripts/account-test-browser.mjs"
   },
   "dependencies": {
+    "@fontsource/figtree": "^5.2.0",
+    "@fontsource/ibm-plex-mono": "^5.2.0",
+    "@neondatabase/serverless": "^1.0.2",
+    "@privy-io/react-auth": "3.49.1",
+    "@privy-io/server-auth": "1.32.5",
+    "genlayer-js": "1.1.8",
+    "lucide-react": "^0.577.0",
     "next": "16.4.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "@privy-io/react-auth": "3.49.1",
-    "@privy-io/server-auth": "1.32.5",
-    "@neondatabase/serverless": "^1.0.2",
-    "genlayer-js": "1.1.8",
+    "server-only": "^0.0.1",
     "viem": "^2.38.0",
-    "zod": "^4.1.0",
-    "lucide-react": "^0.577.0",
-    "@fontsource/figtree": "^5.2.0",
-    "@fontsource/ibm-plex-mono": "^5.2.0",
-    "server-only": "^0.0.1"
+    "workflow": "5.3.0",
+    "zod": "^4.1.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.0",
+    "@playwright/test": "^1.56.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "eslint": "^9.39.0",
     "eslint-config-next": "16.4.2",
-    "vitest": "^3.2.0",
     "tsx": "^4.20.0",
-    "@playwright/test": "^1.56.0"
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
   },
   "type": "module",
   "engines": {

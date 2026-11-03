@@ -1,11 +1,12 @@
 import "server-only";
-import { getOverview, read } from "./chain";
+import { getOverview, read, readAt } from "./chain";
 import {
   collectPages,
   type RecordKind,
   type RecordMap,
   type RecordPage,
 } from "../records";
+import { deploymentById } from "../deployments";
 import type { Agent, Claim } from "../types";
 const methods = {
   agents: ["registry", "list_agents", "get_agent"],
@@ -16,9 +17,10 @@ const methods = {
 export async function lookupRecord<K extends RecordKind>(
   kind: K,
   id: string,
+  deploymentId?: string,
 ): Promise<RecordMap[K]> {
   const [contract, , method] = methods[kind];
-  return read<RecordMap[K]>(contract, method, [id]);
+  return deploymentId ? readAt<RecordMap[K]>(deploymentById(deploymentId),contract,method,[id]) : read<RecordMap[K]>(contract, method, [id]);
 }
 export async function publicRecordPage<K extends RecordKind>(
   kind: K,

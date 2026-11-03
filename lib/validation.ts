@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseUnits } from "viem";
 
+import { ASSURANCE_FIELDS } from "./assurance";
 import { normalizePublicUrl, evidenceHost } from "./evidence";
 export const publicUrl = z
   .string()
@@ -119,6 +120,15 @@ export const actionSchema = z.discriminatedUnion("kind", [
     target: z.enum(["agent", "policy", "claim", "settlement"]),
     recordId: id,
   }),
+  z.object({kind:z.literal("assess"),agentId:id,evidenceUrls:evidence,publicConsent:z.literal(true)}),
+  z.object({kind:z.literal("resolve_assessment"),assessmentId:id,finding:z.enum(ASSURANCE_FIELDS)}),
+  z.object({kind:z.literal("challenge_assessment"),assessmentId:id,finding:z.enum(ASSURANCE_FIELDS),reason:z.string().min(40).max(4000),evidenceUrls:evidence,publicConsent:z.literal(true)}),
+  z.object({kind:z.literal("resolve_assessment_challenge"),assessmentId:id,challengeIndex:z.number().int().min(0).max(5)}),
+  z.object({kind:z.literal("finalize_assessment"),assessmentId:id}),
+  z.object({kind:z.literal("close_assessment"),assessmentId:id}),
+  z.object({kind:z.literal("publish_assessment"),assessmentId:id}),
+  z.object({kind:z.literal("monitor"),agentId:id,enabled:z.boolean()}),
+  z.object({kind:z.literal("withdraw_assurance_bonds")}),
   z.object({ kind: z.literal("faucet") }),
-]);
+]).and(z.object({deployment:z.string().min(1).max(80).optional()}));
 export type Action = z.infer<typeof actionSchema>;

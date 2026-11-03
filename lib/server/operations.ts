@@ -22,9 +22,10 @@ import { previousPool } from "./legacy-capital";
 import { getAccount, rateLimit } from "./accounts";
 import { HttpError } from "./auth";
 import {
-  addresses,
+  addresses as defaultAddresses,
   chainClient,
-  read,
+  read as chainRead,
+  readAt,
   invalidateOverview,
   type ContractName,
 } from "./chain";
@@ -32,6 +33,8 @@ import { inspectReceipt } from "../receipt";
 import type { Action } from "../validation";
 import type { Quote, Claim, Operation } from "../types";
 import type { Agent, Policy } from "../types";
+import { activeDeployment, deploymentById } from "../deployments";
+import type { Assessment, Passport } from "../assurance";
 import { canAppeal } from "../claims";
 
 function publicOperation(row: Record<string, unknown>) {
@@ -40,6 +43,20 @@ function publicOperation(row: Record<string, unknown>) {
 function savedState(row: Record<string, unknown>) {
   return recoveryState(operationRow(row));
 }
+
+export async function submitAction(
+  user: { id: string; email: string },
+  action: Action,
+  idempotencyKey: string,
+) {
+  let selected;
+  try { selected = deploymentById(action.deployment); } catch { throw new HttpError(400, "Unknown deployment generation."); }
+  if (action.deployment && selected.id !== activeDeployment.id && ["register", "revise", "quote", "bind", "stake", "assess", "monitor"].includes(action.kind))
+    throw new HttpError(409, "New registration, capital and cover use the current generation. Earlier positions and claims remain recoverable.");
+  const addresses = action.deployment ? selected : defaultAddresses;
+  const read: typeof chainRead = action.deployment
+    ? <T>(contract: ContractName, method: string, args: CalldataEncodable[] = []) => readAt<T>(selected, contract, method, args)
+    : chainRead;
 async function requireConfirmation<T extends {id?: string} = {id?: string}>(contract: ContractName, method: string, recordId: string): Promise<T> {
   try {
     const record = await read<T>(contract, method, [recordId]);
@@ -50,11 +67,6 @@ async function requireConfirmation<T extends {id?: string} = {id?: string}>(cont
   }
 }
 
-export async function submitAction(
-  user: { id: string; email: string },
-  action: Action,
-  idempotencyKey: string,
-) {
   const sql = db();
   const account = await getAccount(user);
   const fingerprint = createHash("sha256")
@@ -123,7 +135,7 @@ export async function submitAction(
         sql`UPDATE ballast_operations SET attempt=${attempt},status='preparing',execution='pending',tx_hash=NULL,evm_hash=NULL,signed_payload=NULL,nonce=NULL,error=NULL,next_retry_at=NULL,votes='[]',updated_at=now() WHERE id=${id}`,
       ]);
     } else {
-      await sql`INSERT INTO ballast_operations(id,user_id,idempotency_key,kind,action_hash) VALUES (${id},${user.id},${idempotencyKey},${action.kind},${fingerprint})`;
+      await sql`INSERT INTO ballast_operations(id,user_id,idempotency_key,kind,action_hash,deployment_id,action) VALUES (${id},${user.id},${idempotencyKey},${action.kind},${fingerprint},${selected.id},${JSON.stringify(action)}::jsonb)`;
     }
     const client = chainClient(account.key(), async (raw) => {
       const hash = keccak256(raw);
@@ -164,6 +176,31 @@ export async function submitAction(
     let args: CalldataEncodable[] = [];
     let value = 0n;
     switch (action.kind) {
+      case "assess":
+        contract = "assurance"; method = "request_assessment"; args = [action.agentId, action.evidenceUrls]; break;
+      case "monitor":
+        contract = "assurance"; method = "set_monitoring"; args = [action.agentId, action.enabled]; break;
+      case "resolve_assessment":
+        contract = "assurance"; method = "resolve_assessment_finding"; args = [action.assessmentId, action.finding]; break;
+      case "challenge_assessment": {
+        const assessment = await read<Assessment>("assurance", "get_assessment", [action.assessmentId]);
+        const kind = assessment.operator.toLowerCase() === account.address.toLowerCase() ? "operator" : "public";
+        if (assessment.status !== "challenge" || assessment.challenge_until <= Date.now()/1000 || assessment.challenges.some(c => c.field === action.finding && (c.kind === kind || c.status === "pending")))
+          throw new HttpError(409, "This finding is not open to a challenge from your account.");
+        if (new Set([...assessment.effective_evidence_urls, ...action.evidenceUrls]).size > 24)
+          throw new HttpError(409, "This assessment's evidence allowance is exhausted.");
+        contract = "assurance"; method = "challenge_finding"; args = [action.assessmentId, action.finding, action.reason, action.evidenceUrls]; value = parseUnits("0.01",18); break;
+      }
+      case "resolve_assessment_challenge":
+        contract = "assurance"; method = "resolve_challenge"; args = [action.assessmentId, action.challengeIndex]; break;
+      case "finalize_assessment":
+        contract = "assurance"; method = "finalize_assessment"; args = [action.assessmentId]; break;
+      case "close_assessment":
+        contract = "assurance"; method = "close_assessment"; args = [action.assessmentId]; break;
+      case "publish_assessment":
+        contract = "assurance"; method = "publish_assessment"; args = [action.assessmentId]; break;
+      case "withdraw_assurance_bonds":
+        contract = "assurance"; method = "withdraw_bonds"; break;
       case "register":
         contract = "registry";
         method = "register_agent";
@@ -200,6 +237,10 @@ export async function submitAction(
         args = [action.claimId];
         break;
       case "quote":
+        if (selected.version === 2) {
+          const passport = await read<Passport>("assurance", "get_passport", [action.agentId]);
+          if (!passport.ready) throw new HttpError(409, "Complete a fresh passport assessment before requesting cover.");
+        }
         await requireConfirmation("registry", "get_final_agent", action.agentId);
         method = "quote_policy";
         args = [action.agentId, parseUnits(action.limit, 18), action.peerUrls];
@@ -218,6 +259,11 @@ export async function submitAction(
         const existing = await read<Partial<Policy>>("underwriting", "get_agent_policy", [quote.agent_id]);
         if (existing.status === "active" || existing.status === "runoff")
           throw new HttpError(409, "This agent already has active cover or an unresolved filing period.");
+        if (selected.version === 2) {
+          const passport = await read<Passport>("assurance", "get_passport", [quote.agent_id]);
+          if (!passport.ready || passport.final_assessment?.id !== quote.assessment_id || passport.final_assessment?.revision !== quote.assessment_revision)
+            throw new HttpError(409, "The passport is stale, challenged or changed. Request a fresh quote before paying.");
+        }
         method = "bind_policy";
         args = [action.quoteId];
         value = BigInt(quote.premium);
@@ -341,7 +387,7 @@ export async function submitAction(
       );
     await sql`UPDATE ballast_operations SET status='submitting',updated_at=now() WHERE id=${id} AND attempt=${attempt}`;
     const hash = await client.writeContract({
-      address: ["redeem_legacy", "withdraw_legacy"].includes(action.kind) ? previousPool : addresses[contract] as `0x${string}`,
+      address: ["redeem_legacy", "withdraw_legacy"].includes(action.kind) ? previousPool : (addresses as Record<ContractName, string>)[contract] as `0x${string}`,
       functionName: method,
       args,
       value,
