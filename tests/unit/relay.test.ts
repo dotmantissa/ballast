@@ -1,5 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
+import { activeDeployment } from "../../lib/deployments";
 const model = vi.hoisted(() => ({
   rows: new Map<string, Record<string, unknown>>(),
   lease: null as string | null,
@@ -373,6 +374,7 @@ it.each([
   [{kind:"acknowledge",claimId:"a".repeat(24)},"underwriting","get_final_settlement"],
   [{kind:"sync_loss",claimId:"a".repeat(24)},"underwriting","get_final_settlement"],
 ] satisfies [import("../../lib/validation").Action,string,string][])("waits for the required confirmation before signing %j",async(action,contract,method)=>{
+  if(action.kind==='quote'&&activeDeployment.version===2)vi.mocked(read).mockResolvedValueOnce({ready:true});
   vi.mocked(read).mockResolvedValueOnce({});
   await expect(submitAction(user,action,key)).rejects.toThrow("not confirmed yet");
   expect(read).toHaveBeenCalledWith(contract,method,["a".repeat(24)]);
@@ -380,6 +382,7 @@ it.each([
   const row=[...model.rows.values()][0];
   expect(row.status).toBe("error");expect(row.signed_payload).toBeNull();
   advance(6);
+  if(action.kind==='quote'&&activeDeployment.version===2)vi.mocked(read).mockResolvedValueOnce({ready:true});
   vi.mocked(read).mockResolvedValueOnce(action.kind === 'claim' ? {id:"a".repeat(24),operator:'0x'+'9'.repeat(40),status:'active',starts_at:0,ends_at:Math.floor(Date.now()/1000)+100,remaining:'2000000000000000000'} : {id:"a".repeat(24)});
   const retried=await submitAction(user,action,key);
   expect(retried.attempt).toBe(2);
@@ -411,7 +414,7 @@ describe('paid actions refuse known invalid requests before signing',()=>{
  const operator='0x'+'1'.repeat(40);
  const other='0x'+'9'.repeat(40);
  const id='a'.repeat(24);
- const quote=()=>({id,operator,agent_id:'b'.repeat(24),premium:'2000000000000000',manifest_hash:'hash-a',band:'low',bound:false,expires_at:Math.floor(Date.now()/1000)+3600});
+ const quote=()=>({id,operator,agent_id:'b'.repeat(24),premium:'2000000000000000',manifest_hash:'hash-a',assessment_id:'c'.repeat(24),assessment_revision:1,band:'low',bound:false,expires_at:Math.floor(Date.now()/1000)+3600});
  it.each(['bound','expired','declined','revised','overlapping'])('does not send a premium for a %s quote',async(condition)=>{
   vi.mocked(read).mockResolvedValueOnce({...quote(),...(condition==='bound'?{bound:true}:condition==='expired'?{expires_at:0}:condition==='declined'?{band:'declined'}:{})});
   if(['revised','overlapping'].includes(condition))vi.mocked(read).mockResolvedValueOnce({manifest_hash:condition==='revised'?'hash-b':'hash-a'});
@@ -420,8 +423,18 @@ describe('paid actions refuse known invalid requests before signing',()=>{
   expect(model.write).not.toHaveBeenCalled();expect([...model.rows.values()][0].signed_payload).toBeNull();
  });
  it('still sends the quoted premium for a current eligible quote',async()=>{
-  vi.mocked(read).mockResolvedValueOnce(quote()).mockResolvedValueOnce({manifest_hash:'hash-a'}).mockResolvedValueOnce({});
+  vi.mocked(read).mockResolvedValueOnce(quote()).mockResolvedValueOnce({manifest_hash:'hash-a'}).mockResolvedValueOnce({}).mockResolvedValueOnce({ready:true,final_assessment:{id:quote().assessment_id,revision:quote().assessment_revision}});
   await submitAction(user,{kind:'bind',quoteId:id},key);expect(model.write).toHaveBeenCalledWith(expect.objectContaining({functionName:'bind_policy',value:2000000000000000n}));
+ });
+ it.each(['not ready','different assessment','different revision'])('does not send a premium when the passport is %s',async(condition)=>{
+  vi.mocked(read).mockResolvedValueOnce(quote()).mockResolvedValueOnce({manifest_hash:'hash-a'}).mockResolvedValueOnce({}).mockResolvedValueOnce({ready:condition!=='not ready',final_assessment:{id:condition==='different assessment'?'d'.repeat(24):quote().assessment_id,revision:condition==='different revision'?2:1}});
+  await expect(submitAction(user,{kind:'bind',quoteId:id},key)).rejects.toThrow('passport is stale, challenged or changed');
+  expect(model.write).not.toHaveBeenCalled();expect([...model.rows.values()][0].signed_payload).toBeNull();
+ });
+ it('does not request a quote before its passport is ready',async()=>{
+  vi.mocked(read).mockResolvedValueOnce({ready:false});
+  await expect(submitAction(user,{kind:'quote',agentId:id,limit:'1',peerUrls:['https://peer.example.org/history']},key)).rejects.toThrow('fresh passport assessment');
+  expect(model.write).not.toHaveBeenCalled();expect(read).not.toHaveBeenCalledWith('registry','get_final_agent',[id]);
  });
  it.each(['self','outside dates','over limit'])('does not send a claim bond for %s',async(condition)=>{
   vi.mocked(read).mockResolvedValueOnce({id,operator:condition==='self'?operator:other,status:'active',starts_at:condition==='outside dates'?2:0,ends_at:Math.floor(Date.now()/1000)+100,remaining:condition==='over limit'?'1':'2000000000000000000'});
