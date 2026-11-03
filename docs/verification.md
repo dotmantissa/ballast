@@ -1,6 +1,16 @@
 # Verification record
 
-## Local checks
+## Ballast v2 verification — 3 November 2026
+
+The seven root and v2 contracts pass GenVM lint. The direct contract suite passes 196 tests, including independent validator comparisons, fixed challenge deadlines, public assurance challenges, exact loss facts, deterministic awards, cross-generation loss accounting and authenticated finalized confirmations. The Node 22 unit suite passes 135 tests. TypeScript, ESLint and the production Next build pass.
+
+The additive database migration ran twice in the isolated `ballast_test_v2_20261103` schema before it ran in `public`; required columns were verified in both. Existing account keys, balances and records were preserved.
+
+Eleven hosted browser checks passed on staged deployment `dpl_GchxNR8cy2ra862bm1sjEMRt1nut`. They cover actual public passport records, mobile bounds, email authentication, API guards and earlier-generation recovery views. The [hosted Workflow result](v2-workflow-result.json) verifies a real authenticated dispatch and completed Vercel Workflow run without submitting a transaction. Production source and hosted rollout verification are recorded separately from this staged checkpoint.
+
+The isolated v2 lifecycle uses fresh controlled actors and actual Studio transactions. Only its assurance challenge window and sponsor cooldown are shortened to 300 and 60 seconds. Canonical production source retains 24 hours and one day. The court uses its normal deadline and supports mutual acceptance by the actual controlled parties. No closed customer-account tests were resumed.
+
+## Earlier v1 verification
 
 All three contracts pass GenVM lint with their concrete pinned runner. The current direct suite has 140 passing tests. It executes contract methods and SDK storage in direct mode, with controlled web and model results. Captured validator callbacks also receive independent matching and differing answers. These tests establish application behavior, not live validator decisions.
 
