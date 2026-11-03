@@ -1,28 +1,40 @@
 {
   "network": "studionet",
-  "purpose": "Clean application deployment after reviewer remediation",
-  "deploymentGeneration": "review-remediation-production-v1",
-  "transactions": {
-    "registry": "0x4b52f2627fb284fec535932f18a200652d3fa07081579222c5c91967922716c7",
-    "underwriting": "0x0445cf81430a411ff58c12be48006ae2c1810ed027d07149258c2b0b8050ab8b",
-    "court": "0x32119d6e2ff4ac3e42f5b6498ebce78ace44f7605c3670f29e124e0ab96c84d9",
-    "wire_registry": "0x70e18eadda6109af60d8f1d8e0448eeacb77527b5774f3bd03276396af6920a7",
-    "wire_pool": "0xcb231fcb66088f010056f94b8b127c7cd6586f297e174860c1f2c2cd69b550ea"
-  },
+  "chainId": 61999,
+  "registry": "0xfe6B1f3E85Df38286f45EDaeBE003FEb44755487",
+  "assurance": "0xD1712aa9924003F08DAaEd885d4f084bc09F27Cf",
+  "underwriting": "0xcA5567897024B81E9f7a6C87C00c28794e7437Cf",
+  "court": "0x7e702e8908EEd71011d5A2F41dC17d1491262F01",
+  "sponsor": "0x095EA80ce0f9d8026E7051b46A1Ef32A782faEc4",
+  "treasury": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+  "legacyPools": [
+    "0x30B2751eff76306B968123f5dAb24043b1DDF09A"
+  ],
   "sourceHashes": {
     "registry": "f8004769e45b43d284ab12aa9dce34c34811f52d4d9cc172861e024a8b490198",
-    "underwriting": "b7de43b60702c25dc612b2b9085c11d425b7c2a813ed31d731f9aa8ab5b2fc67",
-    "court": "0cac9c757c24e16a83a43fa0a502744b8bc5976d157aa9c28ae164666b64e58e"
+    "assurance": "b5174be36eca0b01a9ecb1cac7355bc5202f5509df04b5498e014816f885c137",
+    "underwriting": "75ac04fe0bf4e40cdc88258b40e92569e05183236ff74b896803360a646cffc5",
+    "court": "38a9d3d0e2b539aedb42b0b39e49b561414265821126c18565d0e296292fb8fc"
   },
-  "registry": "0x5BB4F3C8D04803128452958604f99637D4A2c8Fb",
-  "underwriting": "0x30B2751eff76306B968123f5dAb24043b1DDF09A",
-  "court": "0x10f330aeCB384F4181Eccd3789781E45F0389934",
+  "transactions": {
+    "registry": "0x18333248a635590f56c76250827aee4321a41318520c2e583bab534970f72a7b",
+    "assurance": "0xedfc07af2d80c38059a5ff2cf90475daf020558ceec99d63d05a912f4fd0f2a9",
+    "underwriting": "0x3c807f9a225e8b1be6536fdd6bfa65b4f1a72f0940cad1e808415b2537478fc1",
+    "court": "0x24eef11f68aa9b4d00bd7f39874e7a97fb2a0752345462e08f2785795653abbe",
+    "wire_registry": "0x07c1ddeaecd5c67fd8296cfefb9f7ce0c084c318efc659a1244db6d554759c04",
+    "wire_pool": "0x3593d5827d1b790b18767560818418c4f63de3ea94597b290f8b97bda596c454"
+  },
   "wired": {
     "wire_registry": true,
     "wire_pool": true
   },
-  "verifiedAt": "2026-10-17T02:22:18.496Z",
-  "chainId": 61999,
-  "sourceVerifiedAt": "2026-10-17T02:23:51.744Z",
-  "emptyVerifiedAt": "2026-10-17T02:23:51.744Z"
+  "deploymentGeneration": "v2-production-20261103",
+  "verifiedAt": "2026-11-03T09:52:42.747Z",
+  "sourceVerifiedAt": "2026-11-03T09:54:33.073Z",
+  "emptyVerifiedAt": "2026-11-03T09:54:33.073Z",
+  "isolatedTest": false,
+  "id": "v2-production",
+  "label": "Ballast v2 assurance pool",
+  "version": 2,
+  "indexed": true
 }

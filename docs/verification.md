@@ -2,11 +2,11 @@
 
 ## Ballast v2 verification — 3 November 2026
 
-The seven root and v2 contracts pass GenVM lint. The direct contract suite passes 196 tests, including independent validator comparisons, fixed challenge deadlines, public assurance challenges, exact loss facts, deterministic awards, cross-generation loss accounting and authenticated finalized confirmations. The Node 22 unit suite passes 135 tests. TypeScript, ESLint and the production Next build pass.
+The seven root and v2 contracts pass GenVM lint. The direct contract suite passes 196 tests, including independent validator comparisons, fixed challenge deadlines, public assurance challenges, exact loss facts, deterministic awards, cross-generation loss accounting and authenticated finalized confirmations. The Node 22 unit suite passes 139 tests. TypeScript, ESLint and the production Next build pass.
 
 The additive database migration ran twice in the isolated `ballast_test_v2_20261103` schema before it ran in `public`; required columns were verified in both. Existing account keys, balances and records were preserved.
 
-Eleven hosted browser checks passed on staged deployment `dpl_GchxNR8cy2ra862bm1sjEMRt1nut`. They cover actual public passport records, mobile bounds, email authentication, API guards and earlier-generation recovery views. The [hosted Workflow result](v2-workflow-result.json) verifies a real authenticated dispatch and completed Vercel Workflow run without submitting a transaction. Production source and hosted rollout verification are recorded separately from this staged checkpoint.
+Eleven hosted browser checks passed on staged deployment `dpl_GchxNR8cy2ra862bm1sjEMRt1nut`. They cover actual public passport records, mobile bounds, email authentication, API guards and earlier-generation recovery views. The [hosted Workflow result](v2-workflow-result.json) verifies a real authenticated dispatch and completed Vercel Workflow run without submitting a transaction. The canonical v2 production generation was separately verified against source bytes, wiring, sponsor, treasury and preceding pools, with empty business records and zero native pool balance before selection. Hosted release verification follows this staged checkpoint.
 
 The [completed v2 Studio lifecycle](v2-integration-result.json) passed 35 real controlled transaction checks. It verifies the challenged passport, high-risk quote, three actual claim facts, upheld scope appeal, deterministic 0.2 GEN award, authenticated settlement and exact native payout and bond withdrawals. The pool holds 3.9 GEN, exactly matching its accounting value, and the policy retains 0.8 GEN of cover.
 
@@ -20,13 +20,13 @@ The Node 22 suite has 112 passing tests covering encrypted custody, public input
 
 The Neon operation migration completed. Tables are namespaced for Ballast. No user records were inserted to simulate authentication. Signed broadcasts are encrypted before relay and are excluded from API responses.
 
-## Studio runtime correction
+## Earlier v1 studio runtime correction
 
 The first review quote finalized with a leader execution timeout before a risk decision. A live read only probe returned the registered agent through the default storage view while the explicit finalized view timed out. Studio's host rejects that storage flag. The diagnostic contract is in `tests/integration/contracts/finality_probe.py`; deployment transaction `0x9662ca4f0e98e41639869facfe3438b960a8947634dea108bca1cb8c50cd9de1` created `0x4eC275600Aa613Fd716F5e0FCE58519Bb733aB70`. Its source registry is `0xc7e99F1D090bD0CA7c7Ed2b2d5F39E40e832713E`, with agent `892d26f427a05a5c100ce76e`. The failed quote is `0x52fa5074780d7c678bf34f96d75e3413454bc25c153e16966f0792ea6e1cfe55`. Neither failure is counted as a successful judgment.
 
 The corrected contracts use [authenticated finalized message proofs](finality.md). Tests reject external or altered callbacks, require court proof before settlement, require a filing seal before expiry and prevent delayed confirmations from rewinding records. Application status alone cannot authorize payment.
 
-## Real claims lifecycle
+## Earlier v1 real claims lifecycle
 
 The maintainer workflow deploys a separate contract set, verifies its actual explorer source bytes, schemas and links, and reuses protected signed journals after interruption. It uses separate claimant and executor accounts and an intentionally insecure test vault. The claimant funds real native test GEN escrow. Approved history is executed before cover; a later unapproved native debit supplies the incident. Signed history and incident snapshots are published at immutable evidence commits. Model fixtures never replace risk or claim decisions.
 
@@ -34,11 +34,11 @@ The [completed Studio lifecycle](review-integration-result.json) passed on 17 Oc
 
 The 24 hour challenge window is not shortened by a deployment flag. Both actual parties may voluntarily accept the current decision, using the same public method available to any case. Appeals clear both acceptances. Time travel is confined to direct tests.
 
-## Production transition
+## Earlier v1 production transition
 
 Original production capital remains in its immutable pool. The initial transition inspection found 20 Studio GEN and no policies or claims there. The account owner later redeemed and withdrew 15 GEN of junior capital during the registered account exercise; their 5 GEN senior position remains in the earlier pool. Holder initiated redemption and withdrawal remain accessible in Capital, using the archived address. No account is migrated automatically. Archived contracts retain their earlier code and rules; new safeguards apply to the corrected deployment. The custody master key is preserved. The corrected application pool was source verified and empty before promotion. It now contains the real account exercise records and capital, detailed in the account ledger. The [transition readback](deployment-transition.json) records both deployments and the earlier native balance.
 
-## Browser and hosting
+## Earlier v1 browser and hosting
 
 Production deployment `dpl_Cs6D6RDgnBYscjnFutNJQvjToWow` is ready at https://ballast-cover.vercel.app. Its Node 22 production build passes. Nine hosted Playwright checks cover public data, navigation, theme persistence, email only authentication, mobile bounds, sticky navigation, hostile public URLs, older record lookup, confirmation recovery and mutual acceptance with a device clock behind the network. Four regressions supply controlled public records to the browser; five checks read the actual hosted application. These browser fixtures never populate the live contracts.
 

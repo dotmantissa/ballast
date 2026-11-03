@@ -59,5 +59,87 @@
     "version": 1,
     "indexed": false,
     "label": "Ballast original pool"
+  },
+  {
+    "network": "studionet",
+    "chainId": 61999,
+    "registry": "0xB2F4Bce6D38D1e302a11Bf3261eC45E16d0Cf162",
+    "assurance": "0x5829c36CC1e49DeBf3dA1E76c0C4f71c35fFab37",
+    "underwriting": "0xE0F61C8452ef6db5B2fF40337F1AA1eacCe20B94",
+    "court": "0xbbDFcA459Afcc592deCb3575Da08A115eB72e5c5",
+    "sponsor": "0xFe2446260B58BCE236CDB0841f301d05C6d780fd",
+    "treasury": "0x73856e38351156740d000CDA22be5e6BA1974bCa",
+    "legacyPools": [
+      "0x30B2751eff76306B968123f5dAb24043b1DDF09A"
+    ],
+    "sourceHashes": {
+      "registry": "f8004769e45b43d284ab12aa9dce34c34811f52d4d9cc172861e024a8b490198",
+      "assurance": "dd0a502b57258a5fa9c6749335ea02f09f7d2b15befa2f4cb1b5c40f9e2c8346",
+      "underwriting": "75ac04fe0bf4e40cdc88258b40e92569e05183236ff74b896803360a646cffc5",
+      "court": "38a9d3d0e2b539aedb42b0b39e49b561414265821126c18565d0e296292fb8fc"
+    },
+    "transactions": {
+      "registry": "0x63ba1830f61d5acb08792e4d2057486dc5056c7ae6275c69a585e96d287b92e3",
+      "assurance": "0xeaa276dd935b9fd911f61d4a4c98b969e2d7a02a53fb18fb52eed5f00d16bcfc",
+      "underwriting": "0xb990ee7935a956b25ec7689b97aa6cd4bbbb8b84633718e7a4f2646d402c9733",
+      "court": "0x68d02b7203cc1b902f20106b5db8aa4fbc8ba60fdb7bdf3cdc1b1aa6b5e033ef",
+      "wire_registry": "0x28c2dcd1012d736ead44c263f86f3fa12054d311c6f10bea73c9ae728255f1e4",
+      "wire_pool": "0xdd8f28047de584685103cf07a759d001f2ab6c7296da82b9e195d4b2b73b220e"
+    },
+    "wired": {
+      "wire_registry": true,
+      "wire_pool": true
+    },
+    "deploymentGeneration": "v2-isolated-20261103",
+    "verifiedAt": "2026-11-03T08:24:41.801Z",
+    "sourceVerifiedAt": "2026-11-03T08:38:21.740Z",
+    "emptyVerifiedAt": "2026-11-03T08:38:21.740Z",
+    "isolatedTest": true,
+    "exampleAgent": "ea78c42bb0bb9286a9dcd10f",
+    "id": "v2-isolated",
+    "label": "Isolated v2 Studio validation",
+    "version": 2,
+    "indexed": true,
+    "testOnly": true
+  },
+  {
+    "network": "studionet",
+    "chainId": 61999,
+    "registry": "0xfe6B1f3E85Df38286f45EDaeBE003FEb44755487",
+    "assurance": "0xD1712aa9924003F08DAaEd885d4f084bc09F27Cf",
+    "underwriting": "0xcA5567897024B81E9f7a6C87C00c28794e7437Cf",
+    "court": "0x7e702e8908EEd71011d5A2F41dC17d1491262F01",
+    "sponsor": "0x095EA80ce0f9d8026E7051b46A1Ef32A782faEc4",
+    "treasury": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+    "legacyPools": [
+      "0x30B2751eff76306B968123f5dAb24043b1DDF09A"
+    ],
+    "sourceHashes": {
+      "registry": "f8004769e45b43d284ab12aa9dce34c34811f52d4d9cc172861e024a8b490198",
+      "assurance": "b5174be36eca0b01a9ecb1cac7355bc5202f5509df04b5498e014816f885c137",
+      "underwriting": "75ac04fe0bf4e40cdc88258b40e92569e05183236ff74b896803360a646cffc5",
+      "court": "38a9d3d0e2b539aedb42b0b39e49b561414265821126c18565d0e296292fb8fc"
+    },
+    "transactions": {
+      "registry": "0x18333248a635590f56c76250827aee4321a41318520c2e583bab534970f72a7b",
+      "assurance": "0xedfc07af2d80c38059a5ff2cf90475daf020558ceec99d63d05a912f4fd0f2a9",
+      "underwriting": "0x3c807f9a225e8b1be6536fdd6bfa65b4f1a72f0940cad1e808415b2537478fc1",
+      "court": "0x24eef11f68aa9b4d00bd7f39874e7a97fb2a0752345462e08f2785795653abbe",
+      "wire_registry": "0x07c1ddeaecd5c67fd8296cfefb9f7ce0c084c318efc659a1244db6d554759c04",
+      "wire_pool": "0x3593d5827d1b790b18767560818418c4f63de3ea94597b290f8b97bda596c454"
+    },
+    "wired": {
+      "wire_registry": true,
+      "wire_pool": true
+    },
+    "deploymentGeneration": "v2-production-20261103",
+    "verifiedAt": "2026-11-03T09:52:42.747Z",
+    "sourceVerifiedAt": "2026-11-03T09:54:33.073Z",
+    "emptyVerifiedAt": "2026-11-03T09:54:33.073Z",
+    "isolatedTest": false,
+    "id": "v2-production",
+    "label": "Ballast v2 assurance pool",
+    "version": 2,
+    "indexed": true
   }
 ]
