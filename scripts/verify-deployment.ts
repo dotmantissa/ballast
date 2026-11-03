@@ -30,6 +30,7 @@ const registry=await read("registry","get_config");
 const pool=await read("underwriting","get_dashboard");
 const court=await read("court","get_config");
 assert.equal(String(registry.underwriting).toLowerCase(),state.underwriting.toLowerCase());
+assert.equal(String(pool.registry).toLowerCase(),state.registry.toLowerCase());
 assert.equal(String(pool.court).toLowerCase(),state.court.toLowerCase());
 assert.equal(String(court.registry).toLowerCase(),state.registry.toLowerCase());
 assert.equal(String(court.underwriting).toLowerCase(),state.underwriting.toLowerCase());
@@ -37,10 +38,15 @@ if(state.version===2){
   const assurance=await read('assurance','get_config');
   assert.equal(String(assurance.registry).toLowerCase(),state.registry.toLowerCase());
   assert.equal(String(assurance.sponsor).toLowerCase(),state.sponsor.toLowerCase());
+  assert.equal(String(assurance.treasury).toLowerCase(),state.treasury.toLowerCase());
   assert.equal(String(pool.assurance).toLowerCase(),state.assurance.toLowerCase());
+  assert.deepEqual((pool.legacy_pools as string[]).map(address=>address.toLowerCase()),(state.legacyPools??[]).map((address:string)=>address.toLowerCase()));
+  if(process.env.BALLAST_REQUIRE_EMPTY==="1")assert.equal(Number(assurance.assessment_count),0);
 }
 if(process.env.BALLAST_REQUIRE_EMPTY==="1"){
   assert.equal(String(pool.tvg),"0");assert.equal(Number(registry.agent_count),0);assert.equal(Number(court.claim_count),0);assert.equal(Number(pool.policy_count),0);
+  assert.equal(Number(pool.quote_count),0);
+  assert.equal(await client.getBalance({address:state.underwriting}),0n);
 }
 state.network="studionet";state.chainId=61999;
 state.sourceVerifiedAt=new Date().toISOString();
